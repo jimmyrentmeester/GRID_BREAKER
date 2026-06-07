@@ -10,6 +10,10 @@ import UIKit
 /// absent so the Core/UI stays portable.
 @MainActor
 final class Haptics {
+    /// Global on/off (player preference), set at launch + from Settings. Mirrors
+    /// `AudioEngine.enabled` / `NeonTheme.current` — a simple shared switch.
+    static var enabled = true
+
     #if canImport(UIKit)
     private let light = UIImpactFeedbackGenerator(style: .light)
     private let medium = UIImpactFeedbackGenerator(style: .medium)
@@ -27,6 +31,7 @@ final class Haptics {
     enum Tap { case light, medium, rigid, soft }
 
     func impact(_ tap: Tap) {
+        guard Haptics.enabled else { return }
         #if canImport(UIKit)
         switch tap {
         case .light:  light.impactOccurred()
@@ -38,12 +43,14 @@ final class Haptics {
     }
 
     func error() {
+        guard Haptics.enabled else { return }
         #if canImport(UIKit)
         notify.notificationOccurred(.error)
         #endif
     }
 
     func success() {
+        guard Haptics.enabled else { return }
         #if canImport(UIKit)
         notify.notificationOccurred(.success)
         #endif

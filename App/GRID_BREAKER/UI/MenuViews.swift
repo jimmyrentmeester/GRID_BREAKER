@@ -699,3 +699,205 @@ struct HighScoresView: View {
         .padding(24)
     }
 }
+
+// MARK: - Settings / About
+
+/// Preferences (sound, haptics), accessibility status, help, a guarded progress
+/// reset, and an about/version block. Preferences persist via `GameStore`; the
+/// reset wipes gameplay progress but keeps your preferences (see `resetProgress`).
+struct SettingsView: View {
+    @Bindable var store: GameStore
+    let onTutorial: () -> Void
+    let onBack: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var confirmingReset = false
+
+    private var versionLine: String {
+        let info = Bundle.main.infoDictionary
+        let v = info?["CFBundleShortVersionString"] as? String ?? "—"
+        let b = info?["CFBundleVersion"] as? String ?? "—"
+        return "v\(v) (build \(b))"
+    }
+
+    var body: some View {
+        ZStack {
+            ScrollView {
+                VStack(spacing: 22) {
+                    Text("SETTINGS")
+                        .font(.system(size: 24, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.cyan)
+                        .neonGlow(NeonTheme.cyan, radius: 8)
+
+                    section("SYSTEM") {
+                        SettingToggleRow(label: "SOUND",
+                                         systemImage: store.soundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill",
+                                         isOn: store.soundEnabled) {
+                            let on = !store.soundEnabled
+                            store.setSoundEnabled(on)
+                            AudioEngine.shared.enabled = on
+                            if on { AudioEngine.shared.play(.uiTap) }
+                        }
+                        SettingToggleRow(label: "HAPTICS",
+                                         systemImage: "iphone.radiowaves.left.and.right",
+                                         isOn: store.hapticsEnabled) {
+                            let on = !store.hapticsEnabled
+                            store.setHapticsEnabled(on)
+                            Haptics.enabled = on
+                            if on { Haptics().impact(.light) }
+                        }
+                    }
+
+                    section("ACCESSIBILITY") {
+                        SettingInfoRow(label: "REDUCE MOTION",
+                                       value: reduceMotion ? "ON" : "OFF",
+                                       note: "follows iOS")
+                    }
+
+                    section("HELP") {
+                        SettingActionRow(label: "HOW TO PLAY", systemImage: "graduationcap",
+                                         color: NeonTheme.cyan, action: onTutorial)
+                    }
+
+                    section("DATA") {
+                        SettingActionRow(label: "RESET PROGRESS", systemImage: "trash",
+                                         color: NeonTheme.danger) { confirmingReset = true }
+                    }
+
+                    VStack(spacing: 4) {
+                        Text("GRID_BREAKER")
+                            .font(.system(size: 14, weight: .heavy, design: .monospaced))
+                            .foregroundStyle(NeonTheme.magenta)
+                            .neonGlow(NeonTheme.magenta, radius: 5)
+                        Text(versionLine)
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundStyle(NeonTheme.textDim)
+                        Text("// netrunner reflex hack")
+                            .font(.system(size: 11, weight: .regular, design: .monospaced))
+                            .foregroundStyle(NeonTheme.textDim)
+                    }
+                    .padding(.top, 8)
+
+                    TerminalButton(title: "BACK", color: NeonTheme.magenta, action: onBack)
+                }
+                .padding(24)
+                .frame(maxWidth: 420)
+                .frame(maxWidth: .infinity)
+            }
+
+            if confirmingReset {
+                ConfirmDialog(title: "RESET PROGRESS",
+                              message: "Wipe all Credits, upgrades,\nhigh scores, cosmetics and\ncampaign progress?",
+                              confirmLabel: "RESET",
+                              confirmColor: NeonTheme.danger,
+                              onConfirm: {
+                                  store.resetProgress()
+                                  // Re-apply cosmetics defaults globally (they were just wiped).
+                                  NeonTheme.current = Palettes.byID(store.equippedPaletteID)
+                                  TrailSkins.equipped = TrailSkins.byID(store.equippedTrailID)
+                                  confirmingReset = false
+                              },
+                              onCancel: { confirmingReset = false })
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func section<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+                .tracking(2)
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Shared neon background for a settings row.
+private struct SettingRowBackground: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(Color.white.opacity(0.03))
+            .overlay(RoundedRectangle(cornerRadius: 10)
+                .stroke(NeonTheme.gridLineDim.opacity(0.5), lineWidth: 1))
+    }
+}
+
+/// A labelled ON/OFF preference toggle (tap to flip).
+private struct SettingToggleRow: View {
+    let label: String
+    let systemImage: String
+    let isOn: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Label(label, systemImage: systemImage)
+                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textPrimary)
+                Spacer()
+                Text(isOn ? "ON" : "OFF")
+                    .font(.system(size: 13, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(isOn ? NeonTheme.cyan : NeonTheme.textDim)
+                    .frame(width: 46)
+                    .padding(.vertical, 5)
+                    .background(Capsule().stroke(isOn ? NeonTheme.cyan : NeonTheme.gridLineDim, lineWidth: 1.5))
+                    .neonGlow(isOn ? NeonTheme.cyan : .clear, radius: isOn ? 5 : 0)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 13)
+            .background(SettingRowBackground())
+        }
+        .buttonStyle(TerminalButtonStyle())
+    }
+}
+
+/// A read-only status row (e.g. an OS-driven setting we only reflect).
+private struct SettingInfoRow: View {
+    let label: String
+    let value: String
+    let note: String
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                .foregroundStyle(NeonTheme.textPrimary)
+            Spacer()
+            Text(note)
+                .font(.system(size: 11, weight: .regular, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+            Text(value)
+                .font(.system(size: 13, weight: .heavy, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 13)
+        .background(SettingRowBackground())
+    }
+}
+
+/// A tappable action row (launches a flow / triggers a guarded action).
+private struct SettingActionRow: View {
+    let label: String
+    let systemImage: String
+    let color: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Label(label, systemImage: systemImage)
+                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                    .foregroundStyle(color)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(NeonTheme.textDim)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 13)
+            .background(SettingRowBackground())
+        }
+        .buttonStyle(TerminalButtonStyle())
+    }
+}

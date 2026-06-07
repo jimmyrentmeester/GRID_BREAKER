@@ -34,10 +34,28 @@ final class GameStore {
         persist()
     }
 
+    var hapticsEnabled: Bool { save.hapticsEnabled }
+    func setHapticsEnabled(_ on: Bool) {
+        save.hapticsEnabled = on
+        persist()
+    }
+
     var tutorialSeen: Bool { save.tutorialSeen }
     func markTutorialSeen() {
         guard !save.tutorialSeen else { return }
         save.tutorialSeen = true
+        persist()
+    }
+
+    /// Wipe gameplay progress (Credits, upgrades, scores, cosmetics, campaign) to a
+    /// fresh start. Keeps the player's *preferences* (sound/haptics) and that they've
+    /// already seen the tutorial — those aren't "progress".
+    func resetProgress() {
+        var fresh = SaveData.empty
+        fresh.soundEnabled = save.soundEnabled
+        fresh.hapticsEnabled = save.hapticsEnabled
+        fresh.tutorialSeen = save.tutorialSeen
+        save = fresh
         persist()
     }
 

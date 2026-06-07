@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.15 — Settings screen (2026-06-07)
+- New SETTINGS menu: toggle sound and (now) haptics, see whether Reduce Motion is
+  on, jump to the how-to-play, and reset all progress (with a confirm) for a clean
+  start. Plus an about/version line. Sound & tutorial moved here from the menu.
+
 ## 0.14 — Score & visualizer polish (2026-06-07)
 - Your score is now big and centered, sitting right above the data core in every
   mode (it was a small readout tucked in the top-left).

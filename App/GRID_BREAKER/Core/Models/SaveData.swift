@@ -19,6 +19,7 @@ struct SaveData: Codable, Sendable {
     var cyberdeck: Cyberdeck = .starter
     var highScores: [HighScoreEntry] = []
     var soundEnabled: Bool = true
+    var hapticsEnabled: Bool = true
     /// Number of campaign cores cleared (core N is unlocked when this >= N-1).
     var campaignProgress: Int = 0
     /// Whether the how-to-play explainer has been shown once.
@@ -33,7 +34,7 @@ struct SaveData: Codable, Sendable {
     var equippedTrailID: String = "comet"
 
     enum CodingKeys: String, CodingKey {
-        case version, cyberdeck, highScores, soundEnabled, campaignProgress, tutorialSeen
+        case version, cyberdeck, highScores, soundEnabled, hapticsEnabled, campaignProgress, tutorialSeen
         case ownedPaletteIDs, equippedPaletteID, ownedTrailIDs, equippedTrailID
     }
 
@@ -91,6 +92,7 @@ extension SaveData {
         cyberdeck = try c.decodeIfPresent(Cyberdeck.self, forKey: .cyberdeck) ?? cyberdeck
         highScores = try c.decodeIfPresent([HighScoreEntry].self, forKey: .highScores) ?? highScores
         soundEnabled = try c.decodeIfPresent(Bool.self, forKey: .soundEnabled) ?? soundEnabled
+        hapticsEnabled = try c.decodeIfPresent(Bool.self, forKey: .hapticsEnabled) ?? hapticsEnabled
         campaignProgress = try c.decodeIfPresent(Int.self, forKey: .campaignProgress) ?? campaignProgress
         tutorialSeen = try c.decodeIfPresent(Bool.self, forKey: .tutorialSeen) ?? tutorialSeen
         ownedPaletteIDs = try c.decodeIfPresent([String].self, forKey: .ownedPaletteIDs) ?? ownedPaletteIDs

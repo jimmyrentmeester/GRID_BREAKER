@@ -152,6 +152,17 @@ frame loop; the layer is non-interactive. Skins live in the UI (`TrailSkins`), c
 resolve through the equipped palette, and `TrailSkins.equipped` is a static set at
 launch + on equip (same pattern as `NeonTheme.current`, D16).
 
+## D18 — Settings hub; reset wipes progress, not preferences
+**2026-06-07.** Consolidated the loose menu buttons (SOUND, TUTORIAL) into a single
+SETTINGS screen so the title stays clean and there's an obvious home for new options.
+`resetProgress()` deliberately distinguishes **progress** (Credits, upgrades, scores,
+cosmetics, campaign — wiped) from **preferences** (sound/haptics) and onboarding
+state (`tutorialSeen`), which it preserves: a "reset progress" shouldn't silently
+flip your audio off or re-show the tutorial. Guarded by the existing `ConfirmDialog`
+(destructive, red). Haptics gained an on/off switch via a `Haptics.enabled` static —
+the same shared-singleton/global pattern already used for audio (D12) and cosmetics
+(`NeonTheme.current` D16 / `TrailSkins.equipped` D17), set at launch + on toggle.
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

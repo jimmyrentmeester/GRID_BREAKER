@@ -9,7 +9,7 @@ struct RootView: View {
     @State private var activeCore: DataCore?
     @State private var pulse = false
 
-    private enum Screen { case menu, endless, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial }
+    private enum Screen { case menu, endless, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial, settings }
 
     private func tap() { AudioEngine.shared.play(.uiTap) }
 
@@ -61,12 +61,17 @@ struct RootView: View {
                 HighScoresView(scores: store.highScores, onBack: { screen = .menu }).transition(.opacity)
             case .tutorial:
                 TutorialView(onDone: { store.markTutorialSeen(); screen = .menu }).transition(.opacity)
+            case .settings:
+                SettingsView(store: store,
+                             onTutorial: { tap(); screen = .tutorial },
+                             onBack: { screen = .menu }).transition(.opacity)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: screen)
         .onAppear {
             NeonTheme.current = Palettes.byID(store.equippedPaletteID)   // apply cosmetics
             TrailSkins.equipped = TrailSkins.byID(store.equippedTrailID)
+            Haptics.enabled = store.hapticsEnabled
             AudioEngine.shared.enabled = store.soundEnabled
             AudioEngine.shared.start()
             if !store.tutorialSeen { screen = .tutorial }   // first-launch onboarding
@@ -101,27 +106,12 @@ struct RootView: View {
                 TerminalButton(title: "COSMETICS", color: NeonTheme.gridLine, wide: true) { tap(); screen = .cosmetics }
                 TerminalButton(title: "TOP RUNS", color: NeonTheme.cyan, wide: true) { tap(); screen = .scores }
 
-                HStack(spacing: 18) {
-                    Button {
-                        let on = !store.soundEnabled
-                        store.setSoundEnabled(on)
-                        AudioEngine.shared.enabled = on
-                        if on { AudioEngine.shared.play(.uiTap) }
-                    } label: {
-                        Label(store.soundEnabled ? "SOUND ON" : "SOUND OFF",
-                              systemImage: store.soundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(NeonTheme.textDim)
-                    }
-                    .buttonStyle(TerminalButtonStyle())
-
-                    Button { tap(); screen = .tutorial } label: {
-                        Label("TUTORIAL", systemImage: "graduationcap")
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(NeonTheme.textDim)
-                    }
-                    .buttonStyle(TerminalButtonStyle())
+                Button { tap(); screen = .settings } label: {
+                    Label("SETTINGS", systemImage: "gearshape")
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textDim)
                 }
+                .buttonStyle(TerminalButtonStyle())
                 .padding(.top, 6)
             }
             .frame(maxWidth: 260)        // uniform button width

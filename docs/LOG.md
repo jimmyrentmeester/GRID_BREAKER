@@ -3,6 +3,31 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #23 — Settings / About screen (ship-prep) (2026-06-07)
+First ship-prep slice: a real Settings hub, reachable from a new ⚙ SETTINGS menu
+button (which replaces the loose SOUND + TUTORIAL menu buttons — consolidated).
+- **`SettingsView`** (`MenuViews.swift`), neon-styled sections: SYSTEM (SOUND +
+  new HAPTICS toggles), ACCESSIBILITY (REDUCE MOTION read-only status, "follows
+  iOS"), HELP (HOW TO PLAY → tutorial), DATA (RESET PROGRESS, guarded by the
+  existing `ConfirmDialog`), and an ABOUT block (title + version from the bundle +
+  tagline). Reusable row views: `SettingToggleRow`/`SettingInfoRow`/
+  `SettingActionRow` + shared `SettingRowBackground`.
+- **Haptics toggle:** `Haptics.enabled` static gate (mirrors `AudioEngine.enabled`/
+  `NeonTheme.current`), checked in `impact/error/success`; persisted via
+  `SaveData.hapticsEnabled` (+ tolerant decode) and applied at launch in
+  `RootView.onAppear`.
+- **Reset progress:** `GameStore.resetProgress()` wipes gameplay state (Credits,
+  upgrades, scores, cosmetics, campaign) to `.empty` but **keeps preferences**
+  (sound/haptics) and `tutorialSeen`; the view re-applies palette/trail globals
+  afterward so the look doesn't desync.
+- **Version:** bumped `MARKETING_VERSION` 0.1 → 0.14 (both configs) to match the
+  changelog; the About block reads it from `CFBundleShortVersionString`.
+- **Verified on-device (iPhone 16 Pro sim, computer-use):** menu shows the single
+  SETTINGS button; Settings renders all sections + "v0.14 (build 1)"; SOUND toggled
+  ON→OFF (pill + icon update); RESET PROGRESS → red confirm → reset ran cleanly,
+  preserved SOUND=OFF/HAPTICS=ON, and BACK returned to the menu with no tutorial
+  re-trigger.
+
 ## Run #22 — Score/visualizer layout pass (2026-06-07)
 Three requested adjustments:
 - **Uniform menu buttons.** `TerminalButton` gained a `wide` flag (fills the
