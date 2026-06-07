@@ -3,6 +3,18 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #15 — Pause/quit + how-to-play (2026-06-07)
+- **In-run pause/quit:** `GameViewModel.isPaused` (+ `pause()`/`unpause()`); `advance`
+  and `tap` guard on it so the sim and RAM clock freeze while paused. Pause button
+  (bottom-leading) + `PauseOverlay` (RESUME / QUIT-to-menu). Fills the gap where you
+  could only leave a run by dying.
+- **How-to-play:** `HowToPlayView` (6 rules: decode / armored / firewalls / RAM /
+  fever / upgrades). Auto-shown once on first launch (`SaveData.tutorialSeen` +
+  `GameStore.markTutorialSeen`), and revisitable via a HOW TO PLAY button on the menu.
+- **Verified on-device:** how-to-play auto-shows on a fresh install; pause overlay
+  shows with RAM frozen (19s held across two screenshots). Temp hooks reverted, save
+  cleared.
+
 ## Run #14 — Dynamic Island framing (2026-06-07)
 - Researched DI use (WebSearch/Apple): can't render into the pill while foreground
   (Live Activity Island view only shows when backgrounded). See D14.

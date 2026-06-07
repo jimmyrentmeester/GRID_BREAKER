@@ -9,7 +9,7 @@ struct RootView: View {
     @State private var activeCore: DataCore?
     @State private var pulse = false
 
-    private enum Screen { case menu, endless, campaign, core, cyberdeck, scores }
+    private enum Screen { case menu, endless, campaign, core, cyberdeck, scores, help }
 
     private func tap() { AudioEngine.shared.play(.uiTap) }
 
@@ -51,12 +51,15 @@ struct RootView: View {
                 CyberdeckView(store: store, onBack: { screen = .menu }).transition(.opacity)
             case .scores:
                 HighScoresView(scores: store.highScores, onBack: { screen = .menu }).transition(.opacity)
+            case .help:
+                HowToPlayView(onDone: { store.markTutorialSeen(); screen = .menu }).transition(.opacity)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: screen)
         .onAppear {
             AudioEngine.shared.enabled = store.soundEnabled
             AudioEngine.shared.start()
+            if !store.tutorialSeen { screen = .help }   // first-launch onboarding
         }
         .onChange(of: screen) { _, _ in AudioEngine.shared.resume() }
     }
@@ -86,18 +89,27 @@ struct RootView: View {
                 TerminalButton(title: "CYBERDECK", color: NeonTheme.gold) { tap(); screen = .cyberdeck }
                 TerminalButton(title: "TOP RUNS", color: NeonTheme.cyan) { tap(); screen = .scores }
 
-                Button {
-                    let on = !store.soundEnabled
-                    store.setSoundEnabled(on)
-                    AudioEngine.shared.enabled = on
-                    if on { AudioEngine.shared.play(.uiTap) }
-                } label: {
-                    Label(store.soundEnabled ? "SOUND ON" : "SOUND OFF",
-                          systemImage: store.soundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(NeonTheme.textDim)
+                HStack(spacing: 18) {
+                    Button {
+                        let on = !store.soundEnabled
+                        store.setSoundEnabled(on)
+                        AudioEngine.shared.enabled = on
+                        if on { AudioEngine.shared.play(.uiTap) }
+                    } label: {
+                        Label(store.soundEnabled ? "SOUND ON" : "SOUND OFF",
+                              systemImage: store.soundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(NeonTheme.textDim)
+                    }
+                    .buttonStyle(TerminalButtonStyle())
+
+                    Button { tap(); screen = .help } label: {
+                        Label("HOW TO PLAY", systemImage: "questionmark.circle")
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(NeonTheme.textDim)
+                    }
+                    .buttonStyle(TerminalButtonStyle())
                 }
-                .buttonStyle(TerminalButtonStyle())
                 .padding(.top, 6)
             }
             .padding(.top, 22)

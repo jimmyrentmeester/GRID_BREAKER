@@ -18,6 +18,8 @@ final class GameViewModel {
     private(set) var shakeTrigger = 0
     /// Set by the view from the environment; gates motion-heavy juice.
     var reduceMotion = false
+    /// Paused → the sim (and its RAM clock) is frozen until unpaused.
+    private(set) var isPaused = false
 
     private var engine: GridEngine
     private let config: GameConfig
@@ -56,9 +58,12 @@ final class GameViewModel {
         return fx
     }
 
+    func pause() { isPaused = true }
+    func unpause() { isPaused = false; lastDate = nil }  // re-anchor so no time jumps
+
     /// Called every frame by the TimelineView with the current date.
     func advance(to date: Date) {
-        guard !snapshot.isGameOver else { lastDate = date; return }
+        guard !snapshot.isGameOver, !isPaused else { lastDate = date; return }
         defer { lastDate = date }
         guard let last = lastDate else { return }          // first frame: just anchor
         let dt = min(date.timeIntervalSince(last), 1.0 / 20.0)  // clamp big stalls
@@ -69,7 +74,7 @@ final class GameViewModel {
     }
 
     func tap(cell: Int) {
-        guard !snapshot.isGameOver else { return }
+        guard !snapshot.isGameOver, !isPaused else { return }
         process(engine.handleTap(cellIndex: cell))
         snapshot = engine.snapshot
     }
@@ -237,6 +242,25 @@ struct GameView: View {
                 FeverBanner(multiplier: model.snapshot.scoreMultiplier,
                             fraction: model.snapshot.feverFraction)
                     .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
+            // Pause button (bottom-leading, out of the way of the grid).
+            if !model.snapshot.isGameOver && !model.isPaused {
+                Button { model.pause() } label: {
+                    Image(systemName: "pause.fill")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(NeonTheme.textDim)
+                        .frame(width: 44, height: 44)
+                        .background(Circle().stroke(NeonTheme.gridLineDim.opacity(0.5), lineWidth: 1))
+                }
+                .buttonStyle(TerminalButtonStyle())
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .padding(.leading, 24)
+                .padding(.bottom, 28)
+            }
+
+            if model.isPaused {
+                PauseOverlay(onResume: { model.unpause() }, onQuit: onExit)
             }
 
             if model.snapshot.isGameOver {
@@ -580,6 +604,32 @@ private struct NodeSprite: View {
 }
 
 // MARK: - Game over
+
+private struct PauseOverlay: View {
+    let onResume: () -> Void
+    let onQuit: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.82).ignoresSafeArea()
+            VStack(spacing: 18) {
+                Text("CONNECTION SUSPENDED")
+                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textDim)
+                Text("PAUSED")
+                    .font(.system(size: 30, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.cyan)
+                    .neonGlow(NeonTheme.cyan, radius: 10)
+                HStack(spacing: 14) {
+                    TerminalButton(title: "RESUME", color: NeonTheme.cyan, action: onResume)
+                    TerminalButton(title: "QUIT", color: NeonTheme.magenta, action: onQuit)
+                }
+                .padding(.top, 8)
+            }
+            .padding(32)
+        }
+    }
+}
 
 private struct GameOverOverlay: View {
     let snapshot: SessionSnapshot

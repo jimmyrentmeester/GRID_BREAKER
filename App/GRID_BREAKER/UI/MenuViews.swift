@@ -93,6 +93,71 @@ private struct UpgradeRow: View {
     }
 }
 
+// MARK: - How to play
+
+struct HowToPlayView: View {
+    let onDone: () -> Void
+
+    private struct Rule: Identifiable { let id = UUID(); let symbol: String; let color: Color; let title: String; let text: String }
+    private let rules: [Rule] = [
+        .init(symbol: "circle.grid.cross.fill", color: NeonTheme.cyan, title: "Decode daemons",
+              text: "Tap glowing nodes to harvest data. Cyan = 1 tap."),
+        .init(symbol: "lock.shield.fill", color: NeonTheme.magenta, title: "Armored = 2 taps",
+              text: "Magenta nodes take two taps — breach, then decode. Worth more."),
+        .init(symbol: "exclamationmark.triangle.fill", color: NeonTheme.danger, title: "Avoid firewalls",
+              text: "NEVER tap a red firewall — it ends the run. Left alone, it's harmless."),
+        .init(symbol: "memorychip.fill", color: NeonTheme.cyan, title: "Watch your RAM",
+              text: "RAM is your clock — it drains constantly. Decoding tops it up; misses cost time."),
+        .init(symbol: "bolt.fill", color: NeonTheme.gold, title: "Chain a Fever",
+              text: "String clean hits to trigger Fever: hazards vanish, golden nodes, score ×2."),
+        .init(symbol: "bitcoinsign.circle.fill", color: NeonTheme.gold, title: "Upgrade your deck",
+              text: "Earn Credits, then boost RAM, decode speed and shields in the Cyberdeck."),
+    ]
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("HOW TO HACK")
+                .font(.system(size: 24, weight: .heavy, design: .monospaced))
+                .foregroundStyle(NeonTheme.cyan)
+                .neonGlow(NeonTheme.cyan, radius: 8)
+
+            ScrollView {
+                VStack(spacing: 12) {
+                    ForEach(rules) { rule in
+                        HStack(spacing: 14) {
+                            Image(systemName: rule.symbol)
+                                .font(.system(size: 22))
+                                .foregroundStyle(rule.color)
+                                .neonGlow(rule.color, radius: 4)
+                                .frame(width: 34)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(rule.title)
+                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                    .foregroundStyle(NeonTheme.textPrimary)
+                                Text(rule.text)
+                                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                                    .foregroundStyle(NeonTheme.textDim)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.white.opacity(0.03))
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(rule.color.opacity(0.35), lineWidth: 1))
+                        )
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+
+            TerminalButton(title: "GOT IT", color: NeonTheme.cyan, action: onDone)
+        }
+        .padding(24)
+    }
+}
+
 // MARK: - Campaign level select
 
 struct CampaignView: View {

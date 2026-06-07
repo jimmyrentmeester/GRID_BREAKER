@@ -2,6 +2,12 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.8 — Pause + how-to-play (2026-06-07)
+- You can now pause mid-run (the RAM clock freezes) and quit back to the menu —
+  no more having to die to leave a session.
+- First-time players get a quick "How to Hack" explainer, and it's always available
+  from the main menu.
+
 ## 0.7.2 — Dynamic Island framing (2026-06-07)
 - On iPhones with a Dynamic Island (or notch), your SCORE and RAM time now sit on
   either side of it during play — the island becomes part of the cockpit. Devices

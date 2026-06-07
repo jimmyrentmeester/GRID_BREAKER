@@ -34,6 +34,13 @@ final class GameStore {
         persist()
     }
 
+    var tutorialSeen: Bool { save.tutorialSeen }
+    func markTutorialSeen() {
+        guard !save.tutorialSeen else { return }
+        save.tutorialSeen = true
+        persist()
+    }
+
     // MARK: Campaign
 
     var campaignProgress: Int { save.campaignProgress }
