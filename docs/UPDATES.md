@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.10 — Cosmetics (2026-06-07)
+- Spend your Credits on looks: 5 neon palettes (Sunset Drive, Toxic Leak, Glacier,
+  Amber Terminal + the free Classic) that recolor the whole game. Buy and equip from
+  the new COSMETICS menu. Now there's always something to save up for.
+
 ## 0.9 — Flow (chill) mode (2026-06-07)
 - New FLOW STATE: a calm, no-pressure mode with no clock, no failure and no firewall
   bombs — just a steady, satisfying tap rhythm with a soft living backdrop. Play to

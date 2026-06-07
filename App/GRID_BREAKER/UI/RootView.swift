@@ -9,7 +9,7 @@ struct RootView: View {
     @State private var activeCore: DataCore?
     @State private var pulse = false
 
-    private enum Screen { case menu, endless, flow, campaign, core, cyberdeck, scores, help }
+    private enum Screen { case menu, endless, flow, campaign, core, cyberdeck, cosmetics, scores, help }
 
     private func tap() { AudioEngine.shared.play(.uiTap) }
 
@@ -55,6 +55,8 @@ struct RootView: View {
                 }
             case .cyberdeck:
                 CyberdeckView(store: store, onBack: { screen = .menu }).transition(.opacity)
+            case .cosmetics:
+                CosmeticsView(store: store, onBack: { screen = .menu }).transition(.opacity)
             case .scores:
                 HighScoresView(scores: store.highScores, onBack: { screen = .menu }).transition(.opacity)
             case .help:
@@ -63,6 +65,7 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.3), value: screen)
         .onAppear {
+            NeonTheme.current = Palettes.byID(store.equippedPaletteID)   // apply cosmetic
             AudioEngine.shared.enabled = store.soundEnabled
             AudioEngine.shared.start()
             if !store.tutorialSeen { screen = .help }   // first-launch onboarding
@@ -94,6 +97,7 @@ struct RootView: View {
                 TerminalButton(title: "FLOW STATE", color: NeonTheme.gridLine) { tap(); screen = .flow }
                 TerminalButton(title: "CAMPAIGN", color: NeonTheme.magenta) { tap(); screen = .campaign }
                 TerminalButton(title: "CYBERDECK", color: NeonTheme.gold) { tap(); screen = .cyberdeck }
+                TerminalButton(title: "COSMETICS", color: NeonTheme.gridLine) { tap(); screen = .cosmetics }
                 TerminalButton(title: "TOP RUNS", color: NeonTheme.cyan) { tap(); screen = .scores }
 
                 HStack(spacing: 18) {

@@ -131,6 +131,16 @@ via `GameConfig.chill()` + two engine hooks (`feverEnabled`, `fixedActiveNodes`)
 a `chill` UI flag (calm HUD, soft misses, slow `ChillAtmosphere`). Reuses the whole
 engine — no separate game loop.
 
+## D16 — Cosmetics: palettes via NeonTheme.current (Credit sink)
+**2026-06-07.** Added buyable neon palettes to give Credits a use after upgrades cap
+out. Implemented by making `NeonTheme`'s colors read from an equipped `Palette`
+(`NeonTheme.current`) — every existing `NeonTheme.cyan/...` call site recolors for
+free, no refactor. Palette swaps are infrequent and the screens are recreated on
+navigation, so a non-observed static is fine (no Environment plumbing). `danger` and
+text stay fixed (firewall must always read red). `GameStore` stays color-agnostic
+(buy/equip by id+cost); the colour catalog lives in the UI (`Palettes`). Tap-trail
+skins deferred — the system is extensible if wanted.
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

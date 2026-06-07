@@ -93,6 +93,125 @@ private struct UpgradeRow: View {
     }
 }
 
+// MARK: - Cosmetics (palettes)
+
+struct CosmeticsView: View {
+    @Bindable var store: GameStore
+    let onBack: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Text("COSMETICS")
+                    .font(.system(size: 24, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.cyan)
+                    .neonGlow(NeonTheme.cyan, radius: 8)
+                Spacer()
+                Label("\(store.cyberdeck.credits) CR", systemImage: "bitcoinsign.circle.fill")
+                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.gold)
+            }
+            Text("NEON PALETTES")
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            ScrollView {
+                VStack(spacing: 12) {
+                    ForEach(Palettes.all) { palette in
+                        PaletteRow(palette: palette,
+                                   owned: store.ownsPalette(palette.id),
+                                   equipped: store.equippedPaletteID == palette.id,
+                                   affordable: store.cyberdeck.credits >= palette.cost) {
+                            select(palette)
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+
+            TerminalButton(title: "BACK", color: NeonTheme.magenta, action: onBack)
+        }
+        .padding(24)
+    }
+
+    /// Equip if owned; otherwise buy (then equip). Applies the theme immediately.
+    private func select(_ palette: Palette) {
+        if !store.ownsPalette(palette.id) {
+            guard store.buyPalette(id: palette.id, cost: palette.cost) else { return }
+        }
+        NeonTheme.current = palette          // apply before the store mutation re-renders
+        store.equipPalette(palette.id)
+    }
+}
+
+private struct PaletteRow: View {
+    let palette: Palette
+    let owned: Bool
+    let equipped: Bool
+    let affordable: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                // Swatch preview.
+                HStack(spacing: 4) {
+                    swatch(palette.primary)
+                    swatch(palette.secondary)
+                    swatch(palette.accent)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(palette.name)
+                        .font(.system(size: 15, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textPrimary)
+                    Text(equipped ? "EQUIPPED" : (owned ? "Owned" : "\(palette.cost) CR"))
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                        .foregroundStyle(equipped ? palette.primary : NeonTheme.textDim)
+                }
+                Spacer(minLength: 0)
+                trailing
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.white.opacity(0.03))
+                    .overlay(RoundedRectangle(cornerRadius: 12)
+                        .stroke((equipped ? palette.primary : NeonTheme.gridLineDim).opacity(equipped ? 0.9 : 0.4),
+                                lineWidth: equipped ? 1.5 : 1))
+            )
+        }
+        .buttonStyle(TerminalButtonStyle())
+        .disabled(equipped || (!owned && !affordable))
+    }
+
+    @ViewBuilder private var trailing: some View {
+        if equipped {
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(palette.primary)
+        } else if owned {
+            Text("EQUIP")
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .foregroundStyle(NeonTheme.cyan)
+                .padding(.horizontal, 12).padding(.vertical, 8)
+                .background(RoundedRectangle(cornerRadius: 8).stroke(NeonTheme.cyan, lineWidth: 1.5))
+        } else {
+            Text("\(palette.cost) CR")
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .foregroundStyle(affordable ? NeonTheme.gold : NeonTheme.textDim)
+                .padding(.horizontal, 12).padding(.vertical, 8)
+                .background(RoundedRectangle(cornerRadius: 8)
+                    .stroke(affordable ? NeonTheme.gold : Color.white.opacity(0.15), lineWidth: 1.5))
+        }
+    }
+
+    private func swatch(_ color: Color) -> some View {
+        RoundedRectangle(cornerRadius: 4, style: .continuous)
+            .fill(color)
+            .frame(width: 16, height: 28)
+            .neonGlow(color, radius: 3)
+    }
+}
+
 // MARK: - How to play
 
 struct HowToPlayView: View {

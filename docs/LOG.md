@@ -3,6 +3,22 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #17 — Cosmetics: neon palettes (2026-06-07)
+- New **COSMETICS** screen: 5 buyable/equippable neon palettes (Classic free +
+  Sunset Drive / Toxic Leak / Glacier / Amber Terminal at 500–1200 CR) that recolor
+  the whole game. Fixes the dead-Credits gap (nothing to buy after maxing upgrades).
+- `NeonTheme` refactored to read colors from an equipped `Palette` (`NeonTheme.current`);
+  call sites unchanged. `danger`/text stay fixed for firewall readability. Catalog
+  `Palettes` in NeonTheme.swift.
+- Persistence: `SaveData.ownedPaletteIDs`/`equippedPaletteID` (+ tolerant decode,
+  classic always owned). `GameStore` `buyPalette(id:cost:)`/`equipPalette` (color-
+  agnostic). RootView applies the equipped palette at launch.
+- `CosmeticsView` (swatches + buy/equip in one tap, applies instantly).
+- **Verified on-device:** cosmetics screen (swatches/costs/EQUIPPED) at 2000 CR;
+  equipping Sunset recolors HUD/grid/bg/particles; equipped palette loads at launch.
+  Temp seed/demo reverted, save cleared.
+- Deferred: tap-trail skins (lower value, fuzzier) — palette system is extensible.
+
 ## Run #16 — Flow (chill) mode (2026-06-07)
 - New **FLOW STATE** mode designed for flow (the channel between anxiety & boredom):
   strip anxiety (no RAM clock / no death, no firewall bombs, no penalties, no

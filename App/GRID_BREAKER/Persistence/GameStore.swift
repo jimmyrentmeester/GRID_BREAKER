@@ -41,6 +41,28 @@ final class GameStore {
         persist()
     }
 
+    // MARK: Cosmetics (palettes) — color-agnostic; the UI owns the catalog.
+
+    var equippedPaletteID: String { save.equippedPaletteID }
+    func ownsPalette(_ id: String) -> Bool { save.ownedPaletteIDs.contains(id) }
+
+    /// Buy a palette with Credits. Returns true on success.
+    @discardableResult
+    func buyPalette(id: String, cost: Int) -> Bool {
+        guard !ownsPalette(id), save.cyberdeck.credits >= cost else { return false }
+        save.cyberdeck.credits -= cost
+        save.ownedPaletteIDs.append(id)
+        persist()
+        return true
+    }
+
+    /// Equip an owned palette.
+    func equipPalette(_ id: String) {
+        guard ownsPalette(id) else { return }
+        save.equippedPaletteID = id
+        persist()
+    }
+
     // MARK: Campaign
 
     var campaignProgress: Int { save.campaignProgress }

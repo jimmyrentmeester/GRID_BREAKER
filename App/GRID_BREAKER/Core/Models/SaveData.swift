@@ -23,9 +23,14 @@ struct SaveData: Codable, Sendable {
     var campaignProgress: Int = 0
     /// Whether the how-to-play explainer has been shown once.
     var tutorialSeen: Bool = false
+    /// Cosmetic palette IDs the player owns (Classic is always owned).
+    var ownedPaletteIDs: [String] = ["classic"]
+    /// Currently equipped palette ID.
+    var equippedPaletteID: String = "classic"
 
     enum CodingKeys: String, CodingKey {
         case version, cyberdeck, highScores, soundEnabled, campaignProgress, tutorialSeen
+        case ownedPaletteIDs, equippedPaletteID
     }
 
     static let empty = SaveData()
@@ -84,5 +89,8 @@ extension SaveData {
         soundEnabled = try c.decodeIfPresent(Bool.self, forKey: .soundEnabled) ?? soundEnabled
         campaignProgress = try c.decodeIfPresent(Int.self, forKey: .campaignProgress) ?? campaignProgress
         tutorialSeen = try c.decodeIfPresent(Bool.self, forKey: .tutorialSeen) ?? tutorialSeen
+        ownedPaletteIDs = try c.decodeIfPresent([String].self, forKey: .ownedPaletteIDs) ?? ownedPaletteIDs
+        if !ownedPaletteIDs.contains("classic") { ownedPaletteIDs.append("classic") }
+        equippedPaletteID = try c.decodeIfPresent(String.self, forKey: .equippedPaletteID) ?? equippedPaletteID
     }
 }
