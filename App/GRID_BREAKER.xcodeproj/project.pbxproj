@@ -22,6 +22,7 @@
 		GB000000000000000000001C /* GameStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB000000000000000000000E /* GameStore.swift */; };
 		GB000000000000000000001D /* MenuViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB000000000000000000000F /* MenuViews.swift */; };
 		GB000000000000000000001E /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000100 /* AudioEngine.swift */; };
+		GB000000000000000000001F /* Music in Resources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000101 /* Music */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,6 +42,7 @@
 		GB000000000000000000000E /* GameStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameStore.swift; sourceTree = "<group>"; };
 		GB000000000000000000000F /* MenuViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViews.swift; sourceTree = "<group>"; };
 		GB0000000000000000000100 /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
+		GB0000000000000000000101 /* Music */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Music; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +72,7 @@
 				GB0000000000000000000028 /* Audio */,
 				GB0000000000000000000027 /* Persistence */,
 				GB0000000000000000000026 /* UI */,
+				GB0000000000000000000101 /* Music */,
 				GB000000000000000000000A /* Assets.xcassets */,
 			);
 			path = GRID_BREAKER;
@@ -199,6 +202,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				GB0000000000000000000018 /* Assets.xcassets in Resources */,
+				GB000000000000000000001F /* Music in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

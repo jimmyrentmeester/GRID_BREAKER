@@ -1,10 +1,10 @@
 import Foundation
 import AVFoundation
 
-/// Programmatic synth audio — sharp analog SFX + a looping darksynth pulse
-/// (brief §10.6). No audio assets: everything is rendered into PCM buffers at
-/// launch and played via AVAudioEngine. Defensive throughout — if audio fails to
-/// start, the game plays on silently (it never throws into the game loop).
+/// Game audio. SFX are synthesized into PCM buffers and played via AVAudioEngine.
+/// Music is the player's own MP3s (see `MusicPlayer`) — drop files into the
+/// bundled `Music/` folder. Defensive throughout — if audio fails to start, the
+/// game plays on silently (it never throws into the game loop).
 ///
 /// Shared singleton: audio is a global service; the game/menu just call `play`.
 @MainActor
@@ -15,19 +15,18 @@ final class AudioEngine {
     enum SFX { case decode, decodeBig, breach, miss, bomb, fever, gameOver, uiTap }
 
     private let engine = AVAudioEngine()
-    private let music = AVAudioPlayerNode()
+    private let musicPlayer = MusicPlayer()
     private var sfxPool: [AVAudioPlayerNode] = []
     private var sfxIndex = 0
     private let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
     private var buffers: [SFX: AVAudioPCMBuffer] = [:]
-    private var musicBuffer: AVAudioPCMBuffer?
 
     private(set) var isRunning = false
-    /// Master toggle (persisted in settings). Stops/starts the music loop.
+    /// Master toggle (persisted in settings). Stops/starts SFX and the music.
     var enabled = true {
         didSet {
             guard oldValue != enabled else { return }
-            if enabled { startMusicIfNeeded() } else { music.stop() }
+            musicPlayer.setEnabled(enabled)
         }
     }
 
@@ -53,8 +52,6 @@ final class AudioEngine {
             engine.connect(node, to: engine.mainMixerNode, format: format)
             sfxPool.append(node)
         }
-        engine.attach(music)
-        engine.connect(music, to: engine.mainMixerNode, format: format)
         engine.mainMixerNode.outputVolume = 0.9
 
         engine.prepare()
@@ -62,10 +59,13 @@ final class AudioEngine {
             try engine.start()
             isRunning = true
             sfxPool.forEach { $0.play() }
-            if enabled { startMusicIfNeeded() }
         } catch {
             isRunning = false      // game continues silently
         }
+
+        // Music is independent of the SFX engine (plays the player's MP3s).
+        musicPlayer.loadTracks()
+        musicPlayer.setEnabled(enabled)
     }
 
     // MARK: Playback
@@ -75,13 +75,6 @@ final class AudioEngine {
         let node = sfxPool[sfxIndex]
         sfxIndex = (sfxIndex + 1) % sfxPool.count
         node.scheduleBuffer(buffer, at: nil, options: .interrupts, completionHandler: nil)
-    }
-
-    private func startMusicIfNeeded() {
-        guard isRunning, enabled, let loop = musicBuffer else { return }
-        music.stop()
-        music.scheduleBuffer(loop, at: nil, options: .loops, completionHandler: nil)
-        music.play()
     }
 
     // MARK: Synthesis helpers
@@ -150,33 +143,74 @@ final class AudioEngine {
         buffers[.uiTap] = buffer(seconds: 0.05) { _, t in
             Float((self.sine(1200, t) * self.decayEnv(t, 0.02) * 0.14))
         }
+    }
+}
 
-        musicBuffer = buildMusicLoop()
+// MARK: - Music (player-supplied MP3s)
+
+/// Plays the player's own background music from MP3 files bundled in the app's
+/// `Music/` folder. Drop any number of `.mp3` files in there and rebuild — no
+/// code changes needed. On each launch the tracks are shuffled (so a random one
+/// starts), and when a track finishes the next in the shuffled order plays;
+/// after the last, the list reshuffles and continues.
+///
+/// Uses AVAudioPlayer (not the SFX AVAudioEngine) — simplest path for file
+/// playback + a "finished" callback. NSObject for the delegate. Created and used
+/// on the main thread; the finish callback also fires on the main run loop.
+final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
+    private var queue: [URL] = []
+    private var index = 0
+    private var player: AVAudioPlayer?
+    private var enabled = true
+
+    /// Discover bundled tracks and shuffle them (random first track per launch).
+    func loadTracks() {
+        var urls = Bundle.main.urls(forResourcesWithExtension: "mp3", subdirectory: "Music") ?? []
+        if urls.isEmpty {
+            // Fallback: MP3s added loose to the bundle (not in the Music folder).
+            urls = Bundle.main.urls(forResourcesWithExtension: "mp3", subdirectory: nil) ?? []
+        }
+        queue = urls.shuffled()
+        index = 0
     }
 
-    /// A driving darksynth pulse (~130 BPM, A-minor): a sawtooth bass on every
-    /// eighth note + a sparse high arp, rendered into one looping buffer.
-    private func buildMusicLoop() -> AVAudioPCMBuffer {
-        let bpm = 130.0
-        let step = 60.0 / bpm / 2          // eighth note
-        let bass = [110.0, 110, 87.31, 87.31, 98.0, 98, 130.81, 110] // A A F F G G C A
-        let arp  = [440.0, 0, 523.25, 0, 587.33, 0, 659.25, 0]
-        let steps = bass.count
-        let total = step * Double(steps)
+    func setEnabled(_ on: Bool) {
+        enabled = on
+        if on { play() } else { stop() }
+    }
 
-        return buffer(seconds: total) { _, t in
-            let s = min(steps - 1, Int(t / step))
-            let local = t - Double(s) * step
-            var v = 0.0
-            // Bass — plucky saw with a quick decay.
-            v += self.saw(bass[s], t) * self.decayEnv(local, 0.16) * 0.16
-            // Sub sine for weight.
-            v += self.sine(bass[s] / 2, t) * self.decayEnv(local, 0.20) * 0.10
-            // Sparse arp lead.
-            if arp[s] > 0 {
-                v += (self.sine(arp[s], t) * 0.6 + self.saw(arp[s], t) * 0.4) * self.decayEnv(local, 0.10) * 0.07
-            }
-            return Float(max(-1, min(1, v)))
+    /// Start playing if enabled and not already playing.
+    func play() {
+        guard enabled, player == nil else { return }
+        playCurrent()
+    }
+
+    func stop() {
+        player?.stop()
+        player = nil
+    }
+
+    private func playCurrent() {
+        guard !queue.isEmpty else { return }          // no MP3s bundled yet
+        if index >= queue.count { queue.shuffle(); index = 0 }   // wrap → reshuffle
+        do {
+            let p = try AVAudioPlayer(contentsOf: queue[index])
+            p.delegate = self
+            p.prepareToPlay()
+            p.play()
+            player = p
+        } catch {
+            // Skip an unreadable file and try the next one.
+            index += 1
+            if index < queue.count { playCurrent() }
         }
+    }
+
+    /// A track finished → advance to the next (reshuffles after the last).
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        self.player = nil
+        guard enabled else { return }
+        index += 1
+        playCurrent()
     }
 }

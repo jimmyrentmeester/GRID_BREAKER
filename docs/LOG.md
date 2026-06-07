@@ -3,6 +3,23 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #8 — MP3 music (replaces synth loop) (2026-06-07)
+- `Audio/AudioEngine.swift`: removed the synth music loop (`music` node,
+  `musicBuffer`, `buildMusicLoop`, `startMusicIfNeeded`). Added `MusicPlayer`
+  (NSObject/AVAudioPlayerDelegate): discovers `*.mp3` in the bundled `Music/`
+  folder, shuffles on launch (random first track), advances to the next on finish,
+  reshuffles after the last. SFX unchanged. `enabled`/SOUND toggle now drives the
+  MusicPlayer.
+- `App/GRID_BREAKER/Music/` (new) added to the project as a **folder reference**
+  (Resources phase) so any `.mp3` dropped in is auto-bundled — no code/project
+  edits needed. Includes a README explaining the drop-in workflow.
+- User supplied 3 tracks: Cold_Iron_Handshake / Locked_in_Fever_Mode /
+  Max_The_Score (~4 MB each), committed as game assets.
+- **Verified:** clean build; folder reference bundles the mp3s (confirmed in the
+  built .app); headless AVAudioPlayer test — shuffle gives a random start order,
+  advances on each finish, reshuffles at the end; real mp3 loads & plays
+  (Max_The_Score, 177.9 s). Temp test files removed. (Speaker output = device listen.)
+
 ## Run #7 — M5 audio & polish (2026-06-07)
 - `Audio/AudioEngine.swift` (new): asset-free AVAudioEngine synth. Renders SFX PCM
   buffers (decode/decodeBig/breach/miss/bomb/fever/gameOver/uiTap) + a ~130 BPM

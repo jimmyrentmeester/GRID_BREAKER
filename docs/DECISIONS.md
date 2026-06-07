@@ -78,14 +78,19 @@ extensions, to keep memberwise inits) + `CodingKeys` declared in the type body
 (declaring `CodingKeys` inside the extension crashed the compiler). Verified by
 decoding an old partial save → missing fields default correctly.
 
-## D12 — Audio: asset-free AVAudioEngine synth, shared singleton
-**2026-06-07 (M5).** All audio is synthesized into PCM buffers at launch (no audio
-files) — keeps the €0 ethos and the repo light. `AudioEngine.shared` is a singleton
-(audio is a global service; avoids threading the dependency through every view).
-`.ambient` session category so it respects the silent switch and mixes politely.
-Defensive: if the engine fails to start the game plays on silently. Music is one
-looping buffer (~130 BPM saw bass + arp). **Caveat:** simulator speaker output
-can't be captured via CLI — engine-start + non-silent buffers are verified
+## D12 — Audio: synth SFX engine + MP3 music, shared singleton
+**2026-06-07 (M5; music revised same day).** `AudioEngine.shared` (singleton —
+audio is a global service) with `.ambient` session (respects silent switch, mixes
+politely) and fully defensive start (game plays on silently on failure).
+- **SFX:** synthesized into PCM buffers at launch, played via AVAudioEngine + a
+  6-node pool. Asset-free (€0 ethos).
+- **Music:** the player's own **MP3 files**, dropped into the bundled `Music/`
+  folder (a folder *reference* in the project → any `.mp3` inside is bundled with
+  no code/project change). `MusicPlayer` (AVAudioPlayer + delegate) shuffles the
+  tracks on launch (random first) and advances to the next on finish, reshuffling
+  after the last. (Replaced the original synth music loop on user request.)
+**Caveat:** simulator speaker output can't be captured via CLI — engine start,
+non-silent SFX buffers, mp3 load/play and the shuffle/advance loop are verified
 programmatically; final mix quality is a human device-listen (Q6).
 
 ## D6 — Hand-authored pbxproj

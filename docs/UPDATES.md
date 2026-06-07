@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.6.1 — Custom MP3 soundtrack (2026-06-07)
+- Music is now your own MP3 files. Drop `.mp3` files into `App/GRID_BREAKER/Music/`
+  and rebuild — a random track plays on launch and the rest follow as each finishes.
+- Shipping with three tracks: Cold Iron Handshake, Locked in Fever Mode, Max The Score.
+
 ## 0.6 — Audio & polish (2026-06-07)
 - The game has a voice now: sharp synth SFX for every hit, breach, miss and bomb,
   a fever sting, and a driving darksynth pulse underneath — all generated in code,
