@@ -107,6 +107,19 @@ dominant gauge; ground-truth Part 1.4 visible-growth clarity). Difficulty per co
 (Credits + upgrades apply in both modes) per ground-truth's visible-growth/direction
 emphasis; cores pay Credits win or lose so progress never hard-stalls.
 
+## D14 — Dynamic Island: frame it, don't render into it
+**2026-06-07.** Researched using the Dynamic Island for live score/time. Finding:
+**you cannot draw app content inside the Island pill while your app is in the
+foreground** — a Live Activity's compact Island presentation only appears once the
+app is backgrounded (ActivityKit; Apple HIG). So live score-in-the-pill during play
+is impossible. Chosen approach: lay the HUD out to *frame* the Island — SCORE (left)
+and RAM time (right) pinned to the top, flanking the pill (status bar is hidden
+in-game so the strip is free). Detect a real top inset (`safeAreaInsets.top >= 40`,
+via the key window) → only flank on Island/notch devices; flat-top devices (e.g. SE)
+keep score/RAM inline in the HUD so nothing overlaps or is lost. A between-runs Live
+Activity (Option B) was considered but deferred (needs a widget extension +
+entitlement, and only shows when not playing — awkward for a reflex/time-attack game).
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

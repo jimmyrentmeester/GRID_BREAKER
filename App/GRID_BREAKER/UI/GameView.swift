@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 // MARK: - View model (owns the engine, drives the frame loop)
 
@@ -179,13 +182,28 @@ struct GameView: View {
         UInt64(bitPattern: Int64(Date().timeIntervalSince1970 * 1000))
     }
 
+    /// True only on devices with a Dynamic Island / notch (a real top inset).
+    /// On flat-top devices (e.g. SE) we keep score/RAM inline in the HUD instead
+    /// of flanking the top, so nothing overlaps or is lost.
+    private var hasIslandOrNotch: Bool {
+        #if canImport(UIKit)
+        let top = UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.keyWindow?.safeAreaInsets.top }
+            .max() ?? 0
+        return top >= 40
+        #else
+        return false
+        #endif
+    }
+
     var body: some View {
         ZStack {
             NeonTheme.background.ignoresSafeArea()
             FeverAtmosphere(active: model.snapshot.feverActive && !model.snapshot.isGameOver).ignoresSafeArea()
 
             VStack(spacing: 0) {
-                HUDView(snapshot: model.snapshot, coreName: core?.name)
+                HUDView(snapshot: model.snapshot, coreName: core?.name,
+                        showInlineScore: !hasIslandOrNotch)
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
 
@@ -204,6 +222,16 @@ struct GameView: View {
                 Spacer(minLength: 12).frame(maxHeight: 96)
             }
             .modifier(ShakeEffect(animatableData: shakeAnim))
+
+            // Score + RAM time framing the Dynamic Island / notch. Only on devices
+            // that have one — flat-top devices keep score/RAM inline in the HUD.
+            if hasIslandOrNotch && !model.snapshot.isGameOver {
+                IslandFrameRow(snapshot: model.snapshot)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 16)
+                    .ignoresSafeArea(.container, edges: .top)
+                    .allowsHitTesting(false)
+            }
 
             if model.snapshot.feverActive && !model.snapshot.isGameOver {
                 FeverBanner(multiplier: model.snapshot.scoreMultiplier,
@@ -246,14 +274,100 @@ struct GameView: View {
     }
 }
 
+// MARK: - Dynamic Island frame
+
+/// SCORE (left) and RAM time (right) pinned to the very top, flanking the
+/// Dynamic Island. On notch phones it frames the notch; on flat-top phones it's
+/// a clean split readout in the (status-bar-hidden) top strip — same code, no
+/// device gets a worse layout.
+private struct IslandFrameRow: View {
+    let snapshot: SessionSnapshot
+
+    private var ramColor: Color {
+        snapshot.ramFraction > 0.5 ? NeonTheme.cyan
+        : snapshot.ramFraction > 0.25 ? NeonTheme.gold
+        : NeonTheme.danger
+    }
+
+    var body: some View {
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("SCORE")
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textDim)
+                HStack(spacing: 4) {
+                    Text("\(snapshot.score)")
+                        .font(.system(size: 20, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.cyan)
+                        .neonGlow(NeonTheme.cyan, radius: 6)
+                    if snapshot.scoreMultiplier > 1 {
+                        Text("×\(snapshot.scoreMultiplier)")
+                            .font(.system(size: 13, weight: .heavy, design: .monospaced))
+                            .foregroundStyle(NeonTheme.gold)
+                            .neonGlow(NeonTheme.gold, radius: 5)
+                    }
+                }
+            }
+            Spacer(minLength: 100)   // leave the centre clear for the Island
+            VStack(alignment: .trailing, spacing: 0) {
+                Text("RAM")
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textDim)
+                HStack(spacing: 5) {
+                    if snapshot.shieldCharges > 0 {
+                        HStack(spacing: 2) {
+                            Image(systemName: "shield.fill")
+                            Text("\(snapshot.shieldCharges)")
+                        }
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                    }
+                    Text("\(Int(ceil(max(0, snapshot.ramRemaining))))s")
+                        .font(.system(size: 20, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(ramColor)
+                        .neonGlow(ramColor, radius: 6)
+                        .monospacedDigit()
+                }
+            }
+        }
+        .padding(.horizontal, 22)
+    }
+}
+
 // MARK: - HUD
 
 private struct HUDView: View {
     let snapshot: SessionSnapshot
     var coreName: String? = nil
+    /// On flat-top devices (no Island/notch) show score/RAM here instead of
+    /// flanking the top.
+    var showInlineScore: Bool = false
 
     var body: some View {
         VStack(spacing: 8) {
+            if showInlineScore {
+                HStack(spacing: 8) {
+                    Text("SCORE")
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textDim)
+                    Text("\(snapshot.score)")
+                        .font(.system(size: 22, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.cyan)
+                        .neonGlow(NeonTheme.cyan, radius: 6)
+                    if snapshot.scoreMultiplier > 1 {
+                        Text("×\(snapshot.scoreMultiplier)")
+                            .font(.system(size: 16, weight: .heavy, design: .monospaced))
+                            .foregroundStyle(NeonTheme.gold)
+                            .neonGlow(NeonTheme.gold, radius: 6)
+                    }
+                    Spacer()
+                    if snapshot.shieldCharges > 0 {
+                        Label("\(snapshot.shieldCharges)", systemImage: "shield.fill")
+                            .font(.system(size: 13, weight: .bold, design: .monospaced))
+                            .foregroundStyle(NeonTheme.gold)
+                    }
+                }
+            }
             if let target = snapshot.targetScore {
                 VStack(spacing: 4) {
                     HStack {
@@ -278,27 +392,8 @@ private struct HUDView: View {
                 }
                 .padding(.bottom, 2)
             }
-            HStack(spacing: 8) {
-                Text("SCORE")
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.textDim)
-                Text("\(snapshot.score)")
-                    .font(.system(size: 22, weight: .heavy, design: .monospaced))
-                    .foregroundStyle(NeonTheme.cyan)
-                    .neonGlow(NeonTheme.cyan, radius: 6)
-                if snapshot.scoreMultiplier > 1 {
-                    Text("×\(snapshot.scoreMultiplier)")
-                        .font(.system(size: 16, weight: .heavy, design: .monospaced))
-                        .foregroundStyle(NeonTheme.gold)
-                        .neonGlow(NeonTheme.gold, radius: 6)
-                }
-                Spacer()
-                if snapshot.shieldCharges > 0 {
-                    Label("\(snapshot.shieldCharges)", systemImage: "shield.fill")
-                        .font(.system(size: 13, weight: .bold, design: .monospaced))
-                        .foregroundStyle(NeonTheme.gold)
-                }
-            }
+            // SCORE and RAM time now live in the IslandFrameRow up top (framing
+            // the Dynamic Island). Here we keep the visual bars + combo.
             RAMBar(fraction: snapshot.ramFraction)
             ComboMeter(progress: snapshot.comboProgress,
                        combo: snapshot.combo,

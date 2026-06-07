@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.7.2 — Dynamic Island framing (2026-06-07)
+- On iPhones with a Dynamic Island (or notch), your SCORE and RAM time now sit on
+  either side of it during play — the island becomes part of the cockpit. Devices
+  without one keep the normal HUD, unchanged.
+
 ## 0.7.1 — Polish (2026-06-07)
 - The Failsafe Shield now saves you from a firewall bomb too (not just stray taps) —
   worth buying now.

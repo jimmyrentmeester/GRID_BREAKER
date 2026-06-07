@@ -3,6 +3,19 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #14 — Dynamic Island framing (2026-06-07)
+- Researched DI use (WebSearch/Apple): can't render into the pill while foreground
+  (Live Activity Island view only shows when backgrounded). See D14.
+- Implemented "frame the Island": `IslandFrameRow` (SCORE left, RAM-seconds right,
+  +×mult/shield) pinned to the top safe area, flanking the pill. `GameView`
+  detects a real top inset (`hasIslandOrNotch`, key-window `safeAreaInsets.top >= 40`):
+  flank only on Island/notch devices; flat-top devices show score/RAM inline in
+  `HUDView` (`showInlineScore`) — no overlap, nothing lost.
+- **Verified on two devices:** iPhone (Dynamic Island) — SCORE/RAM flank the pill;
+  iPhone SE (no notch) — inline HUD, no overlap. Temp hooks reverted, saves cleared.
+- Deferred: a between-runs Live Activity (Option B) — needs a widget extension +
+  entitlement and only shows outside the app.
+
 ## Run #13 — Polish pass: shield-vs-bomb, NEXT CORE, finale (2026-06-07)
 - **Shield now absorbs a firewall-bomb tap** (not just empty-cell mis-taps): engine
   `firewallBomb` case consumes a shield charge → new `.firewallDefused` event (gold
