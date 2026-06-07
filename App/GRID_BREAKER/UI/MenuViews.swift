@@ -1,5 +1,45 @@
 import SwiftUI
 
+// MARK: - Confirm dialog (purchases)
+
+/// Neon-styled confirmation overlay used before spending Credits.
+struct ConfirmDialog: View {
+    let title: String
+    let message: String
+    var confirmLabel: String = "BUY"
+    var confirmColor: Color = NeonTheme.gold
+    let onConfirm: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.8).ignoresSafeArea()
+                .onTapGesture(perform: onCancel)
+            VStack(spacing: 16) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textDim)
+                Text(message)
+                    .font(.system(size: 18, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textPrimary)
+                    .multilineTextAlignment(.center)
+                HStack(spacing: 14) {
+                    TerminalButton(title: confirmLabel, color: confirmColor, action: onConfirm)
+                    TerminalButton(title: "CANCEL", color: NeonTheme.magenta, action: onCancel)
+                }
+                .padding(.top, 6)
+            }
+            .padding(28)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(NeonTheme.background.opacity(0.95))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(confirmColor.opacity(0.6), lineWidth: 1.5))
+            )
+            .padding(40)
+        }
+    }
+}
+
 // MARK: - Cyberdeck upgrade screen
 
 /// Spend Credits on permanent Cyberdeck upgrades. The store is the authority for
@@ -7,32 +47,43 @@ import SwiftUI
 struct CyberdeckView: View {
     @Bindable var store: GameStore
     let onBack: () -> Void
+    @State private var pending: CyberdeckUpgrade?
 
     var body: some View {
-        VStack(spacing: 20) {
-            HStack {
-                Text("CYBERDECK")
-                    .font(.system(size: 24, weight: .heavy, design: .monospaced))
-                    .foregroundStyle(NeonTheme.cyan)
-                    .neonGlow(NeonTheme.cyan, radius: 8)
-                Spacer()
-                Label("\(store.cyberdeck.credits) CR", systemImage: "bitcoinsign.circle.fill")
-                    .font(.system(size: 16, weight: .bold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.gold)
-            }
+        ZStack {
+            VStack(spacing: 20) {
+                HStack {
+                    Text("CYBERDECK")
+                        .font(.system(size: 24, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.cyan)
+                        .neonGlow(NeonTheme.cyan, radius: 8)
+                    Spacer()
+                    Label("\(store.cyberdeck.credits) CR", systemImage: "bitcoinsign.circle.fill")
+                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                }
 
-            VStack(spacing: 14) {
-                ForEach(CyberdeckUpgrade.allCases) { upgrade in
-                    UpgradeRow(upgrade: upgrade, deck: store.cyberdeck) {
-                        store.purchase(upgrade)
+                VStack(spacing: 14) {
+                    ForEach(CyberdeckUpgrade.allCases) { upgrade in
+                        UpgradeRow(upgrade: upgrade, deck: store.cyberdeck) {
+                            pending = upgrade            // confirm before spending
+                        }
                     }
                 }
-            }
 
-            Spacer()
-            TerminalButton(title: "BACK", color: NeonTheme.magenta, action: onBack)
+                Spacer()
+                TerminalButton(title: "BACK", color: NeonTheme.magenta, action: onBack)
+            }
+            .padding(24)
+
+            if let p = pending {
+                let lvl = p.currentLevel(in: store.cyberdeck)
+                ConfirmDialog(title: "CONFIRM PURCHASE",
+                              message: "\(p.title) → Lv \(lvl + 1)\n\(p.cost(atLevel: lvl)) CR",
+                              onConfirm: { store.purchase(p); pending = nil },
+                              onCancel: { pending = nil })
+            }
         }
-        .padding(24)
     }
 }
 
@@ -98,50 +149,71 @@ private struct UpgradeRow: View {
 struct CosmeticsView: View {
     @Bindable var store: GameStore
     let onBack: () -> Void
+    @State private var pending: Palette?
 
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("COSMETICS")
-                    .font(.system(size: 24, weight: .heavy, design: .monospaced))
-                    .foregroundStyle(NeonTheme.cyan)
-                    .neonGlow(NeonTheme.cyan, radius: 8)
-                Spacer()
-                Label("\(store.cyberdeck.credits) CR", systemImage: "bitcoinsign.circle.fill")
-                    .font(.system(size: 16, weight: .bold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.gold)
-            }
-            Text("NEON PALETTES")
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundStyle(NeonTheme.textDim)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        ZStack {
+            VStack(spacing: 16) {
+                HStack {
+                    Text("COSMETICS")
+                        .font(.system(size: 24, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.cyan)
+                        .neonGlow(NeonTheme.cyan, radius: 8)
+                    Spacer()
+                    Label("\(store.cyberdeck.credits) CR", systemImage: "bitcoinsign.circle.fill")
+                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                }
+                Text("NEON PALETTES")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textDim)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-            ScrollView {
-                VStack(spacing: 12) {
-                    ForEach(Palettes.all) { palette in
-                        PaletteRow(palette: palette,
-                                   owned: store.ownsPalette(palette.id),
-                                   equipped: store.equippedPaletteID == palette.id,
-                                   affordable: store.cyberdeck.credits >= palette.cost) {
-                            select(palette)
+                ScrollView {
+                    VStack(spacing: 12) {
+                        ForEach(Palettes.all) { palette in
+                            PaletteRow(palette: palette,
+                                       owned: store.ownsPalette(palette.id),
+                                       equipped: store.equippedPaletteID == palette.id,
+                                       affordable: store.cyberdeck.credits >= palette.cost) {
+                                tapped(palette)
+                            }
                         }
                     }
+                    .padding(.vertical, 2)
                 }
-                .padding(.vertical, 2)
-            }
 
-            TerminalButton(title: "BACK", color: NeonTheme.magenta, action: onBack)
+                TerminalButton(title: "BACK", color: NeonTheme.magenta, action: onBack)
+            }
+            .padding(24)
+
+            if let p = pending {
+                ConfirmDialog(title: "CONFIRM PURCHASE",
+                              message: "\(p.name) palette\n\(p.cost) CR",
+                              confirmLabel: "BUY & EQUIP",
+                              onConfirm: { purchaseAndEquip(p); pending = nil },
+                              onCancel: { pending = nil })
+            }
         }
-        .padding(24)
     }
 
-    /// Equip if owned; otherwise buy (then equip). Applies the theme immediately.
-    private func select(_ palette: Palette) {
-        if !store.ownsPalette(palette.id) {
-            guard store.buyPalette(id: palette.id, cost: palette.cost) else { return }
+    /// Owned → equip instantly (free). Not owned → confirm before spending.
+    private func tapped(_ palette: Palette) {
+        if store.ownsPalette(palette.id) {
+            equip(palette)
+        } else if store.cyberdeck.credits >= palette.cost {
+            pending = palette
         }
+    }
+
+    private func equip(_ palette: Palette) {
         NeonTheme.current = palette          // apply before the store mutation re-renders
         store.equipPalette(palette.id)
+    }
+
+    private func purchaseAndEquip(_ palette: Palette) {
+        guard store.buyPalette(id: palette.id, cost: palette.cost) else { return }
+        equip(palette)
     }
 }
 

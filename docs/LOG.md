@@ -3,6 +3,14 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #19 — Purchase confirmation dialogs (2026-06-07)
+- Buying in the Cyberdeck or Cosmetics now asks first: reusable neon `ConfirmDialog`
+  ("CONFIRM PURCHASE / <item> / <cost> CR", BUY/CANCEL). Cyberdeck buy → confirm;
+  Cosmetics buy → confirm (equipping an already-owned palette stays instant/free —
+  no spend, no confirm).
+- Verified on-device (Cyberdeck confirm overlay). Temp triggers reverted, save cleared.
+- Next: utilize the empty space between the top bars and the grid (see QUESTIONS).
+
 ## Run #18 — Interactive tutorial (2026-06-07)
 - Replaced the static How-to-Play card with an interactive, teach-by-doing
   `TutorialView`: step 0 tap a daemon, step 1 armored two-tap (breach→crack), step 2
