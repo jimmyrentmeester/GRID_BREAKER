@@ -141,6 +141,17 @@ text stay fixed (firewall must always read red). `GameStore` stays color-agnosti
 (buy/equip by id+cost); the colour catalog lives in the UI (`Palettes`). Tap-trail
 skins deferred — the system is extensible if wanted.
 
+## D17 — Tap trail tracks touches via a simultaneous gesture
+**2026-06-07.** The tap-trail cosmetic follows the finger via
+`.simultaneousGesture(DragGesture(minimumDistance: 0))` on the GameView root. This
+is the key choice: a simultaneous gesture recognizes ALONGSIDE the cells'
+`.onTapGesture`, so it feeds the trail without consuming taps (verified on-device —
+real taps still register with the gesture active). A `.gesture` (non-simultaneous)
+drag would have stolen taps. Trail points fade over 0.45 s, pruned in the existing
+frame loop; the layer is non-interactive. Skins live in the UI (`TrailSkins`), colors
+resolve through the equipped palette, and `TrailSkins.equipped` is a static set at
+launch + on equip (same pattern as `NeonTheme.current`, D16).
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

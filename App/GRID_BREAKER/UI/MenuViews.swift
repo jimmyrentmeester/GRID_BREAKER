@@ -150,10 +150,17 @@ struct CosmeticsView: View {
     @Bindable var store: GameStore
     let onBack: () -> Void
     @State private var pending: Palette?
+    @State private var pendingTrail: TrailSkin?
+
+    private func sectionLabel(_ s: String) -> some View {
+        Text(s).font(.system(size: 11, weight: .semibold, design: .monospaced))
+            .foregroundStyle(NeonTheme.textDim)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
     var body: some View {
         ZStack {
-            VStack(spacing: 16) {
+            VStack(spacing: 14) {
                 HStack {
                     Text("COSMETICS")
                         .font(.system(size: 24, weight: .heavy, design: .monospaced))
@@ -164,19 +171,25 @@ struct CosmeticsView: View {
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                         .foregroundStyle(NeonTheme.gold)
                 }
-                Text("NEON PALETTES")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.textDim)
-                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 ScrollView {
                     VStack(spacing: 12) {
+                        sectionLabel("NEON PALETTES")
                         ForEach(Palettes.all) { palette in
                             PaletteRow(palette: palette,
                                        owned: store.ownsPalette(palette.id),
                                        equipped: store.equippedPaletteID == palette.id,
                                        affordable: store.cyberdeck.credits >= palette.cost) {
                                 tapped(palette)
+                            }
+                        }
+                        sectionLabel("TAP TRAILS").padding(.top, 6)
+                        ForEach(TrailSkins.all) { skin in
+                            TrailRow(skin: skin,
+                                     owned: store.ownsTrail(skin.id),
+                                     equipped: store.equippedTrailID == skin.id,
+                                     affordable: store.cyberdeck.credits >= skin.cost) {
+                                tappedTrail(skin)
                             }
                         }
                     }
@@ -194,26 +207,113 @@ struct CosmeticsView: View {
                               onConfirm: { purchaseAndEquip(p); pending = nil },
                               onCancel: { pending = nil })
             }
+            if let t = pendingTrail {
+                ConfirmDialog(title: "CONFIRM PURCHASE",
+                              message: "\(t.name) trail\n\(t.cost) CR",
+                              confirmLabel: "BUY & EQUIP",
+                              onConfirm: { purchaseAndEquipTrail(t); pendingTrail = nil },
+                              onCancel: { pendingTrail = nil })
+            }
         }
     }
 
-    /// Owned → equip instantly (free). Not owned → confirm before spending.
+    // MARK: Palettes
     private func tapped(_ palette: Palette) {
-        if store.ownsPalette(palette.id) {
-            equip(palette)
-        } else if store.cyberdeck.credits >= palette.cost {
-            pending = palette
-        }
+        if store.ownsPalette(palette.id) { equip(palette) }
+        else if store.cyberdeck.credits >= palette.cost { pending = palette }
     }
-
     private func equip(_ palette: Palette) {
         NeonTheme.current = palette          // apply before the store mutation re-renders
         store.equipPalette(palette.id)
     }
-
     private func purchaseAndEquip(_ palette: Palette) {
         guard store.buyPalette(id: palette.id, cost: palette.cost) else { return }
         equip(palette)
+    }
+
+    // MARK: Tap trails
+    private func tappedTrail(_ skin: TrailSkin) {
+        if store.ownsTrail(skin.id) { equipTrail(skin) }
+        else if store.cyberdeck.credits >= skin.cost { pendingTrail = skin }
+    }
+    private func equipTrail(_ skin: TrailSkin) {
+        TrailSkins.equipped = skin
+        store.equipTrail(skin.id)
+    }
+    private func purchaseAndEquipTrail(_ skin: TrailSkin) {
+        guard store.buyTrail(id: skin.id, cost: skin.cost) else { return }
+        equipTrail(skin)
+    }
+}
+
+private struct TrailRow: View {
+    let skin: TrailSkin
+    let owned: Bool
+    let equipped: Bool
+    let affordable: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                trailPreview
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(skin.name)
+                        .font(.system(size: 15, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textPrimary)
+                    Text(equipped ? "EQUIPPED" : (owned ? "Owned" : "\(skin.cost) CR"))
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                        .foregroundStyle(equipped ? skin.color() : NeonTheme.textDim)
+                }
+                Spacer(minLength: 0)
+                if equipped {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(skin.color())
+                } else if owned {
+                    Text("EQUIP").font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.cyan)
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                        .background(RoundedRectangle(cornerRadius: 8).stroke(NeonTheme.cyan, lineWidth: 1.5))
+                } else {
+                    Text("\(skin.cost) CR").font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundStyle(affordable ? NeonTheme.gold : NeonTheme.textDim)
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                        .background(RoundedRectangle(cornerRadius: 8)
+                            .stroke(affordable ? NeonTheme.gold : Color.white.opacity(0.15), lineWidth: 1.5))
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(0.03))
+                .overlay(RoundedRectangle(cornerRadius: 12)
+                    .stroke((equipped ? skin.color() : NeonTheme.gridLineDim).opacity(equipped ? 0.9 : 0.4),
+                            lineWidth: equipped ? 1.5 : 1)))
+        }
+        .buttonStyle(TerminalButtonStyle())
+        .disabled(equipped || (!owned && !affordable))
+    }
+
+    // A few fading dots in the skin's shape/color, previewing the trail.
+    private var trailPreview: some View {
+        HStack(spacing: 4) {
+            if skin.isOff {
+                Image(systemName: "nosign").foregroundStyle(NeonTheme.textDim).frame(width: 56, alignment: .leading)
+            } else {
+                ForEach(0..<4, id: \.self) { i in
+                    let f = 1.0 - Double(i) * 0.22
+                    dot.frame(width: 9, height: 9).opacity(f)
+                }
+                .frame(width: 56, alignment: .leading)
+            }
+        }
+        .frame(width: 56, alignment: .leading)
+    }
+
+    @ViewBuilder private var dot: some View {
+        switch skin.dot {
+        case .circle:  Circle().fill(skin.color()).neonGlow(skin.color(), radius: 2)
+        case .square:  RoundedRectangle(cornerRadius: 2).fill(skin.color()).neonGlow(skin.color(), radius: 2)
+        case .diamond: Rectangle().fill(skin.color()).rotationEffect(.degrees(45)).neonGlow(skin.color(), radius: 2)
+        }
     }
 }
 

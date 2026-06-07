@@ -3,6 +3,24 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #21 — Tap-trail skins (2026-06-07)
+- New cosmetic: a neon trail that follows the finger. `TrailSkin`/`TrailSkins`
+  catalog (None, Comet free; Pixel Dust/Spark/Plasma 400–900 CR) — colors resolve
+  through the equipped palette. `TrailSkins.equipped` static (set at launch + on
+  equip, mirrors `NeonTheme.current`).
+- `TrailLayer` renders a fading comet of dots (shape/color per skin) over the recent
+  touch path; fed by a `.simultaneousGesture(DragGesture(minimumDistance:0))` on the
+  GameView root so it tracks touches WITHOUT consuming cell taps. Points pruned/
+  faded in the frame loop (0.45 s). Non-interactive.
+- Persistence: `SaveData.ownedTrailIDs`/`equippedTrailID` (+ tolerant decode; None &
+  Comet always owned). `GameStore` buyTrail/equipTrail/ownsTrail.
+- Cosmetics gains a TAP TRAILS section (TrailRow with dot preview + buy/equip via the
+  confirm dialog).
+- **Verified on-device (computer-use):** real taps still register through the gesture
+  (tap counter incremented; pause/menu taps worked); the Comet trail renders along a
+  drag; Cosmetics shows both PALETTES + TAP TRAILS sections with previews/states.
+  Temp tap-counter/lifetime hooks reverted, save cleared.
+
 ## Run #20 — Data Core (fills the HUD↔grid gap) (2026-06-07)
 - New `DataCoreView` in the space between the top bars and the grid: a neon "data
   core" with a progress arc (Fever charge in endless, target in campaign), a decode

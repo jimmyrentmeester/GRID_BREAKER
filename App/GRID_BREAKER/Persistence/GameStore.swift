@@ -63,6 +63,24 @@ final class GameStore {
         persist()
     }
 
+    var equippedTrailID: String { save.equippedTrailID }
+    func ownsTrail(_ id: String) -> Bool { save.ownedTrailIDs.contains(id) }
+
+    @discardableResult
+    func buyTrail(id: String, cost: Int) -> Bool {
+        guard !ownsTrail(id), save.cyberdeck.credits >= cost else { return false }
+        save.cyberdeck.credits -= cost
+        save.ownedTrailIDs.append(id)
+        persist()
+        return true
+    }
+
+    func equipTrail(_ id: String) {
+        guard ownsTrail(id) else { return }
+        save.equippedTrailID = id
+        persist()
+    }
+
     // MARK: Campaign
 
     var campaignProgress: Int { save.campaignProgress }

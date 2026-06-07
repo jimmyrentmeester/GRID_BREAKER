@@ -2,6 +2,10 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.13 — Tap-trail skins (2026-06-07)
+- Your finger now leaves a neon trail as you play. Buy and equip trail styles
+  (Comet, Pixel Dust, Spark, Plasma) in COSMETICS — they take on your palette colors.
+
 ## 0.12 — Data Core + confirmations (2026-06-07)
 - The space above the grid now holds a live "data core": a neon ring that charges
   toward Fever (or your target in Campaign), pulses on every decode, surges gold in

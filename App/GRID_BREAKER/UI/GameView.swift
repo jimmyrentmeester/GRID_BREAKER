@@ -161,6 +161,7 @@ struct GameView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var shakeAnim: CGFloat = 0
     @State private var outcome: SessionOutcome?
+    @State private var trailPoints: [TrailPoint] = []
     let core: DataCore?                 // nil = endless mode
     let onExit: () -> Void
     /// Advance to the next campaign core (nil in endless / on the last core).
@@ -263,6 +264,9 @@ struct GameView: View {
                     .allowsHitTesting(false)
             }
 
+            // Tap trail (over the grid, under the banners/overlays).
+            TrailLayer(points: trailPoints, skin: TrailSkins.equipped, lifetime: 0.45)
+
             if model.snapshot.feverActive && !model.snapshot.isGameOver {
                 FeverBanner(multiplier: model.snapshot.scoreMultiplier,
                             fraction: model.snapshot.feverFraction)
@@ -303,6 +307,9 @@ struct GameView: View {
                 Color.clear
                     .onChange(of: context.date) { _, newDate in
                         model.advance(to: newDate)
+                        if !trailPoints.isEmpty {       // fade/prune the tap trail
+                            trailPoints.removeAll { newDate.timeIntervalSince($0.born) > 0.45 }
+                        }
                     }
             }
             .allowsHitTesting(false)
@@ -320,6 +327,15 @@ struct GameView: View {
             withAnimation(.easeOut(duration: 0.4)) { shakeAnim = 1 }
         }
         .animation(.easeInOut(duration: 0.3), value: model.snapshot.feverActive)
+        // Trail follows the finger WITHOUT consuming taps (simultaneous, 0 distance).
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                .onChanged { v in
+                    guard !TrailSkins.equipped.isOff, !model.isPaused, !model.snapshot.isGameOver else { return }
+                    trailPoints.append(TrailPoint(pos: v.location, born: Date()))
+                    if trailPoints.count > 48 { trailPoints.removeFirst(trailPoints.count - 48) }
+                }
+        )
     }
 }
 
@@ -394,6 +410,50 @@ private struct IslandFrameRow: View {
             }
         }
         .padding(.horizontal, 22)
+    }
+}
+
+// MARK: - Tap trail (finger-follow cosmetic)
+
+struct TrailPoint: Identifiable, Equatable {
+    let id = UUID()
+    let pos: CGPoint
+    let born: Date
+}
+
+/// Renders the equipped tap-trail skin as a fading comet of dots along the recent
+/// touch path. Non-interactive; fed by a simultaneous drag on the game root so it
+/// never steals cell taps.
+private struct TrailLayer: View {
+    let points: [TrailPoint]
+    let skin: TrailSkin
+    let lifetime: TimeInterval
+
+    var body: some View {
+        if !skin.isOff {
+            let color = skin.color()
+            ZStack {
+                ForEach(points) { p in
+                    let fade = max(0, 1 - Date().timeIntervalSince(p.born) / lifetime)
+                    dot(color: color, fade: CGFloat(fade)).position(p.pos)
+                }
+            }
+            .allowsHitTesting(false)
+        }
+    }
+
+    @ViewBuilder private func dot(color: Color, fade: CGFloat) -> some View {
+        let sz = skin.size * (0.45 + 0.55 * fade)
+        Group {
+            switch skin.dot {
+            case .circle:  Circle().fill(color)
+            case .square:  RoundedRectangle(cornerRadius: 2, style: .continuous).fill(color)
+            case .diamond: Rectangle().fill(color).rotationEffect(.degrees(45))
+            }
+        }
+        .frame(width: sz, height: sz)
+        .opacity(Double(fade) * 0.9)
+        .neonGlow(color, radius: 4)
     }
 }
 

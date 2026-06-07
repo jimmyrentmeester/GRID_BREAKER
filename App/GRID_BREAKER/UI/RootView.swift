@@ -65,7 +65,8 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.3), value: screen)
         .onAppear {
-            NeonTheme.current = Palettes.byID(store.equippedPaletteID)   // apply cosmetic
+            NeonTheme.current = Palettes.byID(store.equippedPaletteID)   // apply cosmetics
+            TrailSkins.equipped = TrailSkins.byID(store.equippedTrailID)
             AudioEngine.shared.enabled = store.soundEnabled
             AudioEngine.shared.start()
             if !store.tutorialSeen { screen = .tutorial }   // first-launch onboarding

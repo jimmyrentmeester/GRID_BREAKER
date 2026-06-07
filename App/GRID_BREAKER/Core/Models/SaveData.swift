@@ -27,10 +27,14 @@ struct SaveData: Codable, Sendable {
     var ownedPaletteIDs: [String] = ["classic"]
     /// Currently equipped palette ID.
     var equippedPaletteID: String = "classic"
+    /// Tap-trail skin IDs owned ("none" + "comet" are free/default).
+    var ownedTrailIDs: [String] = ["none", "comet"]
+    /// Currently equipped tap-trail skin ID.
+    var equippedTrailID: String = "comet"
 
     enum CodingKeys: String, CodingKey {
         case version, cyberdeck, highScores, soundEnabled, campaignProgress, tutorialSeen
-        case ownedPaletteIDs, equippedPaletteID
+        case ownedPaletteIDs, equippedPaletteID, ownedTrailIDs, equippedTrailID
     }
 
     static let empty = SaveData()
@@ -92,5 +96,9 @@ extension SaveData {
         ownedPaletteIDs = try c.decodeIfPresent([String].self, forKey: .ownedPaletteIDs) ?? ownedPaletteIDs
         if !ownedPaletteIDs.contains("classic") { ownedPaletteIDs.append("classic") }
         equippedPaletteID = try c.decodeIfPresent(String.self, forKey: .equippedPaletteID) ?? equippedPaletteID
+        ownedTrailIDs = try c.decodeIfPresent([String].self, forKey: .ownedTrailIDs) ?? ownedTrailIDs
+        if !ownedTrailIDs.contains("none") { ownedTrailIDs.append("none") }
+        if !ownedTrailIDs.contains("comet") { ownedTrailIDs.append("comet") }
+        equippedTrailID = try c.decodeIfPresent(String.self, forKey: .equippedTrailID) ?? equippedTrailID
     }
 }

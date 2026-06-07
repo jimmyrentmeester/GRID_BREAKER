@@ -53,6 +53,42 @@ enum Palettes {
     static func byID(_ id: String) -> Palette { all.first { $0.id == id } ?? classic }
 }
 
+/// A purchasable tap-trail skin (cosmetic) — the neon trail that follows the
+/// player's finger. Colors resolve through the equipped palette so trails harmonize.
+struct TrailSkin: Identifiable, Sendable, Equatable {
+    enum Dot: Sendable { case circle, square, diamond }
+    enum Tint: Sendable { case primary, secondary, accent }
+    let id: String
+    let name: String
+    let cost: Int
+    let dot: Dot
+    let tint: Tint
+    let size: CGFloat
+
+    var isOff: Bool { id == "none" }
+    func color() -> Color {
+        switch tint {
+        case .primary:   return NeonTheme.cyan
+        case .secondary: return NeonTheme.magenta
+        case .accent:    return NeonTheme.gold
+        }
+    }
+}
+
+enum TrailSkins {
+    static let none = TrailSkin(id: "none", name: "None", cost: 0, dot: .circle, tint: .primary, size: 0)
+    static let all: [TrailSkin] = [
+        none,
+        TrailSkin(id: "comet",  name: "Comet",      cost: 0,   dot: .circle,  tint: .primary,   size: 11),
+        TrailSkin(id: "pixel",  name: "Pixel Dust", cost: 400, dot: .square,  tint: .secondary, size: 10),
+        TrailSkin(id: "spark",  name: "Spark",      cost: 600, dot: .circle,  tint: .accent,    size: 7),
+        TrailSkin(id: "plasma", name: "Plasma",     cost: 900, dot: .diamond, tint: .secondary, size: 16),
+    ]
+    static func byID(_ id: String) -> TrailSkin { all.first { $0.id == id } ?? none }
+    /// Equipped skin — set at launch + on equip (mirrors `NeonTheme.current`).
+    static var equipped: TrailSkin = none
+}
+
 /// Centralized neon-cyberpunk design tokens. Colors come from the equipped
 /// `Palette` (cosmetic), so swapping a palette recolors the whole game. `danger`,
 /// `textPrimary` and `textDim` are fixed for readability (ground-truth Part 2.4).
