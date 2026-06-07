@@ -40,6 +40,20 @@ enum CyberdeckUpgrade: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// Player-facing explanation of the effect. Uses the real `GameConfig` values
+    /// so the description can't drift from the actual numbers.
+    var detail: String {
+        let c = GameConfig.default
+        switch self {
+        case .ram:
+            return "Bigger time buffer — start each run with +\(Int(c.ramSecondsPerLevel))s of RAM per level."
+        case .decodeSpeed:
+            return "Each decode restores +\(String(format: "%g", c.decodeBonusPerLevel))s of RAM per level (your only refill in Campaign)."
+        case .shield:
+            return "Absorbs one accidental tap on an empty cell per level, no time lost."
+        }
+    }
+
     /// Highest level purchasable for this upgrade.
     var maxLevel: Int {
         switch self {

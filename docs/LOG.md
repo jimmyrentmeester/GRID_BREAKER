@@ -3,6 +3,15 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #12 — Cyberdeck upgrade descriptions (2026-06-07)
+- Upgrades didn't explain their effect. Added `CyberdeckUpgrade.detail` (built from
+  real `GameConfig` values so it can't drift) and showed it in each `UpgradeRow`
+  along with a `Lv x/max` indicator. RAM = +Ns RAM/level; Decode Speed = +Ns RAM
+  per decode/level (the only Campaign refill); Shield = absorbs an empty-cell mis-tap.
+- Verified on-device (descriptions render + wrap cleanly).
+- Note: Shield currently only absorbs empty-cell mis-taps (not firewall bombs or
+  expiries) — described accurately; could be made to also eat a bomb tap if desired.
+
 ## Run #11 — Bugfix: fever-at-game-over freeze + music not resuming (2026-06-07)
 Reported: game "froze on fever" when finishing a campaign core during fever, and
 music stopped and didn't resume.

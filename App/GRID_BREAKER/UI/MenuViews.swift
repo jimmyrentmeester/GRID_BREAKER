@@ -47,11 +47,20 @@ private struct UpgradeRow: View {
     private var affordable: Bool { !maxed && deck.credits >= cost }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(upgrade.title)
-                    .font(.system(size: 15, weight: .bold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.textPrimary)
+                HStack(spacing: 6) {
+                    Text(upgrade.title)
+                        .font(.system(size: 15, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textPrimary)
+                    Text("Lv \(level)/\(upgrade.maxLevel)")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textDim)
+                }
+                Text(upgrade.detail)
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textDim)
+                    .fixedSize(horizontal: false, vertical: true)
                 // Level pips.
                 HStack(spacing: 4) {
                     ForEach(0..<upgrade.maxLevel, id: \.self) { i in
@@ -61,7 +70,7 @@ private struct UpgradeRow: View {
                     }
                 }
             }
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
             Button(action: onBuy) {
                 Text(maxed ? "MAX" : "\(cost) CR")
                     .font(.system(size: 13, weight: .bold, design: .monospaced))
