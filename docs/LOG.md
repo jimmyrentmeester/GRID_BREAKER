@@ -3,6 +3,26 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #24 — Tap trails reworked into connecting beams (2026-06-07)
+The old trail dropped an isolated dot at each finger sample — in a tap game that
+read as scattered dots, not a trail. Reworked into a neon "data stream".
+- **`TrailLayer` is now a `Canvas`** that connects each successive tap/drag sample to
+  the previous one with a fading beam (glow pass + crisp pass) and a node at each
+  sample. Because consecutive *taps* are connected, a tap-only game leaves a real
+  trail that jumps between the cells you hit (verified: a Z-beam across the grid).
+  Drives its own `TimelineView(.animation)` so the beam recedes smoothly between
+  samples (the old per-dot fade only updated when points were added/pruned). Lifetime
+  0.45 → 0.6 s for better tap-to-tap connection.
+- **Skins gained beam identity:** `TrailSkin` now has `lineWidth` + `dashed` (plus
+  shared `beamStyle(width:)` and `dotPath(at:size:)` Canvas helpers). Comet = smooth
+  cyan; Pixel Dust = segmented magenta; Spark = thin gold; Plasma = thick magenta.
+- **Cosmetics preview rebuilt:** `TrailSwatch` draws a clean static mini-beam (3
+  nodes, brightening toward the lead) with the *same* renderer/skin params instead of
+  the old four fading dots — each skin now previews its real look.
+- **Verified on-device (iPhone 16 Pro sim, computer-use):** all five previews render
+  as distinct clean beams; in-game, five taps drew a connected glowing beam between
+  the cells. Temp lifetime bump (for the screenshot) reverted.
+
 ## Run #23 — Settings / About screen (ship-prep) (2026-06-07)
 First ship-prep slice: a real Settings hub, reachable from a new ⚙ SETTINGS menu
 button (which replaces the loose SOUND + TUTORIAL menu buttons — consolidated).

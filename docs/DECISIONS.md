@@ -151,6 +151,10 @@ drag would have stolen taps. Trail points fade over 0.45 s, pruned in the existi
 frame loop; the layer is non-interactive. Skins live in the UI (`TrailSkins`), colors
 resolve through the equipped palette, and `TrailSkins.equipped` is a static set at
 launch + on equip (same pattern as `NeonTheme.current`, D16).
+**Addendum (Run #24):** the renderer changed from isolated fading dots to a `Canvas`
+beam that *connects* consecutive samples (tap→tap) into a fading "data stream" — in a
+tap game, lone dots didn't read as a trail. The gesture/no-tap-stealing design above
+is unchanged; only the drawing + per-skin style (`lineWidth`/`dashed`) evolved.
 
 ## D18 — Settings hub; reset wipes progress, not preferences
 **2026-06-07.** Consolidated the loose menu buttons (SOUND, TUTORIAL) into a single

@@ -2,6 +2,12 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.16 — Tap trails are real trails now (2026-06-07)
+- Tap trails now draw a glowing beam *between* your taps (a "data stream" that jumps
+  across the grid) instead of leaving lone dots — so they actually look like trails.
+- Each skin has its own beam: Comet (smooth), Pixel Dust (segmented), Spark (thin),
+  Plasma (thick). The COSMETICS previews were redrawn to show the real look, cleanly.
+
 ## 0.15 — Settings screen (2026-06-07)
 - New SETTINGS menu: toggle sound and (now) haptics, see whether Reduce Motion is
   on, jump to the how-to-play, and reset all progress (with a confirm) for a clean

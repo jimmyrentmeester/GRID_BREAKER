@@ -292,27 +292,55 @@ private struct TrailRow: View {
         .disabled(equipped || (!owned && !affordable))
     }
 
-    // A few fading dots in the skin's shape/color, previewing the trail.
+    // A clean mini "data stream": a fading beam through three nodes, in the skin's
+    // own style — the same renderer the in-game trail uses.
     private var trailPreview: some View {
-        HStack(spacing: 4) {
+        Group {
             if skin.isOff {
-                Image(systemName: "nosign").foregroundStyle(NeonTheme.textDim).frame(width: 56, alignment: .leading)
+                Image(systemName: "nosign")
+                    .font(.system(size: 18))
+                    .foregroundStyle(NeonTheme.textDim)
             } else {
-                ForEach(0..<4, id: \.self) { i in
-                    let f = 1.0 - Double(i) * 0.22
-                    dot.frame(width: 9, height: 9).opacity(f)
-                }
-                .frame(width: 56, alignment: .leading)
+                TrailSwatch(skin: skin)
             }
         }
-        .frame(width: 56, alignment: .leading)
+        .frame(width: 58, height: 34, alignment: .center)
     }
+}
 
-    @ViewBuilder private var dot: some View {
-        switch skin.dot {
-        case .circle:  Circle().fill(skin.color()).neonGlow(skin.color(), radius: 2)
-        case .square:  RoundedRectangle(cornerRadius: 2).fill(skin.color()).neonGlow(skin.color(), radius: 2)
-        case .diamond: Rectangle().fill(skin.color()).rotationEffect(.degrees(45)).neonGlow(skin.color(), radius: 2)
+/// Static preview of a trail skin: a left-to-right zig-zag beam with three nodes,
+/// brightening toward the leading (right) end, drawn exactly like the live trail.
+private struct TrailSwatch: View {
+    let skin: TrailSkin
+
+    var body: some View {
+        Canvas { ctx, size in
+            let c = skin.color()
+            let pts = [
+                CGPoint(x: 5, y: size.height * 0.72),
+                CGPoint(x: size.width * 0.5, y: size.height * 0.28),
+                CGPoint(x: size.width - 5, y: size.height * 0.6),
+            ]
+            // fade toward the trailing (left) end
+            let fades: [CGFloat] = [0.5, 0.78, 1.0]
+            func stroke(_ g: GraphicsContext, scale: CGFloat) {
+                for i in 1..<pts.count {
+                    var p = Path(); p.move(to: pts[i - 1]); p.addLine(to: pts[i])
+                    let w = skin.lineWidth * (0.5 + 0.5 * fades[i]) * scale
+                    g.stroke(p, with: .color(c.opacity(0.85 * Double(fades[i]))), style: skin.beamStyle(width: w))
+                }
+            }
+            func nodes(_ g: GraphicsContext, scale: CGFloat) {
+                for (i, p) in pts.enumerated() {
+                    g.fill(skin.dotPath(at: p, size: skin.size * (0.7 + 0.3 * fades[i]) * scale),
+                           with: .color(c.opacity(0.9 * Double(fades[i]))))
+                }
+            }
+            ctx.drawLayer { l in
+                l.addFilter(.blur(radius: max(2, skin.lineWidth * 0.8)))
+                stroke(l, scale: 1.4); nodes(l, scale: 1.3)
+            }
+            stroke(ctx, scale: 1.0); nodes(ctx, scale: 1.0)
         }
     }
 }

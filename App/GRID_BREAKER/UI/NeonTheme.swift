@@ -53,8 +53,9 @@ enum Palettes {
     static func byID(_ id: String) -> Palette { all.first { $0.id == id } ?? classic }
 }
 
-/// A purchasable tap-trail skin (cosmetic) — the neon trail that follows the
-/// player's finger. Colors resolve through the equipped palette so trails harmonize.
+/// A purchasable tap-trail skin (cosmetic) — a neon "data stream" that connects
+/// your successive taps with a fading beam (plus a node at each tap), so even a
+/// tap-only game leaves a real trail. Colors resolve through the equipped palette.
 struct TrailSkin: Identifiable, Sendable, Equatable {
     enum Dot: Sendable { case circle, square, diamond }
     enum Tint: Sendable { case primary, secondary, accent }
@@ -63,7 +64,9 @@ struct TrailSkin: Identifiable, Sendable, Equatable {
     let cost: Int
     let dot: Dot
     let tint: Tint
-    let size: CGFloat
+    let size: CGFloat        // node size at each tap
+    let lineWidth: CGFloat   // beam thickness connecting taps
+    let dashed: Bool         // segmented beam (e.g. pixel) vs. solid
 
     var isOff: Bool { id == "none" }
     func color() -> Color {
@@ -73,16 +76,39 @@ struct TrailSkin: Identifiable, Sendable, Equatable {
         case .accent:    return NeonTheme.gold
         }
     }
+
+    /// Stroke style for the connecting beam at a given (faded) width.
+    func beamStyle(width: CGFloat) -> StrokeStyle {
+        StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round,
+                    dash: dashed ? [max(0.5, width * 0.15), width * 1.5] : [])
+    }
+
+    /// A node shape (circle/square/diamond) centered at `p`, for Canvas filling.
+    func dotPath(at p: CGPoint, size: CGFloat) -> Path {
+        let r = CGRect(x: p.x - size / 2, y: p.y - size / 2, width: size, height: size)
+        switch dot {
+        case .circle: return Path(ellipseIn: r)
+        case .square: return Path(roundedRect: r, cornerRadius: max(1, size * 0.2))
+        case .diamond:
+            var d = Path()
+            d.move(to: CGPoint(x: r.midX, y: r.minY))
+            d.addLine(to: CGPoint(x: r.maxX, y: r.midY))
+            d.addLine(to: CGPoint(x: r.midX, y: r.maxY))
+            d.addLine(to: CGPoint(x: r.minX, y: r.midY))
+            d.closeSubpath()
+            return d
+        }
+    }
 }
 
 enum TrailSkins {
-    static let none = TrailSkin(id: "none", name: "None", cost: 0, dot: .circle, tint: .primary, size: 0)
+    static let none = TrailSkin(id: "none", name: "None", cost: 0, dot: .circle, tint: .primary, size: 0, lineWidth: 0, dashed: false)
     static let all: [TrailSkin] = [
         none,
-        TrailSkin(id: "comet",  name: "Comet",      cost: 0,   dot: .circle,  tint: .primary,   size: 11),
-        TrailSkin(id: "pixel",  name: "Pixel Dust", cost: 400, dot: .square,  tint: .secondary, size: 10),
-        TrailSkin(id: "spark",  name: "Spark",      cost: 600, dot: .circle,  tint: .accent,    size: 7),
-        TrailSkin(id: "plasma", name: "Plasma",     cost: 900, dot: .diamond, tint: .secondary, size: 16),
+        TrailSkin(id: "comet",  name: "Comet",      cost: 0,   dot: .circle,  tint: .primary,   size: 9,  lineWidth: 4,   dashed: false),
+        TrailSkin(id: "pixel",  name: "Pixel Dust", cost: 400, dot: .square,  tint: .secondary, size: 9,  lineWidth: 5,   dashed: true),
+        TrailSkin(id: "spark",  name: "Spark",      cost: 600, dot: .circle,  tint: .accent,    size: 6,  lineWidth: 2.5, dashed: false),
+        TrailSkin(id: "plasma", name: "Plasma",     cost: 900, dot: .diamond, tint: .secondary, size: 13, lineWidth: 7,   dashed: false),
     ]
     static func byID(_ id: String) -> TrailSkin { all.first { $0.id == id } ?? none }
     /// Equipped skin — set at launch + on equip (mirrors `NeonTheme.current`).

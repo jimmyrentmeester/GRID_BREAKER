@@ -278,7 +278,7 @@ struct GameView: View {
             }
 
             // Tap trail (over the grid, under the banners/overlays).
-            TrailLayer(points: trailPoints, skin: TrailSkins.equipped, lifetime: 0.45)
+            TrailLayer(points: trailPoints, skin: TrailSkins.equipped, lifetime: 0.6)
 
             // Fever is announced by the Data Core itself (gold surge + draining arc)
             // and the gold ×N on the score — no separate banner (it'd overlap them).
@@ -318,7 +318,7 @@ struct GameView: View {
                     .onChange(of: context.date) { _, newDate in
                         model.advance(to: newDate)
                         if !trailPoints.isEmpty {       // fade/prune the tap trail
-                            trailPoints.removeAll { newDate.timeIntervalSince($0.born) > 0.45 }
+                            trailPoints.removeAll { newDate.timeIntervalSince($0.born) > 0.6 }
                         }
                     }
             }
@@ -404,9 +404,12 @@ struct TrailPoint: Identifiable, Equatable {
     let born: Date
 }
 
-/// Renders the equipped tap-trail skin as a fading comet of dots along the recent
-/// touch path. Non-interactive; fed by a simultaneous drag on the game root so it
-/// never steals cell taps.
+/// Renders the equipped trail as a fading neon "data stream": each successive
+/// tap/drag sample is connected to the previous one by a glowing beam, with a node
+/// at each sample. Because consecutive *taps* are connected, a tap-only game still
+/// leaves a real trail that jumps between the cells you hit. Non-interactive; fed by
+/// a simultaneous drag on the game root so it never steals cell taps. Its own
+/// TimelineView ticks the fade so the beam recedes smoothly between samples.
 private struct TrailLayer: View {
     let points: [TrailPoint]
     let skin: TrailSkin
@@ -414,29 +417,52 @@ private struct TrailLayer: View {
 
     var body: some View {
         if !skin.isOff {
-            let color = skin.color()
-            ZStack {
-                ForEach(points) { p in
-                    let fade = max(0, 1 - Date().timeIntervalSince(p.born) / lifetime)
-                    dot(color: color, fade: CGFloat(fade)).position(p.pos)
-                }
+            TimelineView(.animation) { tl in
+                Canvas { ctx, _ in draw(ctx, now: tl.date) }
+                    .allowsHitTesting(false)
             }
-            .allowsHitTesting(false)
         }
     }
 
-    @ViewBuilder private func dot(color: Color, fade: CGFloat) -> some View {
-        let sz = skin.size * (0.45 + 0.55 * fade)
-        Group {
-            switch skin.dot {
-            case .circle:  Circle().fill(color)
-            case .square:  RoundedRectangle(cornerRadius: 2, style: .continuous).fill(color)
-            case .diamond: Rectangle().fill(color).rotationEffect(.degrees(45))
-            }
+    private func draw(_ ctx: GraphicsContext, now: Date) {
+        guard !points.isEmpty else { return }
+        let color = skin.color()
+        // Glow pass (blurred) then a crisp pass on top.
+        ctx.drawLayer { layer in
+            layer.addFilter(.blur(radius: max(2, skin.lineWidth * 0.9)))
+            strokeBeam(layer, color: color, now: now, widthScale: 1.5)
+            fillNodes(layer, color: color, now: now, sizeScale: 1.3)
         }
-        .frame(width: sz, height: sz)
-        .opacity(Double(fade) * 0.9)
-        .neonGlow(color, radius: 4)
+        strokeBeam(ctx, color: color, now: now, widthScale: 1.0)
+        fillNodes(ctx, color: color, now: now, sizeScale: 1.0)
+    }
+
+    private func fade(_ p: TrailPoint, _ now: Date) -> CGFloat {
+        CGFloat(max(0, 1 - now.timeIntervalSince(p.born) / lifetime))
+    }
+
+    /// Connect each sample to the previous one; segment opacity/width follow the
+    /// newer endpoint's age, so the freshest part of the stream is brightest.
+    private func strokeBeam(_ ctx: GraphicsContext, color: Color, now: Date, widthScale: CGFloat) {
+        guard points.count >= 2 else { return }
+        for i in 1..<points.count {
+            let f = fade(points[i], now)
+            guard f > 0.01 else { continue }
+            var path = Path()
+            path.move(to: points[i - 1].pos)
+            path.addLine(to: points[i].pos)
+            let w = skin.lineWidth * (0.35 + 0.65 * f) * widthScale
+            ctx.stroke(path, with: .color(color.opacity(0.85 * Double(f))), style: skin.beamStyle(width: w))
+        }
+    }
+
+    private func fillNodes(_ ctx: GraphicsContext, color: Color, now: Date, sizeScale: CGFloat) {
+        for p in points {
+            let f = fade(p, now)
+            guard f > 0.01 else { continue }
+            let sz = skin.size * (0.4 + 0.6 * f) * sizeScale
+            ctx.fill(skin.dotPath(at: p.pos, size: sz), with: .color(color.opacity(0.9 * Double(f))))
+        }
     }
 }
 
