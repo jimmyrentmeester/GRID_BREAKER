@@ -5,8 +5,9 @@ cracking megacorp data cores: tap glowing *daemon* nodes to harvest data and ref
 a draining RAM time buffer, dodge firewall bombs, chain combos into Fever Mode, and
 spend Credits on permanent Cyberdeck upgrades. Pure deterministic client logic — no AI.
 
-> Status: **v0.1 — scaffold.** Neon title screen runs; gameplay engine is next.
-> See [docs/ROADMAP.md](docs/ROADMAP.md).
+> Status: **v0.6 — first vertical slice complete.** Playable grid (3 daemon types),
+> Fever Mode, full juice + synth audio, Credits→Cyberdeck upgrade loop with
+> persistence and local high scores. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Build & run
 ```sh

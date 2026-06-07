@@ -21,6 +21,7 @@
 		GB000000000000000000001B /* SaveData.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB000000000000000000000D /* SaveData.swift */; };
 		GB000000000000000000001C /* GameStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB000000000000000000000E /* GameStore.swift */; };
 		GB000000000000000000001D /* MenuViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB000000000000000000000F /* MenuViews.swift */; };
+		GB000000000000000000001E /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000100 /* AudioEngine.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,6 +40,7 @@
 		GB000000000000000000000D /* SaveData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveData.swift; sourceTree = "<group>"; };
 		GB000000000000000000000E /* GameStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameStore.swift; sourceTree = "<group>"; };
 		GB000000000000000000000F /* MenuViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViews.swift; sourceTree = "<group>"; };
+		GB0000000000000000000100 /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,6 +67,7 @@
 			children = (
 				GB0000000000000000000002 /* GridBreakerApp.swift */,
 				GB0000000000000000000023 /* Core */,
+				GB0000000000000000000028 /* Audio */,
 				GB0000000000000000000027 /* Persistence */,
 				GB0000000000000000000026 /* UI */,
 				GB000000000000000000000A /* Assets.xcassets */,
@@ -107,6 +110,14 @@
 				GB000000000000000000000E /* GameStore.swift */,
 			);
 			path = Persistence;
+			sourceTree = "<group>";
+		};
+		GB0000000000000000000028 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				GB0000000000000000000100 /* AudioEngine.swift */,
+			);
+			path = Audio;
 			sourceTree = "<group>";
 		};
 		GB0000000000000000000025 /* Engine */ = {
@@ -211,6 +222,7 @@
 				GB000000000000000000001B /* SaveData.swift in Sources */,
 				GB000000000000000000001C /* GameStore.swift in Sources */,
 				GB000000000000000000001D /* MenuViews.swift in Sources */,
+				GB000000000000000000001E /* AudioEngine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

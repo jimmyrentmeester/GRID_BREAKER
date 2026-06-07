@@ -10,6 +10,8 @@ struct RootView: View {
 
     private enum Screen { case menu, game, cyberdeck, scores }
 
+    private func tap() { AudioEngine.shared.play(.uiTap) }
+
     var body: some View {
         ZStack {
             NeonTheme.background.ignoresSafeArea()
@@ -34,6 +36,10 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: screen)
+        .onAppear {
+            AudioEngine.shared.enabled = store.soundEnabled
+            AudioEngine.shared.start()
+        }
     }
 
     private var titleScreen: some View {
@@ -56,9 +62,23 @@ struct RootView: View {
             }
 
             VStack(spacing: 12) {
-                TerminalButton(title: "JACK IN", color: NeonTheme.cyan) { screen = .game }
-                TerminalButton(title: "CYBERDECK", color: NeonTheme.gold) { screen = .cyberdeck }
-                TerminalButton(title: "TOP RUNS", color: NeonTheme.magenta) { screen = .scores }
+                TerminalButton(title: "JACK IN", color: NeonTheme.cyan) { tap(); screen = .game }
+                TerminalButton(title: "CYBERDECK", color: NeonTheme.gold) { tap(); screen = .cyberdeck }
+                TerminalButton(title: "TOP RUNS", color: NeonTheme.magenta) { tap(); screen = .scores }
+
+                Button {
+                    let on = !store.soundEnabled
+                    store.setSoundEnabled(on)
+                    AudioEngine.shared.enabled = on
+                    if on { AudioEngine.shared.play(.uiTap) }
+                } label: {
+                    Label(store.soundEnabled ? "SOUND ON" : "SOUND OFF",
+                          systemImage: store.soundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textDim)
+                }
+                .buttonStyle(TerminalButtonStyle())
+                .padding(.top, 6)
             }
             .padding(.top, 22)
         }

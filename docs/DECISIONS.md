@@ -78,6 +78,16 @@ extensions, to keep memberwise inits) + `CodingKeys` declared in the type body
 (declaring `CodingKeys` inside the extension crashed the compiler). Verified by
 decoding an old partial save → missing fields default correctly.
 
+## D12 — Audio: asset-free AVAudioEngine synth, shared singleton
+**2026-06-07 (M5).** All audio is synthesized into PCM buffers at launch (no audio
+files) — keeps the €0 ethos and the repo light. `AudioEngine.shared` is a singleton
+(audio is a global service; avoids threading the dependency through every view).
+`.ambient` session category so it respects the silent switch and mixes politely.
+Defensive: if the engine fails to start the game plays on silently. Music is one
+looping buffer (~130 BPM saw bass + arp). **Caveat:** simulator speaker output
+can't be captured via CLI — engine-start + non-silent buffers are verified
+programmatically; final mix quality is a human device-listen (Q6).
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

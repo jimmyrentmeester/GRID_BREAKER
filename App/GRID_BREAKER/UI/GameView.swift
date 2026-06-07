@@ -24,6 +24,7 @@ final class GameViewModel {
     private var freezeRemaining: TimeInterval = 0   // hit-stop budget
     private var pendingEffects: [JuiceEffect] = []
     private let haptics = Haptics()
+    private let audio = AudioEngine.shared
 
     init(config: GameConfig = .default,
          deck: Cyberdeck = .starter,
@@ -85,36 +86,36 @@ final class GameViewModel {
                                             points: points))
                 queued = true
                 if type == .armoredDaemon {
-                    haptics.impact(.medium)
+                    haptics.impact(.medium); audio.play(.decodeBig)
                     if !reduceMotion { freezeRemaining = 0.08 }   // hit-stop on the heavy kill
                 } else {
-                    haptics.impact(.light)
+                    haptics.impact(.light); audio.play(.decode)
                 }
             case let .nodeBreached(cell):
                 pendingEffects.append(.init(cell: cell, style: .breach, color: NeonTheme.magenta, points: nil))
                 queued = true
-                haptics.impact(.soft)
+                haptics.impact(.soft); audio.play(.breach)
             case let .emptyMiss(cell):
                 pendingEffects.append(.init(cell: cell, style: .miss, color: NeonTheme.danger, points: nil))
                 queued = true
-                haptics.impact(.rigid)
+                haptics.impact(.rigid); audio.play(.miss)
             case .nodeExpired:
-                haptics.impact(.soft)
+                haptics.impact(.soft); audio.play(.miss)
             case let .missAbsorbed(cell):
                 pendingEffects.append(.init(cell: cell, style: .shield, color: NeonTheme.gold, points: nil))
                 queued = true
-                haptics.impact(.soft)
+                haptics.impact(.soft); audio.play(.breach)
             case let .firewallExploded(cell):
                 pendingEffects.append(.init(cell: cell, style: .bomb, color: NeonTheme.danger, points: nil))
                 queued = true
                 if !reduceMotion { freezeRemaining = 0.06; shakeTrigger += 1 }
-                haptics.error()
+                haptics.error(); audio.play(.bomb)
             case .feverStarted:
-                haptics.success()
+                haptics.success(); audio.play(.fever)
             case .feverEnded:
                 haptics.impact(.soft)
             case .gameOver:
-                break
+                audio.play(.gameOver)
             }
         }
         if queued { effectSeq += 1 }

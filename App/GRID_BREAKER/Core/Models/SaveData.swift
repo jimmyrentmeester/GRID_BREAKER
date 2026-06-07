@@ -18,8 +18,9 @@ struct SaveData: Codable, Sendable {
     var version: Int = 1
     var cyberdeck: Cyberdeck = .starter
     var highScores: [HighScoreEntry] = []
+    var soundEnabled: Bool = true
 
-    enum CodingKeys: String, CodingKey { case version, cyberdeck, highScores }
+    enum CodingKeys: String, CodingKey { case version, cyberdeck, highScores, soundEnabled }
 
     static let empty = SaveData()
 
@@ -74,5 +75,6 @@ extension SaveData {
         version = try c.decodeIfPresent(Int.self, forKey: .version) ?? version
         cyberdeck = try c.decodeIfPresent(Cyberdeck.self, forKey: .cyberdeck) ?? cyberdeck
         highScores = try c.decodeIfPresent([HighScoreEntry].self, forKey: .highScores) ?? highScores
+        soundEnabled = try c.decodeIfPresent(Bool.self, forKey: .soundEnabled) ?? soundEnabled
     }
 }

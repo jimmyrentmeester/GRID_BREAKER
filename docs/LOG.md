@@ -3,6 +3,23 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #7 — M5 audio & polish (2026-06-07)
+- `Audio/AudioEngine.swift` (new): asset-free AVAudioEngine synth. Renders SFX PCM
+  buffers (decode/decodeBig/breach/miss/bomb/fever/gameOver/uiTap) + a ~130 BPM
+  darksynth loop; 6-node SFX pool; `.ambient` session; defensive (never throws into
+  the game). Shared singleton.
+- Wired SFX into `GameViewModel.process(_:)` next to haptics. UI blips on menu.
+- Sound toggle persisted: `SaveData.soundEnabled` (+ tolerant decode), `GameStore`
+  `setSoundEnabled`, menu SOUND ON/OFF button; engine started in `RootView.onAppear`.
+- Generated neon app icon via CoreGraphics swift script (1024²) → AppIcon.appiconset.
+- pbxproj: new Audio group + AudioEngine.swift (fixed an ID-collision — reused
+  GB…0010 which was GridBreakerApp's build-file id; moved icon fileRef to GB…0100).
+- **Verified:** clean build; on-device temp diagnostic showed engine `run=Y` and
+  non-silent buffers (decode 0.42 / bomb 0.59 / music 0.19); menu SOUND toggle
+  renders; app icon PNG generated + compiles into the catalog. Temp hooks reverted.
+  Speaker output itself = human device listen (CLI can't capture sim audio).
+- Q4 (audio sourcing) + Q5 (haptics) resolved. Vertical-slice DoD met.
+
 ## Run #6 — M4 meta progression (2026-06-07)
 - `Core/Models/SaveData.swift` (new): `SaveData` + `HighScoreEntry`, leaderboard
   insert/cap/isHighScore, and tolerant `init(from:)` extensions (back-compat).

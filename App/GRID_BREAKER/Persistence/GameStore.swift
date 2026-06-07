@@ -27,6 +27,12 @@ final class GameStore {
 
     var cyberdeck: Cyberdeck { save.cyberdeck }
     var highScores: [HighScoreEntry] { save.highScores }
+    var soundEnabled: Bool { save.soundEnabled }
+
+    func setSoundEnabled(_ on: Bool) {
+        save.soundEnabled = on
+        persist()
+    }
 
     /// Credits a given final score will award (for previewing on the HUD).
     func creditsForScore(_ score: Int) -> Int { config.credits(forScore: score) }

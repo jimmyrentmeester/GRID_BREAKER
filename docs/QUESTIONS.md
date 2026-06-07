@@ -10,12 +10,15 @@ Resolved questions move to `DECISIONS.md`.
   first fever ~5 s, casual ~78 s, skill ceiling ~168 s. Numbers may still want a
   real-device feel check, but the curve is validated. [Run #5]
 
+- **Q4 — Audio sourcing** → programmatic AVAudioEngine synth (asset-free), per the
+  €0 ethos. [Run #7]
+- **Q5 — Haptics fidelity** → `UIImpactFeedback`/`UINotificationFeedback` generators
+  (not Core Haptics) — enough fidelity, far less code. [Run #2/M2]
+
 ## Open
 - **Q1 — Modes:** Endless high-score only, or also the brief's "campaign" (target
   score per data core)? Assumption for now: build endless first, campaign later.
 - **Q2 — Grid progression:** Start 3×3 and step up to 4×4 mid-session by score, or
-  pick per session? Assumption: start 3×3, escalate.
-- **Q4 — Audio sourcing:** Synth SFX/music programmatically (AVAudioEngine, like
-  PeuterGames) or licensed loops? Affects M5.
-- **Q5 — Haptics fidelity:** Core Haptics patterns vs. simple `UIImpactFeedback`?
-  Core Haptics is richer but more code; default to impact generators first.
+  pick per session? Assumption: start 3×3, escalate. (Engine already supports 4×4.)
+- **Q6 — Real-device audio listen:** SFX/music verified at engine+buffer level only;
+  confirm they sound right (and balanced vs. game) on a physical device.

@@ -2,6 +2,12 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.6 — Audio & polish (2026-06-07)
+- The game has a voice now: sharp synth SFX for every hit, breach, miss and bomb,
+  a fever sting, and a driving darksynth pulse underneath — all generated in code,
+  no audio files. Toggle sound on/off from the menu.
+- New neon app icon. This completes the first full vertical slice of GRID_BREAKER.
+
 ## 0.5 — Meta progression (2026-06-07)
 - The loop closes: every run pays out Credits, which you spend in the CYBERDECK on
   permanent upgrades (bigger RAM buffer, faster decoding, a failsafe shield). Your

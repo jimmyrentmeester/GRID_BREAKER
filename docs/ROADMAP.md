@@ -74,9 +74,24 @@ fever ~5 s, lively board, ~1–2 min sessions with a skill ceiling. See D10 / Q3
   persisted across relaunch; game-over "+1 CR" / NEW HIGH SCORE). Temp seed/demo
   reverted.
 
-## 📋 M5 — Audio & polish
-Synthwave/darksynth loop (120–150 BPM), sharp analog SFX (decode discharge, glitch
-on error), boot/terminal transitions, app icon.
+## ✅ M5 — Audio & polish (done)
+- `AudioEngine` (AVAudioEngine, asset-free synth): sharp analog SFX rendered into
+  PCM buffers — decode discharge, heavier armored decode, breach tick, miss glitch,
+  firewall detonation, fever sting, game-over descent, UI blip; played via a
+  6-node pool so rapid hits overlap. Driving darksynth loop (~130 BPM, A-minor saw
+  bass + sub + sparse arp), looped. `.ambient` session (respects silent switch).
+- All SFX traced to the same `GameEvent` stream in `process(_:)` (alongside haptics).
+- Persisted SOUND ON/OFF toggle (SaveData.soundEnabled, menu button); UI blips.
+- Generated neon app icon (CoreGraphics 1024² — 2×2 grid, one glowing target node).
+- **Verified:** clean build; engine starts on-device (`run=Y`) with non-silent
+  buffers (decode/bomb/music peaks 0.42/0.59/0.19) via temp diagnostic (reverted);
+  menu shows the SOUND toggle. NOTE: actual speaker output needs a human listen on
+  a real device — simulator audio can't be captured via CLI.
+
+## ✅ Vertical slice — Definition of Done
+The brief's first-slice DoD is met (sans the planned web high-score backend, which
+is out of hobby scope): one playable grid, 3 daemon types with distinct behavior,
+HUD, fever, Credits→Cyberdeck upgrade loop, local high scores, full juice + audio.
 
 ## Later (out of current scope)
 Android (Skip or CMP rewrite), web-WASM demo + backend proxy for high-score sync,
