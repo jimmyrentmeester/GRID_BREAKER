@@ -3,6 +3,18 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #20 — Data Core (fills the HUD↔grid gap) (2026-06-07)
+- New `DataCoreView` in the space between the top bars and the grid: a neon "data
+  core" with a progress arc (Fever charge in endless, target in campaign), a decode
+  pulse, a gold Fever surge, and two slow counter-rotating dashed scanner rings
+  (the ambient layer). Sizes itself to the slot (shrinks on small screens),
+  reduced-motion aware, non-interactive.
+- Replaced the top spacer with the core (grid stays in the thumb zone). Removed the
+  now-redundant `ComboMeter` from the HUD (the core shows Fever charge). In Flow the
+  core is a calm decorative pulse.
+- **Verified on-device:** core renders mid-session with the arc charging toward Fever
+  and decode pulse; grid position preserved. Temp autoplay reverted, save cleared.
+
 ## Run #19 — Purchase confirmation dialogs (2026-06-07)
 - Buying in the Cyberdeck or Cosmetics now asks first: reusable neon `ConfirmDialog`
   ("CONFIRM PURCHASE / <item> / <cost> CR", BUY/CANCEL). Cyberdeck buy → confirm;

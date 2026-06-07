@@ -227,10 +227,20 @@ struct GameView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
 
-                // Push the grid into the lower-middle so it sits in the natural
-                // thumb-reach zone, not up by the (read-only) HUD. The bottom gap
-                // is capped so the grid doesn't glue to the very bottom edge.
-                Spacer(minLength: 12)
+                // The Data Core fills the space between the HUD and the grid, while
+                // keeping the grid down in the thumb-reach zone (it's a flexible slot
+                // that the core sizes itself into).
+                DataCoreView(progress: core != nil ? model.snapshot.targetProgress
+                                                   : model.snapshot.comboProgress,
+                             feverActive: model.snapshot.feverActive,
+                             chill: chill,
+                             label: chill ? "FLOW"
+                                   : model.snapshot.feverActive ? "FEVER"
+                                   : core != nil ? "DECRYPT" : "CHARGE",
+                             decodeToken: model.snapshot.score,
+                             reduceMotion: reduceMotion)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.vertical, 8)
 
                 GridBoard(snapshot: model.snapshot,
                           reduceMotion: reduceMotion,
@@ -387,6 +397,73 @@ private struct IslandFrameRow: View {
     }
 }
 
+// MARK: - Data Core (reactive centerpiece + ambient scanner)
+
+/// Fills the space between the HUD and the grid: a neon "data core" you're cracking.
+/// The progress arc tracks Fever charge (endless) or the target (campaign); it
+/// pulses on each decode and surges gold during Fever. Two slow counter-rotating
+/// dashed rings give the ambient "scanner is alive" feel. Sizes to its slot, so it
+/// shrinks gracefully on small screens. Purely presentational.
+private struct DataCoreView: View {
+    let progress: Double        // 0…1 (fever charge / target); decorative when chill
+    let feverActive: Bool
+    let chill: Bool
+    let label: String
+    let decodeToken: Int        // changes per decode → pulse
+    let reduceMotion: Bool
+
+    @State private var spin: Double = 0
+    @State private var pulse: CGFloat = 1
+
+    private var tint: Color { feverActive ? NeonTheme.gold : NeonTheme.cyan }
+
+    var body: some View {
+        GeometryReader { geo in
+            let s = max(70, min(min(geo.size.width, geo.size.height) - 12, 180))
+            ZStack {
+                Circle()
+                    .stroke(NeonTheme.gridLineDim.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [2, 14]))
+                    .frame(width: s, height: s)
+                    .rotationEffect(.degrees(-spin * 0.6))
+                Circle()
+                    .stroke(tint.opacity(0.40), style: StrokeStyle(lineWidth: 1.5, dash: [4, 12]))
+                    .frame(width: s * 0.86, height: s * 0.86)
+                    .rotationEffect(.degrees(spin))
+                Circle().stroke(tint.opacity(0.15), lineWidth: 3).frame(width: s * 0.6, height: s * 0.6)
+                if !chill {
+                    Circle()
+                        .trim(from: 0, to: max(0.0001, min(1, progress)))
+                        .stroke(tint, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                        .frame(width: s * 0.6, height: s * 0.6)
+                        .rotationEffect(.degrees(-90))
+                        .neonGlow(tint, radius: 5)
+                        .animation(.easeOut(duration: 0.25), value: progress)
+                }
+                VStack(spacing: 3) {
+                    Image(systemName: feverActive ? "bolt.fill" : "hexagon")
+                        .font(.system(size: s * 0.16, weight: .bold))
+                        .foregroundStyle(tint).neonGlow(tint, radius: 6)
+                    Text(label)
+                        .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textDim)
+                }
+                .scaleEffect(pulse)
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .allowsHitTesting(false)
+        .onAppear { spin = 360 }
+        .animation(reduceMotion ? nil
+                   : .linear(duration: feverActive ? 4 : 14).repeatForever(autoreverses: false),
+                   value: spin)
+        .onChange(of: decodeToken) { _, _ in
+            guard !reduceMotion else { return }
+            pulse = 1.16
+            withAnimation(.easeOut(duration: 0.3)) { pulse = 1 }
+        }
+    }
+}
+
 // MARK: - HUD
 
 private struct HUDView: View {
@@ -447,44 +524,11 @@ private struct HUDView: View {
                 }
                 .padding(.bottom, 2)
             }
-            // SCORE and RAM time now live in the IslandFrameRow up top (framing
-            // the Dynamic Island). Here we keep the visual bars + combo — but Flow
-            // mode hides them (no clock, no fever) to stay calm and uncluttered.
+            // SCORE/RAM live in the IslandFrameRow up top; Fever charge now lives in
+            // the Data Core. Here we keep just the RAM bar (hidden in Flow).
             if !chill {
                 RAMBar(fraction: snapshot.ramFraction)
-                ComboMeter(progress: snapshot.comboProgress,
-                           combo: snapshot.combo,
-                           threshold: snapshot.comboThreshold,
-                           feverActive: snapshot.feverActive)
             }
-        }
-    }
-}
-
-/// Combo progress toward the next fever (visible growth, Part 1.4).
-private struct ComboMeter: View {
-    let progress: Double
-    let combo: Int
-    let threshold: Int
-    let feverActive: Bool
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Text(feverActive ? "FEVER" : "COMBO \(combo)/\(threshold)")
-                .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                .foregroundStyle(feverActive ? NeonTheme.gold : NeonTheme.textDim)
-                .frame(width: 96, alignment: .leading)
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.08))
-                    Capsule()
-                        .fill(feverActive ? NeonTheme.gold : NeonTheme.magenta)
-                        .frame(width: max(0, geo.size.width * (feverActive ? 1 : progress)))
-                        .neonGlow(feverActive ? NeonTheme.gold : NeonTheme.magenta, radius: 4)
-                        .animation(.easeOut(duration: 0.18), value: progress)
-                }
-            }
-            .frame(height: 5)
         }
     }
 }

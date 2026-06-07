@@ -2,6 +2,12 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.12 — Data Core + confirmations (2026-06-07)
+- The space above the grid now holds a live "data core": a neon ring that charges
+  toward Fever (or your target in Campaign), pulses on every decode, surges gold in
+  Fever, with a slow scanner backdrop. Atmosphere + at-a-glance feedback in one.
+- Buying in the Cyberdeck or Cosmetics now asks for confirmation first.
+
 ## 0.11 — Interactive tutorial (2026-06-07)
 - The how-to is now hands-on: you actually decode a daemon, breach an armored one,
   and learn to dodge the firewall, with a short recap at the end. Runs on first
