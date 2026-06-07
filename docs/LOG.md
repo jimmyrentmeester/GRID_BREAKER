@@ -3,6 +3,25 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #11 — Bugfix: fever-at-game-over freeze + music not resuming (2026-06-07)
+Reported: game "froze on fever" when finishing a campaign core during fever, and
+music stopped and didn't resume.
+- **Freeze (visual):** `GridEngine.endGame` set `isGameOver` but never cleared
+  fever; `tick()` then returns early forever, leaving `feverActive` true → the
+  full-screen fever atmosphere + banner stuck behind the result. Fix: `endGame`
+  now clears `feverActive`/`feverRemaining`. View also gates fever atmosphere/banner
+  on `!isGameOver` (defensive). Verified headless: 30/30 wins, fever-at-gameover=0;
+  on-device the CORE CRACKED screen is clean (no gold).
+- **Music:** there was NO audio-interruption handling — an AVAudioSession
+  interruption / route or engine-config change paused the music `AVAudioPlayer`
+  (and stopped the SFX engine) with nothing to resume it, while the game loop kept
+  running. Fix: `AudioEngine` now observes `AVAudioEngineConfigurationChange`,
+  `AVAudioSession.interruptionNotification` (.ended), and
+  `UIApplication.didBecomeActiveNotification`, plus a `resume()` self-heal
+  (reactivate session, restart engine if stopped, resume/continue music). `resume()`
+  is also called on every screen change and on GameView appear.
+- Verified: clean build; temp auto-win confirmed the clean overlay; reverted hooks.
+
 ## Run #10 — Campaign mode (2026-06-07)
 - `Core/Models/Campaign.swift` (new): `DataCore` + 10-core ladder (target,
   timeBudget, difficultyBias). `GameConfig.campaign(timeBudget:)` = time-attack

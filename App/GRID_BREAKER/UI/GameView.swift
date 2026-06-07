@@ -173,7 +173,7 @@ struct GameView: View {
     var body: some View {
         ZStack {
             NeonTheme.background.ignoresSafeArea()
-            FeverAtmosphere(active: model.snapshot.feverActive).ignoresSafeArea()
+            FeverAtmosphere(active: model.snapshot.feverActive && !model.snapshot.isGameOver).ignoresSafeArea()
 
             VStack(spacing: 0) {
                 HUDView(snapshot: model.snapshot, coreName: core?.name)
@@ -196,7 +196,7 @@ struct GameView: View {
             }
             .modifier(ShakeEffect(animatableData: shakeAnim))
 
-            if model.snapshot.feverActive {
+            if model.snapshot.feverActive && !model.snapshot.isGameOver {
                 FeverBanner(multiplier: model.snapshot.scoreMultiplier,
                             fraction: model.snapshot.feverFraction)
                     .transition(.move(edge: .top).combined(with: .opacity))
@@ -219,7 +219,7 @@ struct GameView: View {
             }
             .allowsHitTesting(false)
         }
-        .onAppear { model.reduceMotion = reduceMotion }
+        .onAppear { model.reduceMotion = reduceMotion; AudioEngine.shared.resume() }
         .onChange(of: reduceMotion) { _, new in model.reduceMotion = new }
         .onChange(of: model.snapshot.isGameOver) { _, over in
             if over, outcome == nil {

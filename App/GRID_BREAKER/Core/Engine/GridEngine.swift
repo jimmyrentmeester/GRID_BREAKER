@@ -315,6 +315,11 @@ struct GridEngine {
     private mutating func endGame(_ reason: GameOverReason) -> GameEvent {
         isGameOver = true
         gameOverReason = reason
+        // End fever too, so the fever atmosphere/banner doesn't stick on the
+        // game-over screen (ending mid-fever otherwise froze the visuals — tick()
+        // returns early once the game is over and never clears it).
+        feverActive = false
+        feverRemaining = 0
         return .gameOver(reason)
     }
 }

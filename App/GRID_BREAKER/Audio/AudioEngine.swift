@@ -1,5 +1,8 @@
 import Foundation
 import AVFoundation
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Game audio. SFX are synthesized into PCM buffers and played via AVAudioEngine.
 /// Music is the player's own MP3s (see `MusicPlayer`) — drop files into the
@@ -66,6 +69,47 @@ final class AudioEngine {
         // Music is independent of the SFX engine (plays the player's MP3s).
         musicPlayer.loadTracks()
         musicPlayer.setEnabled(enabled)
+
+        registerObservers()
+    }
+
+    /// Self-heal: recover audio after an interruption / route or config change /
+    /// returning to the foreground. Safe to call any time (idempotent-ish).
+    func resume() {
+        guard isRunning else { start(); return }
+        #if canImport(UIKit)
+        try? AVAudioSession.sharedInstance().setActive(true)
+        #endif
+        if !engine.isRunning {
+            engine.prepare()
+            try? engine.start()
+        }
+        if engine.isRunning {
+            sfxPool.forEach { if !$0.isPlaying { $0.play() } }
+        }
+        musicPlayer.resume()
+    }
+
+    // MARK: Resilience
+
+    private func registerObservers() {
+        let nc = NotificationCenter.default
+        // The SFX engine stops itself on a route/config change — restart it.
+        nc.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.resume() }
+        }
+        #if canImport(UIKit)
+        // Audio-session interruption (calls, other apps, system sounds): resume on end.
+        nc.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
+            guard let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+                  AVAudioSession.InterruptionType(rawValue: raw) == .ended else { return }
+            MainActor.assumeIsolated { self?.resume() }
+        }
+        // Returning to the foreground is a reliable moment to re-check audio.
+        nc.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.resume() }
+        }
+        #endif
     }
 
     // MARK: Playback
@@ -188,6 +232,17 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
     func stop() {
         player?.stop()
         player = nil
+    }
+
+    /// Resume after an interruption: replay if paused, or start the next track if
+    /// the player was torn down. No-op if music is off or already playing.
+    func resume() {
+        guard enabled else { return }
+        if let p = player {
+            if !p.isPlaying { p.play() }
+        } else {
+            playCurrent()
+        }
     }
 
     private func playCurrent() {

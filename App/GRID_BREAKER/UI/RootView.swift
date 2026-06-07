@@ -56,6 +56,7 @@ struct RootView: View {
             AudioEngine.shared.enabled = store.soundEnabled
             AudioEngine.shared.start()
         }
+        .onChange(of: screen) { _, _ in AudioEngine.shared.resume() }
     }
 
     private var titleScreen: some View {
