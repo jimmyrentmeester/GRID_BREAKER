@@ -217,31 +217,6 @@ struct FeverAtmosphere: View {
     }
 }
 
-/// Top banner announcing Fever Mode + a shrinking window bar (brief §10.2).
-struct FeverBanner: View {
-    let multiplier: Int
-    let fraction: Double
-
-    var body: some View {
-        VStack(spacing: 6) {
-            Text("⚡ FEVER ×\(multiplier) ⚡")
-                .font(.system(size: 22, weight: .heavy, design: .monospaced))
-                .foregroundStyle(NeonTheme.gold)
-                .neonGlow(NeonTheme.gold, radius: 10)
-            GeometryReader { geo in
-                Capsule()
-                    .fill(NeonTheme.gold)
-                    .frame(width: max(0, geo.size.width * fraction))
-                    .neonGlow(NeonTheme.gold, radius: 5)
-            }
-            .frame(width: 180, height: 4)
-        }
-        .padding(.top, 70)
-        .frame(maxHeight: .infinity, alignment: .top)
-        .allowsHitTesting(false)
-    }
-}
-
 // MARK: - Button feel
 
 /// Micro press-response for terminal buttons (skill §2: every tap a 0.06 s dip).

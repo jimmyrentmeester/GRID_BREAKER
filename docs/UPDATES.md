@@ -2,6 +2,15 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.14 — Score & visualizer polish (2026-06-07)
+- Your score is now big and centered, sitting right above the data core in every
+  mode (it was a small readout tucked in the top-left).
+- Flow mode's central core finally does something: a ring that fills as you build a
+  decode streak, then resets — calm, satisfying feedback with no pressure.
+- Fever now plays out on the core itself (it surges gold and the ring drains as the
+  burst runs out) instead of a separate banner, so nothing overlaps the score.
+- Main-menu buttons are all the same width now.
+
 ## 0.13 — Tap-trail skins (2026-06-07)
 - Your finger now leaves a neon trail as you play. Buy and equip trail styles
   (Comet, Pixel Dust, Spark, Plasma) in COSMETICS — they take on your palette colors.

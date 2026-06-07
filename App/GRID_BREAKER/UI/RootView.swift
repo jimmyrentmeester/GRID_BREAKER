@@ -94,12 +94,12 @@ struct RootView: View {
             }
 
             VStack(spacing: 12) {
-                TerminalButton(title: "JACK IN", color: NeonTheme.cyan) { tap(); screen = .endless }
-                TerminalButton(title: "FLOW STATE", color: NeonTheme.gridLine) { tap(); screen = .flow }
-                TerminalButton(title: "CAMPAIGN", color: NeonTheme.magenta) { tap(); screen = .campaign }
-                TerminalButton(title: "CYBERDECK", color: NeonTheme.gold) { tap(); screen = .cyberdeck }
-                TerminalButton(title: "COSMETICS", color: NeonTheme.gridLine) { tap(); screen = .cosmetics }
-                TerminalButton(title: "TOP RUNS", color: NeonTheme.cyan) { tap(); screen = .scores }
+                TerminalButton(title: "JACK IN", color: NeonTheme.cyan, wide: true) { tap(); screen = .endless }
+                TerminalButton(title: "FLOW STATE", color: NeonTheme.gridLine, wide: true) { tap(); screen = .flow }
+                TerminalButton(title: "CAMPAIGN", color: NeonTheme.magenta, wide: true) { tap(); screen = .campaign }
+                TerminalButton(title: "CYBERDECK", color: NeonTheme.gold, wide: true) { tap(); screen = .cyberdeck }
+                TerminalButton(title: "COSMETICS", color: NeonTheme.gridLine, wide: true) { tap(); screen = .cosmetics }
+                TerminalButton(title: "TOP RUNS", color: NeonTheme.cyan, wide: true) { tap(); screen = .scores }
 
                 HStack(spacing: 18) {
                     Button {
@@ -124,6 +124,7 @@ struct RootView: View {
                 }
                 .padding(.top, 6)
             }
+            .frame(maxWidth: 260)        // uniform button width
             .padding(.top, 22)
         }
         .onAppear {

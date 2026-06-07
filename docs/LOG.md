@@ -3,6 +3,31 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #22 — Score/visualizer layout pass (2026-06-07)
+Three requested adjustments:
+- **Uniform menu buttons.** `TerminalButton` gained a `wide` flag (fills the
+  container via `maxWidth: .infinity`); all six main-menu buttons use it inside a
+  `maxWidth: 260` column, so they're one consistent width.
+- **Flow uses the Data Core.** The centerpiece arc was previously blank in Flow.
+  Removed the `!chill` guard so the arc renders there too, fed by a new
+  `coreProgress`: a repeating "combo ring" (fills every `comboThreshold` decodes,
+  shows full on completion, then resets) — the core now reacts to play even with no
+  goal or Fever.
+- **Big score above the visualizer (all modes).** New `BigScoreView` (SCORE label +
+  ~46pt number with a numeric-roll transition + gold ×N + shield charge) sits
+  directly above the Data Core. Removed the small top-left SCORE block from
+  `IslandFrameRow` (now just RAM time / ⌁ FLOW flanking the Island) and the inline
+  SCORE row from the flat-top HUD (`showInlineScore` param dropped).
+- **Fever now lives in the core, not a banner.** The old `FeverBanner` overlapped
+  the new centered score, so it's gone: during Fever the Data Core arc drains with
+  the burst timer (`coreProgress` returns `feverFraction`) over its gold surge +
+  bolt + "FEVER" label, and the score shows the gold ×N — one dominant moment, no
+  collision. `FeverBanner` deleted (dead code).
+- **Verified on-device (iPhone 16 Pro sim, computer-use):** menu buttons uniform;
+  endless shows big score + CHARGE arc; Fever surges gold with a draining arc and
+  gold ×2 score (no overlap); Flow shows the big score + a filling/cycling FLOW
+  ring. Temp autoplay hook reverted.
+
 ## Run #21 — Tap-trail skins (2026-06-07)
 - New cosmetic: a neon trail that follows the finger. `TrailSkin`/`TrailSkins`
   catalog (None, Comet free; Pixel Dust/Spark/Plasma 400–900 CR) — colors resolve

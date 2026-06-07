@@ -214,6 +214,19 @@ struct GameView: View {
         #endif
     }
 
+    /// What the Data Core arc tracks. During Fever it drains with the burst timer
+    /// (the core IS the Fever readout); otherwise campaign → target, endless →
+    /// Fever charge, Flow → a repeating "combo ring" (fills every comboThreshold
+    /// decodes, then resets) so the centerpiece reacts to play even without a goal.
+    private var coreProgress: Double {
+        let s = model.snapshot
+        if s.feverActive { return s.feverFraction }
+        guard chill else { return core != nil ? s.targetProgress : s.comboProgress }
+        let t = max(1, s.comboThreshold)
+        let cyc = s.combo % t
+        return (s.combo > 0 && cyc == 0) ? 1 : Double(cyc) / Double(t)
+    }
+
     var body: some View {
         ZStack {
             NeonTheme.background.ignoresSafeArea()
@@ -223,25 +236,25 @@ struct GameView: View {
             FeverAtmosphere(active: model.snapshot.feverActive && !model.snapshot.isGameOver).ignoresSafeArea()
 
             VStack(spacing: 0) {
-                HUDView(snapshot: model.snapshot, coreName: core?.name,
-                        showInlineScore: !hasIslandOrNotch, chill: chill)
+                HUDView(snapshot: model.snapshot, coreName: core?.name, chill: chill)
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
 
-                // The Data Core fills the space between the HUD and the grid, while
-                // keeping the grid down in the thumb-reach zone (it's a flexible slot
-                // that the core sizes itself into).
-                DataCoreView(progress: core != nil ? model.snapshot.targetProgress
-                                                   : model.snapshot.comboProgress,
-                             feverActive: model.snapshot.feverActive,
-                             chill: chill,
-                             label: chill ? "FLOW"
-                                   : model.snapshot.feverActive ? "FEVER"
-                                   : core != nil ? "DECRYPT" : "CHARGE",
-                             decodeToken: model.snapshot.score,
-                             reduceMotion: reduceMotion)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.vertical, 8)
+                // Big score sits right above the Data Core (the score is what you
+                // watch). The core fills the rest of the gap and keeps the grid down
+                // in the thumb-reach zone (a flexible slot it sizes itself into).
+                VStack(spacing: 6) {
+                    BigScoreView(snapshot: model.snapshot)
+                    DataCoreView(progress: coreProgress,
+                                 feverActive: model.snapshot.feverActive,
+                                 label: chill ? "FLOW"
+                                       : model.snapshot.feverActive ? "FEVER"
+                                       : core != nil ? "DECRYPT" : "CHARGE",
+                                 decodeToken: model.snapshot.score,
+                                 reduceMotion: reduceMotion)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .padding(.vertical, 8)
 
                 GridBoard(snapshot: model.snapshot,
                           reduceMotion: reduceMotion,
@@ -267,11 +280,8 @@ struct GameView: View {
             // Tap trail (over the grid, under the banners/overlays).
             TrailLayer(points: trailPoints, skin: TrailSkins.equipped, lifetime: 0.45)
 
-            if model.snapshot.feverActive && !model.snapshot.isGameOver {
-                FeverBanner(multiplier: model.snapshot.scoreMultiplier,
-                            fraction: model.snapshot.feverFraction)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
+            // Fever is announced by the Data Core itself (gold surge + draining arc)
+            // and the gold ×N on the score — no separate banner (it'd overlap them).
 
             // Pause button (bottom-leading, out of the way of the grid).
             if !model.snapshot.isGameOver && !model.isPaused {
@@ -357,24 +367,7 @@ private struct IslandFrameRow: View {
 
     var body: some View {
         HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("SCORE")
-                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.textDim)
-                HStack(spacing: 4) {
-                    Text("\(snapshot.score)")
-                        .font(.system(size: 20, weight: .heavy, design: .monospaced))
-                        .foregroundStyle(NeonTheme.cyan)
-                        .neonGlow(NeonTheme.cyan, radius: 6)
-                    if snapshot.scoreMultiplier > 1 {
-                        Text("×\(snapshot.scoreMultiplier)")
-                            .font(.system(size: 13, weight: .heavy, design: .monospaced))
-                            .foregroundStyle(NeonTheme.gold)
-                            .neonGlow(NeonTheme.gold, radius: 5)
-                    }
-                }
-            }
-            Spacer(minLength: 100)   // leave the centre clear for the Island
+            Spacer(minLength: 100)   // score now lives above the core; keep RAM by the Island
             if chill {
                 // No clock in Flow — a calm marker instead of RAM time.
                 VStack(alignment: .trailing, spacing: 0) {
@@ -391,21 +384,11 @@ private struct IslandFrameRow: View {
                     Text("RAM")
                         .font(.system(size: 9, weight: .semibold, design: .monospaced))
                         .foregroundStyle(NeonTheme.textDim)
-                    HStack(spacing: 5) {
-                        if snapshot.shieldCharges > 0 {
-                            HStack(spacing: 2) {
-                                Image(systemName: "shield.fill")
-                                Text("\(snapshot.shieldCharges)")
-                            }
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                            .foregroundStyle(NeonTheme.gold)
-                        }
-                        Text("\(Int(ceil(max(0, snapshot.ramRemaining))))s")
-                            .font(.system(size: 20, weight: .heavy, design: .monospaced))
-                            .foregroundStyle(ramColor)
-                            .neonGlow(ramColor, radius: 6)
-                            .monospacedDigit()
-                    }
+                    Text("\(Int(ceil(max(0, snapshot.ramRemaining))))s")
+                        .font(.system(size: 20, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(ramColor)
+                        .neonGlow(ramColor, radius: 6)
+                        .monospacedDigit()
                 }
             }
         }
@@ -465,9 +448,8 @@ private struct TrailLayer: View {
 /// dashed rings give the ambient "scanner is alive" feel. Sizes to its slot, so it
 /// shrinks gracefully on small screens. Purely presentational.
 private struct DataCoreView: View {
-    let progress: Double        // 0…1 (fever charge / target); decorative when chill
+    let progress: Double        // 0…1 (fever charge / target / Flow combo ring)
     let feverActive: Bool
-    let chill: Bool
     let label: String
     let decodeToken: Int        // changes per decode → pulse
     let reduceMotion: Bool
@@ -490,15 +472,13 @@ private struct DataCoreView: View {
                     .frame(width: s * 0.86, height: s * 0.86)
                     .rotationEffect(.degrees(spin))
                 Circle().stroke(tint.opacity(0.15), lineWidth: 3).frame(width: s * 0.6, height: s * 0.6)
-                if !chill {
-                    Circle()
-                        .trim(from: 0, to: max(0.0001, min(1, progress)))
-                        .stroke(tint, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                        .frame(width: s * 0.6, height: s * 0.6)
-                        .rotationEffect(.degrees(-90))
-                        .neonGlow(tint, radius: 5)
-                        .animation(.easeOut(duration: 0.25), value: progress)
-                }
+                Circle()
+                    .trim(from: 0, to: max(0.0001, min(1, progress)))
+                    .stroke(tint, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .frame(width: s * 0.6, height: s * 0.6)
+                    .rotationEffect(.degrees(-90))
+                    .neonGlow(tint, radius: 5)
+                    .animation(.easeOut(duration: 0.25), value: progress)
                 VStack(spacing: 3) {
                     Image(systemName: feverActive ? "bolt.fill" : "hexagon")
                         .font(.system(size: s * 0.16, weight: .bold))
@@ -524,42 +504,55 @@ private struct DataCoreView: View {
     }
 }
 
+// MARK: - Big score
+
+/// The score, large and centered, sitting directly above the Data Core in every
+/// mode (it's the number you actually watch). Rolls on change, shows the Fever
+/// multiplier in gold, and carries the shield-charge indicator.
+private struct BigScoreView: View {
+    let snapshot: SessionSnapshot
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("SCORE")
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+                .tracking(3)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(snapshot.score)")
+                    .font(.system(size: 46, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.cyan)
+                    .neonGlow(NeonTheme.cyan, radius: 10)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                if snapshot.scoreMultiplier > 1 {
+                    Text("×\(snapshot.scoreMultiplier)")
+                        .font(.system(size: 22, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                        .neonGlow(NeonTheme.gold, radius: 7)
+                }
+            }
+            if snapshot.shieldCharges > 0 {
+                Label("\(snapshot.shieldCharges)", systemImage: "shield.fill")
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.gold)
+                    .padding(.top, 2)
+            }
+        }
+        .animation(.easeOut(duration: 0.25), value: snapshot.score)
+    }
+}
+
 // MARK: - HUD
 
 private struct HUDView: View {
     let snapshot: SessionSnapshot
     var coreName: String? = nil
-    /// On flat-top devices (no Island/notch) show score/RAM here instead of
-    /// flanking the top.
-    var showInlineScore: Bool = false
     /// Flow mode hides the pressure HUD (RAM bar + combo meter).
     var chill: Bool = false
 
     var body: some View {
         VStack(spacing: 8) {
-            if showInlineScore {
-                HStack(spacing: 8) {
-                    Text("SCORE")
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(NeonTheme.textDim)
-                    Text("\(snapshot.score)")
-                        .font(.system(size: 22, weight: .heavy, design: .monospaced))
-                        .foregroundStyle(NeonTheme.cyan)
-                        .neonGlow(NeonTheme.cyan, radius: 6)
-                    if snapshot.scoreMultiplier > 1 {
-                        Text("×\(snapshot.scoreMultiplier)")
-                            .font(.system(size: 16, weight: .heavy, design: .monospaced))
-                            .foregroundStyle(NeonTheme.gold)
-                            .neonGlow(NeonTheme.gold, radius: 6)
-                    }
-                    Spacer()
-                    if snapshot.shieldCharges > 0 {
-                        Label("\(snapshot.shieldCharges)", systemImage: "shield.fill")
-                            .font(.system(size: 13, weight: .bold, design: .monospaced))
-                            .foregroundStyle(NeonTheme.gold)
-                    }
-                }
-            }
             if let target = snapshot.targetScore {
                 VStack(spacing: 4) {
                     HStack {
@@ -859,6 +852,7 @@ private struct GameOverOverlay: View {
 struct TerminalButton: View {
     let title: String
     let color: Color
+    var wide: Bool = false        // fill the container width (uniform menu buttons)
     let action: () -> Void
 
     var body: some View {
@@ -868,6 +862,7 @@ struct TerminalButton: View {
                 .foregroundStyle(color)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
+                .frame(maxWidth: wide ? .infinity : nil)
                 .background(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .stroke(color, lineWidth: 1.5)
