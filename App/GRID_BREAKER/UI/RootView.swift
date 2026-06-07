@@ -39,10 +39,12 @@ struct RootView: View {
                 if let core = activeCore {
                     GameView(core: core, deck: store.cyberdeck,
                              onExit: { screen = .campaign },
+                             onNext: Campaign.core(id: core.id + 1).map { next in { activeCore = next } },
                              recordSession: { score, won in
                                  let earned = store.recordCore(core, won: won, score: score, on: Date())
                                  return SessionOutcome(creditsEarned: earned, isHighScore: false)
                              })
+                        .id(core.id)          // fresh session when advancing cores
                         .transition(.opacity)
                 }
             case .cyberdeck:

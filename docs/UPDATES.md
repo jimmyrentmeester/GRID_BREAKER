@@ -2,6 +2,12 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.7.1 — Polish (2026-06-07)
+- The Failsafe Shield now saves you from a firewall bomb too (not just stray taps) —
+  worth buying now.
+- Campaign: a NEXT CORE button after a win so you can keep going, and a proper
+  finale ("THE GRID IS YOURS") when all 10 cores fall.
+
 ## 0.7 — Campaign mode (2026-06-07)
 - New CAMPAIGN: 10 hand-tuned data cores, each a time attack — hit the target score
   before your RAM countdown runs out. Cores unlock as you clear them.

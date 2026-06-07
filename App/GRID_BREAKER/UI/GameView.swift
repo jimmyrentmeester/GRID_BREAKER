@@ -113,6 +113,11 @@ final class GameViewModel {
                 pendingEffects.append(.init(cell: cell, style: .shield, color: NeonTheme.gold, points: nil))
                 queued = true
                 haptics.impact(.soft); audio.play(.breach)
+            case let .firewallDefused(cell):
+                // Shield saved you — a bright gold "blocked" pop, no game over.
+                pendingEffects.append(.init(cell: cell, style: .shield, color: NeonTheme.gold, points: nil))
+                queued = true
+                haptics.impact(.medium); audio.play(.decodeBig)
             case let .firewallExploded(cell):
                 pendingEffects.append(.init(cell: cell, style: .bomb, color: NeonTheme.danger, points: nil))
                 queued = true
@@ -145,14 +150,18 @@ struct GameView: View {
     @State private var outcome: SessionOutcome?
     let core: DataCore?                 // nil = endless mode
     let onExit: () -> Void
+    /// Advance to the next campaign core (nil in endless / on the last core).
+    let onNext: (() -> Void)?
     /// Persist the finished session exactly once; returns what it yielded.
     let recordSession: (_ score: Int, _ won: Bool) -> SessionOutcome
 
     init(core: DataCore? = nil,
          deck: Cyberdeck,
          onExit: @escaping () -> Void,
+         onNext: (() -> Void)? = nil,
          recordSession: @escaping (_ score: Int, _ won: Bool) -> SessionOutcome) {
         self.core = core
+        self.onNext = onNext
         let model: GameViewModel
         if let core {
             model = GameViewModel(config: .campaign(timeBudget: core.timeBudget),
@@ -206,7 +215,9 @@ struct GameView: View {
                 GameOverOverlay(snapshot: model.snapshot,
                                 core: core,
                                 outcome: outcome,
+                                isFinalCore: core.map { $0.id >= Campaign.count } ?? false,
                                 onReplay: { outcome = nil; model.restart(seed: GameView.freshSeed()) },
+                                onNext: (model.snapshot.didWin && onNext != nil) ? onNext : nil,
                                 onExit: onExit)
             }
 
@@ -479,12 +490,17 @@ private struct GameOverOverlay: View {
     let snapshot: SessionSnapshot
     let core: DataCore?
     let outcome: SessionOutcome?
+    let isFinalCore: Bool
     let onReplay: () -> Void
+    let onNext: (() -> Void)?
     let onExit: () -> Void
 
     private var didWin: Bool { snapshot.didWin }
+    /// Winning the last core = whole campaign cleared → a finale.
+    private var isFinale: Bool { didWin && isFinalCore }
 
     private var headline: String {
+        if isFinale { return "THE GRID IS YOURS" }
         if core != nil { return didWin ? "CORE CRACKED" : "INTRUSION FAILED" }
         switch snapshot.gameOverReason {
         case .firewallHit: return "FIREWALL TRIGGERED"
@@ -492,21 +508,31 @@ private struct GameOverOverlay: View {
         default:           return "CONNECTION LOST"
         }
     }
-    private var headlineColor: Color { didWin ? NeonTheme.cyan : NeonTheme.danger }
+    private var headlineColor: Color {
+        if isFinale { return NeonTheme.gold }
+        return didWin ? NeonTheme.cyan : NeonTheme.danger
+    }
 
     var body: some View {
         ZStack {
             Color.black.opacity(0.80).ignoresSafeArea()
             VStack(spacing: 16) {
-                Text(core != nil ? (core?.name.uppercased() ?? "") : "CONNECTION TERMINATED")
+                Text(isFinale ? "CAMPAIGN COMPLETE"
+                              : (core != nil ? (core?.name.uppercased() ?? "") : "CONNECTION TERMINATED"))
                     .font(.system(size: 13, weight: .semibold, design: .monospaced))
                     .foregroundStyle(NeonTheme.textDim)
                 Text(headline)
-                    .font(.system(size: 26, weight: .heavy, design: .monospaced))
+                    .font(.system(size: isFinale ? 30 : 26, weight: .heavy, design: .monospaced))
                     .foregroundStyle(headlineColor)
-                    .neonGlow(headlineColor, radius: 10)
+                    .neonGlow(headlineColor, radius: isFinale ? 16 : 10)
+                    .multilineTextAlignment(.center)
 
-                if didWin {
+                if isFinale {
+                    Text("◆ ALL 10 CORES CRACKED ◆")
+                        .font(.system(size: 14, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.cyan)
+                        .neonGlow(NeonTheme.cyan, radius: 8)
+                } else if didWin {
                     Text("◆ DATA CORE DECRYPTED ◆")
                         .font(.system(size: 14, weight: .heavy, design: .monospaced))
                         .foregroundStyle(NeonTheme.gold)
@@ -529,11 +555,16 @@ private struct GameOverOverlay: View {
                         .foregroundStyle(NeonTheme.gold)
                 }
 
-                HStack(spacing: 14) {
-                    TerminalButton(title: core != nil ? "RETRY" : "RECONNECT",
-                                   color: NeonTheme.cyan, action: onReplay)
-                    TerminalButton(title: core != nil ? "CORES" : "JACK OUT",
-                                   color: NeonTheme.magenta, action: onExit)
+                VStack(spacing: 12) {
+                    if let onNext {
+                        TerminalButton(title: "NEXT CORE", color: NeonTheme.gold, action: onNext)
+                    }
+                    HStack(spacing: 14) {
+                        TerminalButton(title: core != nil ? "RETRY" : "RECONNECT",
+                                       color: NeonTheme.cyan, action: onReplay)
+                        TerminalButton(title: core != nil ? "CORES" : "JACK OUT",
+                                       color: NeonTheme.magenta, action: onExit)
+                    }
                 }
                 .padding(.top, 10)
             }

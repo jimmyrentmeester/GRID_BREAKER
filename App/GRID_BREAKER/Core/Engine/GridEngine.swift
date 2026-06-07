@@ -35,6 +35,7 @@ enum GameEvent: Sendable, Equatable {
     case nodeExpired(NodeType, cell: Int)   // a daemon timed out (penalty)
     case emptyMiss(cell: Int)               // tapped an empty cell (penalty)
     case missAbsorbed(cell: Int)            // a miss eaten by the Failsafe Shield
+    case firewallDefused(cell: Int)         // bomb tapped but eaten by the Shield
     case firewallExploded(cell: Int)        // bomb tapped → game over
     case feverStarted                       // combo hit threshold → Fever Mode
     case feverEnded                         // Fever Mode window elapsed
@@ -232,6 +233,11 @@ struct GridEngine {
         case .firewallBomb:
             let cell = nodes[idx].cellIndex
             nodes.remove(at: idx)
+            // The Failsafe Shield eats a bomb tap (your worst mistake), no game over.
+            if shieldCharges > 0 {
+                shieldCharges -= 1
+                return [.firewallDefused(cell: cell)]
+            }
             return [.firewallExploded(cell: cell), endGame(.firewallHit)]
 
         case .standardDaemon:

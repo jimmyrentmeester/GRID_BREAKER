@@ -3,6 +3,19 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #13 — Polish pass: shield-vs-bomb, NEXT CORE, finale (2026-06-07)
+- **Shield now absorbs a firewall-bomb tap** (not just empty-cell mis-taps): engine
+  `firewallBomb` case consumes a shield charge → new `.firewallDefused` event (gold
+  "blocked" pop + medium haptic), no game over. Shield description updated.
+- **NEXT CORE** button on a campaign win (cores 1-9) → advances to the next core.
+  `GameView` gains `onNext`; RootView passes it (nil on the last core) and `.id(core.id)`
+  forces a fresh session when advancing.
+- **Campaign finale**: winning core 10 shows "THE GRID IS YOURS / ALL 10 CORES
+  CRACKED" (gold) instead of the normal CORE CRACKED, no NEXT button.
+- **Verified:** clean build; headless (shield defuses bomb → no game over, charge
+  consumed); on-device (NEXT CORE on a core-1 win; finale on a core-10 win with a
+  strong deck). Temp hooks reverted, save cleared.
+
 ## Run #12 — Cyberdeck upgrade descriptions (2026-06-07)
 - Upgrades didn't explain their effect. Added `CyberdeckUpgrade.detail` (built from
   real `GameConfig` values so it can't drift) and showed it in each `UpgradeRow`

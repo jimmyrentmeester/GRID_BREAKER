@@ -50,7 +50,7 @@ enum CyberdeckUpgrade: String, CaseIterable, Identifiable, Sendable {
         case .decodeSpeed:
             return "Each decode restores +\(String(format: "%g", c.decodeBonusPerLevel))s of RAM per level (your only refill in Campaign)."
         case .shield:
-            return "Absorbs one accidental tap on an empty cell per level, no time lost."
+            return "Absorbs one mistake per level — a mis-tap OR a firewall bomb — no penalty."
         }
     }
 
