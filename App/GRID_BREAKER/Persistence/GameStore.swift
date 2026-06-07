@@ -34,6 +34,27 @@ final class GameStore {
         persist()
     }
 
+    // MARK: Campaign
+
+    var campaignProgress: Int { save.campaignProgress }
+    /// Core 1 is always open; core N opens once the previous is cleared.
+    func isUnlocked(_ core: DataCore) -> Bool { core.id <= save.campaignProgress + 1 }
+    func isCleared(_ core: DataCore) -> Bool { core.id <= save.campaignProgress }
+
+    /// Record a campaign attempt: always pay Credits for the decodes (shared
+    /// economy → progress never fully stalls), and advance the campaign if this
+    /// win cleared the next locked core. Returns Credits earned.
+    @discardableResult
+    func recordCore(_ core: DataCore, won: Bool, score: Int, on date: Date) -> Int {
+        let earned = config.credits(forScore: score)
+        save.cyberdeck.credits += earned
+        if won && core.id == save.campaignProgress + 1 {
+            save.campaignProgress = core.id
+        }
+        persist()
+        return earned
+    }
+
     /// Credits a given final score will award (for previewing on the HUD).
     func creditsForScore(_ score: Int) -> Int { config.credits(forScore: score) }
 

@@ -19,8 +19,10 @@ struct SaveData: Codable, Sendable {
     var cyberdeck: Cyberdeck = .starter
     var highScores: [HighScoreEntry] = []
     var soundEnabled: Bool = true
+    /// Number of campaign cores cleared (core N is unlocked when this >= N-1).
+    var campaignProgress: Int = 0
 
-    enum CodingKeys: String, CodingKey { case version, cyberdeck, highScores, soundEnabled }
+    enum CodingKeys: String, CodingKey { case version, cyberdeck, highScores, soundEnabled, campaignProgress }
 
     static let empty = SaveData()
 
@@ -76,5 +78,6 @@ extension SaveData {
         cyberdeck = try c.decodeIfPresent(Cyberdeck.self, forKey: .cyberdeck) ?? cyberdeck
         highScores = try c.decodeIfPresent([HighScoreEntry].self, forKey: .highScores) ?? highScores
         soundEnabled = try c.decodeIfPresent(Bool.self, forKey: .soundEnabled) ?? soundEnabled
+        campaignProgress = try c.decodeIfPresent(Int.self, forKey: .campaignProgress) ?? campaignProgress
     }
 }

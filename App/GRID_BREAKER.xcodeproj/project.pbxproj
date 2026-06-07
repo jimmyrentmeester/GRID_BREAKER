@@ -23,6 +23,7 @@
 		GB000000000000000000001D /* MenuViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB000000000000000000000F /* MenuViews.swift */; };
 		GB000000000000000000001E /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000100 /* AudioEngine.swift */; };
 		GB000000000000000000001F /* Music in Resources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000101 /* Music */; };
+		GB0000000000000000000103 /* Campaign.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000102 /* Campaign.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +44,7 @@
 		GB000000000000000000000F /* MenuViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViews.swift; sourceTree = "<group>"; };
 		GB0000000000000000000100 /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
 		GB0000000000000000000101 /* Music */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Music; sourceTree = "<group>"; };
+		GB0000000000000000000102 /* Campaign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Campaign.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +105,7 @@
 				GB0000000000000000000008 /* Cyberdeck.swift */,
 				GB0000000000000000000009 /* GameConfig.swift */,
 				GB000000000000000000000D /* SaveData.swift */,
+				GB0000000000000000000102 /* Campaign.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -227,6 +230,7 @@
 				GB000000000000000000001C /* GameStore.swift in Sources */,
 				GB000000000000000000001D /* MenuViews.swift in Sources */,
 				GB000000000000000000001E /* AudioEngine.swift in Sources */,
+				GB0000000000000000000103 /* Campaign.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

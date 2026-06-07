@@ -75,6 +75,19 @@ struct GameConfig: Sendable {
 
     static let `default` = GameConfig()
 
+    /// Config for a campaign core: a **time attack**. RAM is a true countdown of
+    /// `timeBudget` seconds (extended by the RAM upgrade) — decodes do NOT refill
+    /// it, so you race the clock to the target. The Decode-Speed upgrade is the one
+    /// source of refill (`decodeBonusPerLevel`), so it stays meaningful. Misses
+    /// still cost time and a firewall still ends the run.
+    static func campaign(timeBudget: TimeInterval) -> GameConfig {
+        var c = GameConfig.default
+        c.baseRAMSeconds = timeBudget
+        c.bonusStandardDecode = 0
+        c.bonusArmoredDecode = 0
+        return c
+    }
+
     /// Deterministic effective RAM capacity for a given Cyberdeck.
     func ramCapacity(for deck: Cyberdeck) -> TimeInterval {
         baseRAMSeconds + ramSecondsPerLevel * TimeInterval(deck.ramLevel)

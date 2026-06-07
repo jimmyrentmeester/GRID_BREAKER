@@ -20,6 +20,8 @@ final class GameViewModel {
     private let config: GameConfig
     private let deck: Cyberdeck
     private let gridSize: GridSize
+    private let targetScore: Int?
+    private let difficultyBias: Int
     private var lastDate: Date?
     private var freezeRemaining: TimeInterval = 0   // hit-stop budget
     private var pendingEffects: [JuiceEffect] = []
@@ -29,11 +31,16 @@ final class GameViewModel {
     init(config: GameConfig = .default,
          deck: Cyberdeck = .starter,
          gridSize: GridSize = .threeByThree,
-         seed: UInt64) {
+         seed: UInt64,
+         targetScore: Int? = nil,
+         difficultyBias: Int = 0) {
         self.config = config
         self.deck = deck
         self.gridSize = gridSize
-        let engine = GridEngine(config: config, deck: deck, gridSize: gridSize, seed: seed)
+        self.targetScore = targetScore
+        self.difficultyBias = difficultyBias
+        let engine = GridEngine(config: config, deck: deck, gridSize: gridSize, seed: seed,
+                                targetScore: targetScore, difficultyBias: difficultyBias)
         self.engine = engine
         self.snapshot = engine.snapshot
         haptics.prepare()
@@ -65,7 +72,8 @@ final class GameViewModel {
     }
 
     func restart(seed: UInt64) {
-        engine = GridEngine(config: config, deck: deck, gridSize: gridSize, seed: seed)
+        engine = GridEngine(config: config, deck: deck, gridSize: gridSize, seed: seed,
+                            targetScore: targetScore, difficultyBias: difficultyBias)
         lastDate = nil
         freezeRemaining = 0
         pendingEffects.removeAll()
@@ -135,14 +143,25 @@ struct GameView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var shakeAnim: CGFloat = 0
     @State private var outcome: SessionOutcome?
+    let core: DataCore?                 // nil = endless mode
     let onExit: () -> Void
     /// Persist the finished session exactly once; returns what it yielded.
-    let recordSession: (Int) -> SessionOutcome
+    let recordSession: (_ score: Int, _ won: Bool) -> SessionOutcome
 
-    init(deck: Cyberdeck,
+    init(core: DataCore? = nil,
+         deck: Cyberdeck,
          onExit: @escaping () -> Void,
-         recordSession: @escaping (Int) -> SessionOutcome) {
-        _model = State(initialValue: GameViewModel(deck: deck, seed: GameView.freshSeed()))
+         recordSession: @escaping (_ score: Int, _ won: Bool) -> SessionOutcome) {
+        self.core = core
+        let model: GameViewModel
+        if let core {
+            model = GameViewModel(config: .campaign(timeBudget: core.timeBudget),
+                                  deck: deck, seed: GameView.freshSeed(),
+                                  targetScore: core.targetScore, difficultyBias: core.difficultyBias)
+        } else {
+            model = GameViewModel(deck: deck, seed: GameView.freshSeed())
+        }
+        _model = State(initialValue: model)
         self.onExit = onExit
         self.recordSession = recordSession
     }
@@ -157,7 +176,7 @@ struct GameView: View {
             FeverAtmosphere(active: model.snapshot.feverActive).ignoresSafeArea()
 
             VStack(spacing: 0) {
-                HUDView(snapshot: model.snapshot)
+                HUDView(snapshot: model.snapshot, coreName: core?.name)
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
 
@@ -185,8 +204,9 @@ struct GameView: View {
 
             if model.snapshot.isGameOver {
                 GameOverOverlay(snapshot: model.snapshot,
+                                core: core,
                                 outcome: outcome,
-                                onReconnect: { outcome = nil; model.restart(seed: GameView.freshSeed()) },
+                                onReplay: { outcome = nil; model.restart(seed: GameView.freshSeed()) },
                                 onExit: onExit)
             }
 
@@ -202,7 +222,9 @@ struct GameView: View {
         .onAppear { model.reduceMotion = reduceMotion }
         .onChange(of: reduceMotion) { _, new in model.reduceMotion = new }
         .onChange(of: model.snapshot.isGameOver) { _, over in
-            if over, outcome == nil { outcome = recordSession(model.snapshot.score) }
+            if over, outcome == nil {
+                outcome = recordSession(model.snapshot.score, model.snapshot.didWin)
+            }
         }
         .onChange(of: model.shakeTrigger) { _, _ in
             guard !reduceMotion else { return }
@@ -217,9 +239,34 @@ struct GameView: View {
 
 private struct HUDView: View {
     let snapshot: SessionSnapshot
+    var coreName: String? = nil
 
     var body: some View {
         VStack(spacing: 8) {
+            if let target = snapshot.targetScore {
+                VStack(spacing: 4) {
+                    HStack {
+                        Text(coreName ?? "DATA CORE")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundStyle(NeonTheme.gold)
+                        Spacer()
+                        Text("\(snapshot.score) / \(target)")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundStyle(NeonTheme.gold)
+                    }
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color.white.opacity(0.08))
+                            Capsule().fill(NeonTheme.gold)
+                                .frame(width: max(0, geo.size.width * snapshot.targetProgress))
+                                .neonGlow(NeonTheme.gold, radius: 5)
+                                .animation(.easeOut(duration: 0.18), value: snapshot.targetProgress)
+                        }
+                    }
+                    .frame(height: 7)
+                }
+                .padding(.bottom, 2)
+            }
             HStack(spacing: 8) {
                 Text("SCORE")
                     .font(.system(size: 12, weight: .semibold, design: .monospaced))
@@ -430,50 +477,63 @@ private struct NodeSprite: View {
 
 private struct GameOverOverlay: View {
     let snapshot: SessionSnapshot
+    let core: DataCore?
     let outcome: SessionOutcome?
-    let onReconnect: () -> Void
+    let onReplay: () -> Void
     let onExit: () -> Void
 
-    private var message: String {
+    private var didWin: Bool { snapshot.didWin }
+
+    private var headline: String {
+        if core != nil { return didWin ? "CORE CRACKED" : "INTRUSION FAILED" }
         switch snapshot.gameOverReason {
         case .firewallHit: return "FIREWALL TRIGGERED"
         case .ramDepleted: return "RAM DEPLETED"
-        case .none:        return "CONNECTION LOST"
+        default:           return "CONNECTION LOST"
         }
     }
+    private var headlineColor: Color { didWin ? NeonTheme.cyan : NeonTheme.danger }
 
     var body: some View {
         ZStack {
             Color.black.opacity(0.80).ignoresSafeArea()
             VStack(spacing: 16) {
-                Text("CONNECTION TERMINATED")
-                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                Text(core != nil ? (core?.name.uppercased() ?? "") : "CONNECTION TERMINATED")
+                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
                     .foregroundStyle(NeonTheme.textDim)
-                Text(message)
+                Text(headline)
                     .font(.system(size: 26, weight: .heavy, design: .monospaced))
-                    .foregroundStyle(NeonTheme.danger)
-                    .neonGlow(NeonTheme.danger, radius: 10)
+                    .foregroundStyle(headlineColor)
+                    .neonGlow(headlineColor, radius: 10)
 
-                if outcome?.isHighScore == true {
+                if didWin {
+                    Text("◆ DATA CORE DECRYPTED ◆")
+                        .font(.system(size: 14, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                        .neonGlow(NeonTheme.gold, radius: 8)
+                } else if outcome?.isHighScore == true {
                     Text("◆ NEW HIGH SCORE ◆")
                         .font(.system(size: 14, weight: .heavy, design: .monospaced))
                         .foregroundStyle(NeonTheme.gold)
                         .neonGlow(NeonTheme.gold, radius: 8)
                 }
 
-                Text("DATA DECODED: \(snapshot.score)")
+                Text(core != nil ? "DECODED: \(snapshot.score) / \(core?.targetScore ?? 0)"
+                                 : "DATA DECODED: \(snapshot.score)")
                     .font(.system(size: 18, weight: .bold, design: .monospaced))
                     .foregroundStyle(NeonTheme.cyan)
                     .padding(.top, 2)
-                if let earned = outcome?.creditsEarned {
+                if let earned = outcome?.creditsEarned, earned > 0 {
                     Label("+\(earned) CR", systemImage: "bitcoinsign.circle.fill")
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                         .foregroundStyle(NeonTheme.gold)
                 }
 
                 HStack(spacing: 14) {
-                    TerminalButton(title: "RECONNECT", color: NeonTheme.cyan, action: onReconnect)
-                    TerminalButton(title: "JACK OUT", color: NeonTheme.magenta, action: onExit)
+                    TerminalButton(title: core != nil ? "RETRY" : "RECONNECT",
+                                   color: NeonTheme.cyan, action: onReplay)
+                    TerminalButton(title: core != nil ? "CORES" : "JACK OUT",
+                                   color: NeonTheme.magenta, action: onExit)
                 }
                 .padding(.top, 10)
             }
@@ -508,6 +568,6 @@ struct TerminalButton: View {
 #Preview {
     GameView(deck: .starter,
              onExit: {},
-             recordSession: { _ in SessionOutcome(creditsEarned: 0, isHighScore: false) })
+             recordSession: { _, _ in SessionOutcome(creditsEarned: 0, isHighScore: false) })
         .preferredColorScheme(.dark)
 }

@@ -24,6 +24,7 @@ struct SeededRNG: RandomNumberGenerator {
 enum GameOverReason: String, Sendable {
     case ramDepleted   // the RAM time buffer ran out
     case firewallHit   // the player tapped an active firewall bomb
+    case coreCracked   // campaign: reached the target score (a WIN)
 }
 
 /// Things that happened during a tick/tap. The shell turns these into juice
@@ -56,8 +57,18 @@ struct SessionSnapshot: Sendable {
     var feverActive: Bool
     var feverFraction: Double          // remaining fever window, 0…1
     var scoreMultiplier: Int           // 1, or feverScoreMultiplier during fever
+    var targetScore: Int?              // campaign goal (nil in endless)
     var isGameOver: Bool
     var gameOverReason: GameOverReason?
+
+    /// Campaign win.
+    var didWin: Bool { gameOverReason == .coreCracked }
+
+    /// Progress toward the campaign target, 0…1 (for the goal bar).
+    var targetProgress: Double {
+        guard let t = targetScore, t > 0 else { return 0 }
+        return min(1, Double(score) / Double(t))
+    }
 
     var ramFraction: Double {
         guard ramCapacity > 0 else { return 0 }
@@ -81,6 +92,11 @@ struct SessionSnapshot: Sendable {
 struct GridEngine {
     let config: GameConfig
     let gridSize: GridSize
+    /// Campaign target score (nil = endless). Reaching it wins the core.
+    let targetScore: Int?
+    /// Difficulty offset: scaling is computed from `score + difficultyBias`, so a
+    /// campaign core can start at a faster pace without inflating the score.
+    let difficultyBias: Int
 
     private var rng: SeededRNG
     private var clock: TimeInterval = 0          // accumulated session seconds
@@ -101,9 +117,13 @@ struct GridEngine {
     init(config: GameConfig = .default,
          deck: Cyberdeck = .starter,
          gridSize: GridSize = .threeByThree,
-         seed: UInt64) {
+         seed: UInt64,
+         targetScore: Int? = nil,
+         difficultyBias: Int = 0) {
         self.config = config
         self.gridSize = gridSize
+        self.targetScore = targetScore
+        self.difficultyBias = difficultyBias
         self.rng = SeededRNG(seed: seed)
         self.ramCapacity = config.ramCapacity(for: deck)
         self.ramRemaining = config.ramCapacity(for: deck)
@@ -125,10 +145,14 @@ struct GridEngine {
             feverFraction: feverActive && config.feverDuration > 0
                 ? max(0, feverRemaining / config.feverDuration) : 0,
             scoreMultiplier: feverActive ? config.feverScoreMultiplier : 1,
+            targetScore: targetScore,
             isGameOver: isGameOver,
             gameOverReason: gameOverReason
         )
     }
+
+    /// Score used for difficulty scaling (campaign cores can start faster).
+    private var scaledScore: Int { score + difficultyBias }
 
     // MARK: Per-frame update
 
@@ -167,10 +191,10 @@ struct GridEngine {
 
         // 3. Spawn new nodes on cadence. Fever: faster + fuller, golden-only.
         timeSinceLastSpawn += deltaTime
-        let interval = feverActive ? config.feverSpawnInterval : config.spawnInterval(atScore: score)
+        let interval = feverActive ? config.feverSpawnInterval : config.spawnInterval(atScore: scaledScore)
         let target = feverActive
             ? min(gridSize.cellCount, config.feverActiveNodes)
-            : config.targetActiveNodes(atScore: score, gridSize: gridSize)
+            : config.targetActiveNodes(atScore: scaledScore, gridSize: gridSize)
         while timeSinceLastSpawn >= interval, nodes.count < target,
               let node = spawnNode() {
             nodes.append(node)
@@ -211,16 +235,22 @@ struct GridEngine {
             return [.firewallExploded(cell: cell), endGame(.firewallHit)]
 
         case .standardDaemon:
-            return [decode(at: idx)] + checkFever()
+            return [decode(at: idx)] + checkFever() + checkTarget()
 
         case .armoredDaemon:
             if nodes[idx].hitsRemaining > 1 {
                 nodes[idx].hitsRemaining -= 1   // breach the shell
                 return [.nodeBreached(cell: nodes[idx].cellIndex)]
             } else {
-                return [decode(at: idx)] + checkFever()
+                return [decode(at: idx)] + checkFever() + checkTarget()
             }
         }
+    }
+
+    /// Campaign win: reaching the target score cracks the core.
+    private mutating func checkTarget() -> [GameEvent] {
+        guard !isGameOver, let target = targetScore, score >= target else { return [] }
+        return [endGame(.coreCracked)]
     }
 
     /// Start Fever Mode if a fresh decode pushed the combo to threshold.
@@ -278,7 +308,7 @@ struct GridEngine {
 
         return GridNode(cellIndex: cell,
                         type: type,
-                        lifespan: config.nodeLifespan(atScore: score),
+                        lifespan: config.nodeLifespan(atScore: scaledScore),
                         spawnedAt: clock)
     }
 

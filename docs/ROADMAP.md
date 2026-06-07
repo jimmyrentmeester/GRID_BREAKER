@@ -93,6 +93,16 @@ The brief's first-slice DoD is met (sans the planned web high-score backend, whi
 is out of hobby scope): one playable grid, 3 daemon types with distinct behavior,
 HUD, fever, Credits→Cyberdeck upgrade loop, local high scores, full juice + audio.
 
+## ✅ Campaign mode (done, post-slice)
+10 hand-tuned **time-attack** data cores (reach target score before the RAM
+countdown empties — decodes don't refill in campaign; the Decode-Speed upgrade is
+the only refill). Difficulty scales via per-core `difficultyBias` (faster pace) +
+rising targets, sim-tuned so early cores clear on a starter deck and late ones
+need skill/upgrades. Shared economy (cores pay Credits; upgrades apply). Level
+select with lock/clear states, in-session target HUD, CORE CRACKED / INTRUSION
+FAILED screens, persisted progress. See D13.
+
 ## Later (out of current scope)
-Android (Skip or CMP rewrite), web-WASM demo + backend proxy for high-score sync,
-cosmetics. Revisit only if the project graduates from hobby scope.
+4×4 grid escalation (engine supports it; Q2). Android (Skip or CMP rewrite),
+web-WASM demo + backend proxy for high-score sync, cosmetics. Revisit only if the
+project graduates from hobby scope.

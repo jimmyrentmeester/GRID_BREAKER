@@ -2,6 +2,13 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.7 — Campaign mode (2026-06-07)
+- New CAMPAIGN: 10 hand-tuned data cores, each a time attack — hit the target score
+  before your RAM countdown runs out. Cores unlock as you clear them.
+- It gets genuinely hard: early cores are doable cold, later ones reward Cyberdeck
+  upgrades (Credits are shared between modes). Crack "The Monolith" if you can.
+- Also: the in-game grid now sits lower for comfier one-handed play.
+
 ## 0.6.1 — Custom MP3 soundtrack (2026-06-07)
 - Music is now your own MP3 files. Drop `.mp3` files into `App/GRID_BREAKER/Music/`
   and rebuild — a random track plays on launch and the rest follow as each finishes.

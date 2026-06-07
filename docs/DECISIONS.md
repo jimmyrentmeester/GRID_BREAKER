@@ -93,6 +93,20 @@ politely) and fully defensive start (game plays on silently on failure).
 non-silent SFX buffers, mp3 load/play and the shuffle/advance loop are verified
 programmatically; final mix quality is a human device-listen (Q6).
 
+## D13 — Campaign is a time-attack (RAM-as-countdown), not grind
+**2026-06-07.** Per the brief ("reach a target score within the time limit") and
+the user's "consult ground truth" steer. First tried RAM-as-clock WITH the normal
+decode refill → the headless sim showed 100% wins on every core even on a starter
+deck (a competent player refills faster than RAM drains → immortal → any target is
+grindable). So campaign cores use `GameConfig.campaign(timeBudget:)`: RAM is a true
+countdown (no decode refill; the Decode-Speed upgrade is the only refill, keeping it
+meaningful), and you race to the target. Picked over a separate second countdown
+clock because two depleting bars split attention in a reflex game (game-feel: one
+dominant gauge; ground-truth Part 1.4 visible-growth clarity). Difficulty per core =
+`difficultyBias` (faster pace) + target + time budget, sim-tuned. Shared economy
+(Credits + upgrades apply in both modes) per ground-truth's visible-growth/direction
+emphasis; cores pay Credits win or lose so progress never hard-stalls.
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

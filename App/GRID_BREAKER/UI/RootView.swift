@@ -6,9 +6,10 @@ import SwiftUI
 struct RootView: View {
     @State private var store = GameStore()
     @State private var screen: Screen = .menu
+    @State private var activeCore: DataCore?
     @State private var pulse = false
 
-    private enum Screen { case menu, game, cyberdeck, scores }
+    private enum Screen { case menu, endless, campaign, core, cyberdeck, scores }
 
     private func tap() { AudioEngine.shared.play(.uiTap) }
 
@@ -20,15 +21,30 @@ struct RootView: View {
             switch screen {
             case .menu:
                 titleScreen.transition(.opacity)
-            case .game:
+            case .endless:
                 GameView(deck: store.cyberdeck,
                          onExit: { screen = .menu },
-                         recordSession: { score in
+                         recordSession: { score, _ in
                              let isHigh = store.isHighScore(score)
                              let earned = store.recordSession(score: score, on: Date())
                              return SessionOutcome(creditsEarned: earned, isHighScore: isHigh)
                          })
                     .transition(.opacity)
+            case .campaign:
+                CampaignView(store: store,
+                             onPlay: { core in activeCore = core; screen = .core },
+                             onBack: { screen = .menu })
+                    .transition(.opacity)
+            case .core:
+                if let core = activeCore {
+                    GameView(core: core, deck: store.cyberdeck,
+                             onExit: { screen = .campaign },
+                             recordSession: { score, won in
+                                 let earned = store.recordCore(core, won: won, score: score, on: Date())
+                                 return SessionOutcome(creditsEarned: earned, isHighScore: false)
+                             })
+                        .transition(.opacity)
+                }
             case .cyberdeck:
                 CyberdeckView(store: store, onBack: { screen = .menu }).transition(.opacity)
             case .scores:
@@ -62,9 +78,10 @@ struct RootView: View {
             }
 
             VStack(spacing: 12) {
-                TerminalButton(title: "JACK IN", color: NeonTheme.cyan) { tap(); screen = .game }
+                TerminalButton(title: "JACK IN", color: NeonTheme.cyan) { tap(); screen = .endless }
+                TerminalButton(title: "CAMPAIGN", color: NeonTheme.magenta) { tap(); screen = .campaign }
                 TerminalButton(title: "CYBERDECK", color: NeonTheme.gold) { tap(); screen = .cyberdeck }
-                TerminalButton(title: "TOP RUNS", color: NeonTheme.magenta) { tap(); screen = .scores }
+                TerminalButton(title: "TOP RUNS", color: NeonTheme.cyan) { tap(); screen = .scores }
 
                 Button {
                     let on = !store.soundEnabled

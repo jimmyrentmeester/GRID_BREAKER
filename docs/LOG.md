@@ -3,6 +3,27 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #10 — Campaign mode (2026-06-07)
+- `Core/Models/Campaign.swift` (new): `DataCore` + 10-core ladder (target,
+  timeBudget, difficultyBias). `GameConfig.campaign(timeBudget:)` = time-attack
+  (RAM countdown, no decode refill). `SaveData.campaignProgress` (+ tolerant decode).
+- `Core/Engine/GridEngine.swift`: `targetScore`/`difficultyBias` params, `.coreCracked`
+  win, `scaledScore` for difficulty, `checkTarget()`; snapshot exposes target +
+  `didWin`/`targetProgress`.
+- `Persistence/GameStore.swift`: `isUnlocked`/`isCleared`/`recordCore` (pay Credits
+  always, advance progress on a fresh win).
+- `UI/GameView.swift`: campaign session (config/target/bias), target HUD bar,
+  win/lose overlay (CORE CRACKED / INTRUSION FAILED, RETRY/CORES). `recordSession`
+  now `(score, won)`. `UI/MenuViews.swift`: `CampaignView` level select.
+  `UI/RootView.swift`: CAMPAIGN button + campaign/core routing.
+- Design: chose **time-attack** (RAM-as-countdown) over RAM-with-refill because the
+  latter made any target grindable (sim showed 100% wins) — see D13.
+- **Verified:** clean build. Sim-tuned curve (starter clears 1-4, walls ~5-7;
+  skilled reaches ~7-9; mid deck clears to 7-8; strong deck 100%). Headless:
+  progression unlock/advance/replay + persistence + back-compat. On-device:
+  campaign select (locks), in-session target HUD + RAM countdown, CORE CRACKED win
+  with +15 CR. Temp hooks reverted, save cleared.
+
 ## Run #9 — Grid ergonomics (2026-06-07)
 - `UI/GameView.swift`: moved the grid from the top third into the lower-middle
   thumb-reach zone. HUD stays pinned at top (read-only); a flexible Spacer above
