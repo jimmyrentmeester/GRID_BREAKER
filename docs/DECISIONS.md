@@ -29,6 +29,19 @@ replay, which enables free deterministic QA later (ground-truth Part 5.1).
 Natural expiry is always safe (brief §10.3 anti-frustration rule). Encoded in
 `NodeType.firewallBomb` (requiredTaps 0, not harvestable).
 
+## D7 — Frame loop via TimelineView(.animation), not CADisplayLink
+**2026-06-07 (M1).** The engine is advanced once per frame from
+`TimelineView(.animation)`'s date via `onChange` (runs outside the render pass, so
+no "modifying state during update"). Chosen over a `CADisplayLink`/NSObject driver
+to avoid UIKit plumbing and keep the loop pure-SwiftUI. dt is clamped to ≤1/20 s so
+a stall can't teleport the simulation. Revisit only if frame pacing proves jittery.
+
+## D8 — Generous hitbox = whole cell tappable
+**2026-06-07 (M1).** Instead of a 1.2× sprite-sized hitbox, the entire grid cell is
+the tap target and the sprite is drawn inset (~0.7×). Same effect as brief §10.7
+(forgiving touch) with simpler, drift-free hit-testing. `GameConfig.hitboxPadding`
+is retained for any future precise hit-testing.
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

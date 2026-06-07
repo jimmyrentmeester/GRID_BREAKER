@@ -1,34 +1,44 @@
 import SwiftUI
 
-/// Placeholder title screen for the scaffold milestone (M0).
-///
-/// Renders the neon "terminal boot" identity so the project is watchable from
-/// day one (ground-truth Part 0: every slice ends with something you can run).
-/// The grid, HUD, gameplay and upgrade screen arrive in later milestones.
+/// Title screen → game. The neon "terminal boot" identity (brief §10.6); tap
+/// JACK IN to start a session (ground-truth Part 1.5: there's always a clear
+/// way to begin, never an empty opening).
 struct RootView: View {
     @State private var pulse = false
+    @State private var inSession = false
 
     var body: some View {
         ZStack {
             NeonTheme.background.ignoresSafeArea()
             GridBackdrop().ignoresSafeArea()
 
-            VStack(spacing: 16) {
-                Text("GRID_BREAKER")
-                    .font(.system(size: 38, weight: .heavy, design: .monospaced))
-                    .foregroundStyle(NeonTheme.cyan)
-                    .neonGlow(NeonTheme.cyan, radius: pulse ? 16 : 9)
-
-                Text("// netrunner reflex hack")
-                    .font(.system(size: 14, weight: .medium, design: .monospaced))
-                    .foregroundStyle(NeonTheme.magenta)
-                    .neonGlow(NeonTheme.magenta, radius: 6)
-
-                Text("SCAFFOLD ONLINE — M0")
-                    .font(.system(size: 11, weight: .regular, design: .monospaced))
-                    .foregroundStyle(NeonTheme.textDim)
-                    .padding(.top, 8)
+            if inSession {
+                GameView(onExit: { inSession = false })
+                    .transition(.opacity)
+            } else {
+                titleScreen
+                    .transition(.opacity)
             }
+        }
+        .animation(.easeInOut(duration: 0.35), value: inSession)
+    }
+
+    private var titleScreen: some View {
+        VStack(spacing: 16) {
+            Text("GRID_BREAKER")
+                .font(.system(size: 38, weight: .heavy, design: .monospaced))
+                .foregroundStyle(NeonTheme.cyan)
+                .neonGlow(NeonTheme.cyan, radius: pulse ? 16 : 9)
+
+            Text("// netrunner reflex hack")
+                .font(.system(size: 14, weight: .medium, design: .monospaced))
+                .foregroundStyle(NeonTheme.magenta)
+                .neonGlow(NeonTheme.magenta, radius: 6)
+
+            TerminalButton(title: "JACK IN", color: NeonTheme.cyan) {
+                inSession = true
+            }
+            .padding(.top, 18)
         }
         .onAppear {
             withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {

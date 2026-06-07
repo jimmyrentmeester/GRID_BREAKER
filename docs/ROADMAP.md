@@ -10,18 +10,21 @@ scoped slice per session.
 - Neon theme tokens + placeholder title screen. Builds + runs (screenshot verified).
 - Vendored `GAME_GROUND_TRUTH.md` (binding) + the design brief PDF.
 
-## 🚧 M1 — Playable grid (the core loop, no juice yet)
-The vertical slice that proves the loop. **GridEngine becomes the authority.**
-- `GridEngine`: seeded spawn (position + type), per-frame `tick(deltaTime:)`,
-  `handleTap(cellIndex:)`, expiry, RAM drain, score, exponential lifespan
-  compression + active-node scaling (brief §10.3).
-- `SessionSnapshot` + a `@MainActor @Observable` view-model driving the view.
-- Grid view (3×3 → 4×4), tappable nodes with 1.2× hitbox padding; standard /
-  armored (2-hit, breached state) / firewall bomb (explode-on-touch only).
-- HUD: RAM buffer bar, score. Instant-death on bomb tap / RAM depletion.
-- Verify: 60 fps feel, tap latency, screenshot.
+## ✅ M1 — Playable grid (the core loop, no juice yet) (done)
+The vertical slice that proves the loop. **GridEngine is the authority.**
+- `GridEngine` + `SeededRNG`: seeded spawn (position + type), per-frame
+  `tick(deltaTime:)`, `handleTap(cellIndex:)`, expiry, RAM drain, score,
+  exponential lifespan + spawn-cadence compression, active-node ceiling (§10.3).
+- `SessionSnapshot` + `GameEvent` stream + `@MainActor @Observable` `GameViewModel`
+  driven by `TimelineView(.animation)` (no UIKit display-link plumbing).
+- Grid view (3×3), full-cell tap = generous hitbox; standard / armored (2-hit,
+  breached state) / firewall bomb (explode-on-touch only). HUD: RAM bar + score.
+  Game-over overlay (RECONNECT / JACK OUT). Title screen JACK IN → session.
+- **Verified:** clean build; on-device grid + draining RAM bar + bomb sprite
+  (screenshot); headless deterministic sim (seeds 42/1337/999999 run a full 60 s,
+  bomb-tap → instant firewallHit, same-seed determinism confirmed).
 
-## 📋 M2 — Game feel & juice
+## 🚧 M2 — Game feel & juice
 hit-flash (2 frames) · hit-pause (~16 ms on armored kill) · screen-shake on bomb ·
 micro-haptics (light hit / heavy error) · neon particle burst on decode · RAM-bar
 ghost layer. Each flourish traced to a `GameEvent` (Part 2.5). Respect reduced-motion.

@@ -16,6 +16,7 @@
 		GB0000000000000000000016 /* Cyberdeck.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000008 /* Cyberdeck.swift */; };
 		GB0000000000000000000017 /* GameConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000009 /* GameConfig.swift */; };
 		GB0000000000000000000018 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = GB000000000000000000000A /* Assets.xcassets */; };
+		GB0000000000000000000019 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB000000000000000000000B /* GameView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +30,7 @@
 		GB0000000000000000000008 /* Cyberdeck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cyberdeck.swift; sourceTree = "<group>"; };
 		GB0000000000000000000009 /* GameConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameConfig.swift; sourceTree = "<group>"; };
 		GB000000000000000000000A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		GB000000000000000000000B /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,6 +104,7 @@
 			children = (
 				GB0000000000000000000003 /* RootView.swift */,
 				GB0000000000000000000004 /* NeonTheme.swift */,
+				GB000000000000000000000B /* GameView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -183,6 +186,7 @@
 				GB0000000000000000000015 /* GridNode.swift in Sources */,
 				GB0000000000000000000016 /* Cyberdeck.swift in Sources */,
 				GB0000000000000000000017 /* GameConfig.swift in Sources */,
+				GB0000000000000000000019 /* GameView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

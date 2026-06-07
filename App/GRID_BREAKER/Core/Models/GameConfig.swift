@@ -38,6 +38,18 @@ struct GameConfig: Sendable {
     /// Shortest a node lifespan may ever shrink to (fairness floor).
     var minNodeLifespan: TimeInterval = 0.45
 
+    // MARK: Spawn cadence (how fast new nodes appear)
+    /// Seconds between spawns at score 0.
+    var baseSpawnInterval: TimeInterval = 0.85
+    /// Spawn interval compresses with score (more frequent over time).
+    var spawnCompression: Double = 0.0035
+    /// Fastest the spawn cadence may ever get (fairness floor).
+    var minSpawnInterval: TimeInterval = 0.30
+
+    // MARK: Score payouts
+    var scoreStandard: Int = 1
+    var scoreArmored: Int = 2
+
     // MARK: Fever mode (brief 10.2)
     /// Consecutive clean hits required to trigger Fever Mode.
     var feverComboThreshold: Int = 8
@@ -63,5 +75,17 @@ struct GameConfig: Sendable {
     func nodeLifespan(atScore score: Int) -> TimeInterval {
         let scaled = baseNodeLifespan * exp(-lifespanCompression * Double(score))
         return max(minNodeLifespan, scaled)
+    }
+
+    /// Deterministic spawn interval at a given score (exponential compression).
+    func spawnInterval(atScore score: Int) -> TimeInterval {
+        let scaled = baseSpawnInterval * exp(-spawnCompression * Double(score))
+        return max(minSpawnInterval, scaled)
+    }
+
+    /// How many nodes may be active at once at a given score (brief §10.3:
+    /// active-node ceiling grows as score/10). Always leaves one free cell.
+    func targetActiveNodes(atScore score: Int, gridSize: GridSize) -> Int {
+        max(1, min(gridSize.cellCount - 1, 1 + score / 10))
     }
 }
