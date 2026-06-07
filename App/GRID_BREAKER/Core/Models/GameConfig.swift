@@ -50,6 +50,12 @@ struct GameConfig: Sendable {
     var scoreStandard: Int = 1
     var scoreArmored: Int = 2
 
+    // MARK: Meta progression
+    /// Credits earned per point of decode score at session end.
+    var creditsPerScore: Double = 1.0
+    /// Extra RAM time per decode, per Decode-Speed upgrade level.
+    var decodeBonusPerLevel: TimeInterval = 0.15
+
     // MARK: Fever mode (brief 10.2)
     /// Consecutive clean hits required to trigger Fever Mode.
     var feverComboThreshold: Int = 8
@@ -72,6 +78,16 @@ struct GameConfig: Sendable {
     /// Deterministic effective RAM capacity for a given Cyberdeck.
     func ramCapacity(for deck: Cyberdeck) -> TimeInterval {
         baseRAMSeconds + ramSecondsPerLevel * TimeInterval(deck.ramLevel)
+    }
+
+    /// Extra RAM time added to each decode by the Decode-Speed upgrade.
+    func decodeTimeBonus(for deck: Cyberdeck) -> TimeInterval {
+        decodeBonusPerLevel * TimeInterval(deck.decodeSpeedLevel)
+    }
+
+    /// Credits awarded for a final score (deterministic, paid once on game over).
+    func credits(forScore score: Int) -> Int {
+        max(0, Int(Double(score) * creditsPerScore))
     }
 
     /// Deterministic node lifespan at a given score (exponential compression).

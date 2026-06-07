@@ -58,9 +58,21 @@ Data-driven retune of `GameConfig` (spawn cadence, node count, lifespan, RAM
 economy) via the headless realistic-player sim. Fixed the sparse early game: first
 fever ~5 s, lively board, ~1–2 min sessions with a skill ceiling. See D10 / Q3.
 
-## 🚧 M4 — Meta progression
-Credits payout on session end → upgrade screen (RAM / decode speed / shield),
-deterministic cost scaling, back-compat persistence, local high-score leaderboard.
+## ✅ M4 — Meta progression (done)
+- `GameStore` (@Observable): authority for meta-state, persists JSON to UserDefaults.
+  Credits paid once on game-over (`credits(forScore:)`), leaderboard (top 5),
+  `purchase()` spends credits with deterministic geometric cost scaling.
+- `SaveData`/`HighScoreEntry` with **tolerant decoding** (custom `init(from:)` +
+  body `CodingKeys` → missing fields fall back to defaults; old saves survive).
+- Upgrades applied to sessions: RAM capacity (ramLevel), shield charges
+  (shieldLevel), extra decode time (decodeSpeedLevel → `decodeTimeBonus`).
+- UI: menu hub (JACK IN / CYBERDECK / TOP RUNS + BEST), `CyberdeckView` (level pips,
+  affordable/maxed buy buttons), `HighScoresView`, game-over screen shows credits
+  earned + NEW HIGH SCORE.
+- **Verified:** clean build; headless (economy, leaderboard cap, Codable round-trip,
+  back-compat decode of an old partial save); on-device (Cyberdeck 800 CR + scores
+  persisted across relaunch; game-over "+1 CR" / NEW HIGH SCORE). Temp seed/demo
+  reverted.
 
 ## 📋 M5 — Audio & polish
 Synthwave/darksynth loop (120–150 BPM), sharp analog SFX (decode discharge, glitch

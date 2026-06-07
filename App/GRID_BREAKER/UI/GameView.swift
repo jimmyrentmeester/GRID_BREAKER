@@ -123,11 +123,28 @@ final class GameViewModel {
 
 // MARK: - Game screen
 
+/// What a finished session yielded, for the game-over screen.
+struct SessionOutcome: Equatable {
+    let creditsEarned: Int
+    let isHighScore: Bool
+}
+
 struct GameView: View {
-    @State private var model = GameViewModel(seed: GameView.freshSeed())
+    @State private var model: GameViewModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var shakeAnim: CGFloat = 0
-    var onExit: () -> Void = {}
+    @State private var outcome: SessionOutcome?
+    let onExit: () -> Void
+    /// Persist the finished session exactly once; returns what it yielded.
+    let recordSession: (Int) -> SessionOutcome
+
+    init(deck: Cyberdeck,
+         onExit: @escaping () -> Void,
+         recordSession: @escaping (Int) -> SessionOutcome) {
+        _model = State(initialValue: GameViewModel(deck: deck, seed: GameView.freshSeed()))
+        self.onExit = onExit
+        self.recordSession = recordSession
+    }
 
     static func freshSeed() -> UInt64 {
         UInt64(bitPattern: Int64(Date().timeIntervalSince1970 * 1000))
@@ -162,7 +179,8 @@ struct GameView: View {
 
             if model.snapshot.isGameOver {
                 GameOverOverlay(snapshot: model.snapshot,
-                                onReconnect: { model.restart(seed: GameView.freshSeed()) },
+                                outcome: outcome,
+                                onReconnect: { outcome = nil; model.restart(seed: GameView.freshSeed()) },
                                 onExit: onExit)
             }
 
@@ -177,6 +195,9 @@ struct GameView: View {
         }
         .onAppear { model.reduceMotion = reduceMotion }
         .onChange(of: reduceMotion) { _, new in model.reduceMotion = new }
+        .onChange(of: model.snapshot.isGameOver) { _, over in
+            if over, outcome == nil { outcome = recordSession(model.snapshot.score) }
+        }
         .onChange(of: model.shakeTrigger) { _, _ in
             guard !reduceMotion else { return }
             shakeAnim = 0
@@ -403,6 +424,7 @@ private struct NodeSprite: View {
 
 private struct GameOverOverlay: View {
     let snapshot: SessionSnapshot
+    let outcome: SessionOutcome?
     let onReconnect: () -> Void
     let onExit: () -> Void
 
@@ -416,8 +438,8 @@ private struct GameOverOverlay: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.78).ignoresSafeArea()
-            VStack(spacing: 18) {
+            Color.black.opacity(0.80).ignoresSafeArea()
+            VStack(spacing: 16) {
                 Text("CONNECTION TERMINATED")
                     .font(.system(size: 14, weight: .semibold, design: .monospaced))
                     .foregroundStyle(NeonTheme.textDim)
@@ -425,10 +447,23 @@ private struct GameOverOverlay: View {
                     .font(.system(size: 26, weight: .heavy, design: .monospaced))
                     .foregroundStyle(NeonTheme.danger)
                     .neonGlow(NeonTheme.danger, radius: 10)
+
+                if outcome?.isHighScore == true {
+                    Text("◆ NEW HIGH SCORE ◆")
+                        .font(.system(size: 14, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                        .neonGlow(NeonTheme.gold, radius: 8)
+                }
+
                 Text("DATA DECODED: \(snapshot.score)")
                     .font(.system(size: 18, weight: .bold, design: .monospaced))
                     .foregroundStyle(NeonTheme.cyan)
-                    .padding(.top, 4)
+                    .padding(.top, 2)
+                if let earned = outcome?.creditsEarned {
+                    Label("+\(earned) CR", systemImage: "bitcoinsign.circle.fill")
+                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                }
 
                 HStack(spacing: 14) {
                     TerminalButton(title: "RECONNECT", color: NeonTheme.cyan, action: onReconnect)
@@ -465,5 +500,8 @@ struct TerminalButton: View {
 }
 
 #Preview {
-    GameView().preferredColorScheme(.dark)
+    GameView(deck: .starter,
+             onExit: {},
+             recordSession: { _ in SessionOutcome(creditsEarned: 0, isHighScore: false) })
+        .preferredColorScheme(.dark)
 }

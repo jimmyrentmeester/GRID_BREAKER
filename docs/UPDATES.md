@@ -2,6 +2,13 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.5 — Meta progression (2026-06-07)
+- The loop closes: every run pays out Credits, which you spend in the CYBERDECK on
+  permanent upgrades (bigger RAM buffer, faster decoding, a failsafe shield). Your
+  high scores are saved in TOP RUNS, and everything persists between launches.
+- New main menu ties it together: JACK IN / CYBERDECK / TOP RUNS.
+- Next: sound & music (synthwave + sharp SFX) and final polish.
+
 ## 0.4.1 — Balance pass (2026-06-07)
 - The opening is no longer sparse: ~2 nodes from the first second, faster cadence,
   so it feels like a reflex game immediately and your first Fever comes in ~5s.

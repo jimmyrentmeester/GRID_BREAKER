@@ -1,30 +1,43 @@
 import SwiftUI
 
-/// Title screen → game. The neon "terminal boot" identity (brief §10.6); tap
-/// JACK IN to start a session (ground-truth Part 1.5: there's always a clear
-/// way to begin, never an empty opening).
+/// Top-level menu hub. Owns the persistent `GameStore` and routes between the
+/// title, a session, the Cyberdeck upgrade screen and the high-score table
+/// (ground-truth Part 1.5: always a clear way to begin, never an empty opening).
 struct RootView: View {
+    @State private var store = GameStore()
+    @State private var screen: Screen = .menu
     @State private var pulse = false
-    @State private var inSession = false
+
+    private enum Screen { case menu, game, cyberdeck, scores }
 
     var body: some View {
         ZStack {
             NeonTheme.background.ignoresSafeArea()
             GridBackdrop().ignoresSafeArea()
 
-            if inSession {
-                GameView(onExit: { inSession = false })
+            switch screen {
+            case .menu:
+                titleScreen.transition(.opacity)
+            case .game:
+                GameView(deck: store.cyberdeck,
+                         onExit: { screen = .menu },
+                         recordSession: { score in
+                             let isHigh = store.isHighScore(score)
+                             let earned = store.recordSession(score: score, on: Date())
+                             return SessionOutcome(creditsEarned: earned, isHighScore: isHigh)
+                         })
                     .transition(.opacity)
-            } else {
-                titleScreen
-                    .transition(.opacity)
+            case .cyberdeck:
+                CyberdeckView(store: store, onBack: { screen = .menu }).transition(.opacity)
+            case .scores:
+                HighScoresView(scores: store.highScores, onBack: { screen = .menu }).transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.35), value: inSession)
+        .animation(.easeInOut(duration: 0.3), value: screen)
     }
 
     private var titleScreen: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             Text("GRID_BREAKER")
                 .font(.system(size: 38, weight: .heavy, design: .monospaced))
                 .foregroundStyle(NeonTheme.cyan)
@@ -35,10 +48,19 @@ struct RootView: View {
                 .foregroundStyle(NeonTheme.magenta)
                 .neonGlow(NeonTheme.magenta, radius: 6)
 
-            TerminalButton(title: "JACK IN", color: NeonTheme.cyan) {
-                inSession = true
+            if let best = store.highScores.first {
+                Text("BEST  \(best.score)")
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.gold)
+                    .padding(.top, 4)
             }
-            .padding(.top, 18)
+
+            VStack(spacing: 12) {
+                TerminalButton(title: "JACK IN", color: NeonTheme.cyan) { screen = .game }
+                TerminalButton(title: "CYBERDECK", color: NeonTheme.gold) { screen = .cyberdeck }
+                TerminalButton(title: "TOP RUNS", color: NeonTheme.magenta) { screen = .scores }
+            }
+            .padding(.top, 22)
         }
         .onAppear {
             withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {

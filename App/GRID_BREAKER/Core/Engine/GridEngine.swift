@@ -90,6 +90,7 @@ struct GridEngine {
     private(set) var ramRemaining: TimeInterval
     private let ramCapacity: TimeInterval
     private(set) var shieldCharges: Int
+    private let decodeTimeBonus: TimeInterval
     private(set) var nodes: [GridNode] = []
     private(set) var combo: Int = 0
     private(set) var feverActive = false
@@ -107,6 +108,7 @@ struct GridEngine {
         self.ramCapacity = config.ramCapacity(for: deck)
         self.ramRemaining = config.ramCapacity(for: deck)
         self.shieldCharges = deck.shieldLevel
+        self.decodeTimeBonus = config.decodeTimeBonus(for: deck)
     }
 
     var snapshot: SessionSnapshot {
@@ -242,10 +244,10 @@ struct GridEngine {
         switch node.type {
         case .standardDaemon:
             score += config.scoreStandard * multiplier
-            ramRemaining = min(ramCapacity, ramRemaining + config.bonusStandardDecode)
+            ramRemaining = min(ramCapacity, ramRemaining + config.bonusStandardDecode + decodeTimeBonus)
         case .armoredDaemon:
             score += config.scoreArmored * multiplier
-            ramRemaining = min(ramCapacity, ramRemaining + config.bonusArmoredDecode)
+            ramRemaining = min(ramCapacity, ramRemaining + config.bonusArmoredDecode + decodeTimeBonus)
         case .firewallBomb:
             break // never decoded
         }

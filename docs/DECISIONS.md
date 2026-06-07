@@ -67,6 +67,17 @@ avgNodes 1.8–2.4 for normal play (was 0.5–1.2), casual session ~78 s and goo
 dies ~168 s (a real ceiling), within the brief's 60–120 s target. A perfectly
 metronomic 0.20 s player still survives — acceptable (no human sustains that).
 
+## D11 — Persistence: UserDefaults JSON + tolerant decode
+**2026-06-07 (M4).** Save data (Cyberdeck + high scores) persists as JSON in
+UserDefaults via `GameStore` (the meta-state authority). Not abstracted behind a
+protocol seam yet — pragmatic for a single local store; revisit if a second backend
+(e.g. iCloud/web sync) appears. **Gotcha:** Swift's synthesized `Codable` does NOT
+apply property defaults for missing keys — an old save lacking a newer field would
+fail to decode and (via `try?`) wipe progress. Fixed with custom `init(from:)` (in
+extensions, to keep memberwise inits) + `CodingKeys` declared in the type body
+(declaring `CodingKeys` inside the extension crashed the compiler). Verified by
+decoding an old partial save → missing fields default correctly.
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

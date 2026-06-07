@@ -3,6 +3,26 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #6 — M4 meta progression (2026-06-07)
+- `Core/Models/SaveData.swift` (new): `SaveData` + `HighScoreEntry`, leaderboard
+  insert/cap/isHighScore, and tolerant `init(from:)` extensions (back-compat).
+- `Core/Models/Cyberdeck.swift`: added body `CodingKeys`.
+- `Core/Models/GameConfig.swift`: `creditsPerScore`, `decodeBonusPerLevel`,
+  `decodeTimeBonus(for:)`, `credits(forScore:)`.
+- `Core/Engine/GridEngine.swift`: applies `decodeTimeBonus` (decode-speed upgrade).
+- `Persistence/GameStore.swift` (new): @Observable authority; UserDefaults JSON
+  persistence; `recordSession` (pay credits once + leaderboard), `purchase`.
+- `UI/MenuViews.swift` (new): `CyberdeckView`, `HighScoresView`. `UI/RootView.swift`:
+  menu hub routing (menu/game/cyberdeck/scores) + BEST. `UI/GameView.swift`: injects
+  deck, records session once on game-over, shows credits/NEW HIGH SCORE.
+- Project: new Persistence group + 3 files in pbxproj.
+- **Verified:** clean build; headless tests (economy, leaderboard, Codable
+  round-trip, back-compat decode of an old partial save — defaults applied);
+  on-device (Cyberdeck shows 800 CR + scores persisted across a 2nd launch;
+  game-over "+1 CR" + NEW HIGH SCORE). All temp seed/demo hooks reverted + save cleared.
+- Gotcha logged (D11): synthesized Codable doesn't apply defaults for missing keys.
+- Next: M5 — audio & polish.
+
 ## Run #5 — Balance pass (2026-06-07)
 - `Core/Models/GameConfig.swift` only (no logic change): retuned spawn cadence,
   node count, lifespan and RAM economy to fix the sparse early game (Q3). See D10

@@ -15,6 +15,8 @@ struct Cyberdeck: Codable, Sendable, Equatable {
     /// Spendable cryptocurrency earned by cracking data cores.
     var credits: Int = 0
 
+    enum CodingKeys: String, CodingKey { case ramLevel, decodeSpeedLevel, shieldLevel, credits }
+
     static let starter = Cyberdeck()
 }
 
