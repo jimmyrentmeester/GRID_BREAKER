@@ -156,10 +156,15 @@ struct GameView: View {
             NeonTheme.background.ignoresSafeArea()
             FeverAtmosphere(active: model.snapshot.feverActive).ignoresSafeArea()
 
-            VStack(spacing: 18) {
+            VStack(spacing: 0) {
                 HUDView(snapshot: model.snapshot)
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
+
+                // Push the grid into the lower-middle so it sits in the natural
+                // thumb-reach zone, not up by the (read-only) HUD. The bottom gap
+                // is capped so the grid doesn't glue to the very bottom edge.
+                Spacer(minLength: 12)
 
                 GridBoard(snapshot: model.snapshot,
                           reduceMotion: reduceMotion,
@@ -168,7 +173,7 @@ struct GameView: View {
                           onTap: { model.tap(cell: $0) })
                 .padding(.horizontal, 16)
 
-                Spacer(minLength: 0)
+                Spacer(minLength: 12).frame(maxHeight: 96)
             }
             .modifier(ShakeEffect(animatableData: shakeAnim))
 

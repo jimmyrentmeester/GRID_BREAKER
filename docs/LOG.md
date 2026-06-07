@@ -3,6 +3,13 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #9 — Grid ergonomics (2026-06-07)
+- `UI/GameView.swift`: moved the grid from the top third into the lower-middle
+  thumb-reach zone. HUD stays pinned at top (read-only); a flexible Spacer above
+  the grid biases it down, with a capped (≤96 pt) bottom gap so it doesn't glue to
+  the edge. Verified on-device (screenshot) — grid now sits low/centered.
+- Next: campaign mode.
+
 ## Run #8 — MP3 music (replaces synth loop) (2026-06-07)
 - `Audio/AudioEngine.swift`: removed the synth music loop (`music` node,
   `musicBuffer`, `buildMusicLoop`, `startMusicIfNeeded`). Added `MusicPlayer`
