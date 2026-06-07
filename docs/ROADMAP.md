@@ -39,9 +39,19 @@ All flourishes traced to a real `GameEvent` via `GameViewModel.process(_:)`:
   (flash + gold particles + "+2", score=2, RAM refilled, bomb left untapped).
   Shake/hit-stop ride the same verified event pipeline.
 
-## 🚧 M3 — Fever Mode
-combo tracking → fever trigger (hazards vanish, golden bonus nodes, score ×2),
-shrinking display window, distinct audio/visual state.
+## ✅ M3 — Fever Mode (done)
+- Engine: combo tracking (decode +1, reset on miss/daemon-expiry), fever trigger at
+  `feverComboThreshold` (8) → hazards vanish (bombs removed), golden-only dense
+  spawns (`feverSpawnInterval`/`feverActiveNodes`), score ×`feverScoreMultiplier`
+  (2), `feverDuration` (4 s) window then auto-end. New events `feverStarted`/
+  `feverEnded`; snapshot exposes combo/threshold/feverActive/feverFraction/multiplier.
+- UI: combo meter (COMBO n/8 → FEVER), HUD ×2 badge, gold `FeverAtmosphere` overlay,
+  `FeverBanner` with shrinking window bar, golden bonus-node sprites, success haptic
+  on fever start.
+- **Verified:** clean build; headless sim (4 seeds: fever triggers 4×/45 s, each
+  exactly 4.0 s, ends cleanly, ×2 lifts perfect-play score to ~130 vs ~87 baseline);
+  on-device capture of full fever state (banner, ×2, gold atmosphere, gold nodes,
+  score burst). No-bombs-during-fever enforced in `spawnNode`.
 
 ## 📋 M4 — Meta progression
 Credits payout on session end → upgrade screen (RAM / decode speed / shield),

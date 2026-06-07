@@ -55,6 +55,9 @@ struct GameConfig: Sendable {
     var feverComboThreshold: Int = 8
     var feverDuration: TimeInterval = 4.0
     var feverScoreMultiplier: Int = 2
+    /// During fever: faster spawns + a fuller grid of golden bonus nodes.
+    var feverSpawnInterval: TimeInterval = 0.34
+    var feverActiveNodes: Int = 4
 
     // MARK: Input tolerance (brief 10.7 risk mitigation)
     /// Hitbox is enlarged beyond the visual sprite for touch tolerance.

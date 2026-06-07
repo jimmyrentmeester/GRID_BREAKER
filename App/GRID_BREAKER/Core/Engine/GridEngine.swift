@@ -35,6 +35,8 @@ enum GameEvent: Sendable, Equatable {
     case emptyMiss(cell: Int)               // tapped an empty cell (penalty)
     case missAbsorbed(cell: Int)            // a miss eaten by the Failsafe Shield
     case firewallExploded(cell: Int)        // bomb tapped → game over
+    case feverStarted                       // combo hit threshold → Fever Mode
+    case feverEnded                         // Fever Mode window elapsed
     case gameOver(GameOverReason)
 }
 
@@ -49,12 +51,23 @@ struct SessionSnapshot: Sendable {
     var ramRemaining: TimeInterval
     var ramCapacity: TimeInterval
     var shieldCharges: Int
+    var combo: Int
+    var comboThreshold: Int
+    var feverActive: Bool
+    var feverFraction: Double          // remaining fever window, 0…1
+    var scoreMultiplier: Int           // 1, or feverScoreMultiplier during fever
     var isGameOver: Bool
     var gameOverReason: GameOverReason?
 
     var ramFraction: Double {
         guard ramCapacity > 0 else { return 0 }
         return min(1, max(0, ramRemaining / ramCapacity))
+    }
+
+    /// Progress toward the next fever trigger, 0…1 (for the combo meter).
+    var comboProgress: Double {
+        guard comboThreshold > 0 else { return 0 }
+        return min(1, Double(combo) / Double(comboThreshold))
     }
 }
 
@@ -78,6 +91,9 @@ struct GridEngine {
     private let ramCapacity: TimeInterval
     private(set) var shieldCharges: Int
     private(set) var nodes: [GridNode] = []
+    private(set) var combo: Int = 0
+    private(set) var feverActive = false
+    private var feverRemaining: TimeInterval = 0
     private(set) var isGameOver = false
     private(set) var gameOverReason: GameOverReason?
 
@@ -101,6 +117,12 @@ struct GridEngine {
             ramRemaining: ramRemaining,
             ramCapacity: ramCapacity,
             shieldCharges: shieldCharges,
+            combo: combo,
+            comboThreshold: config.feverComboThreshold,
+            feverActive: feverActive,
+            feverFraction: feverActive && config.feverDuration > 0
+                ? max(0, feverRemaining / config.feverDuration) : 0,
+            scoreMultiplier: feverActive ? config.feverScoreMultiplier : 1,
             isGameOver: isGameOver,
             gameOverReason: gameOverReason
         )
@@ -115,26 +137,38 @@ struct GridEngine {
         var events: [GameEvent] = []
         clock += deltaTime
 
+        // 0. Fever window countdown.
+        if feverActive {
+            feverRemaining -= deltaTime
+            if feverRemaining <= 0 {
+                feverActive = false
+                feverRemaining = 0
+                combo = 0
+                events.append(.feverEnded)
+            }
+        }
+
         // 1. Drain the RAM buffer.
         ramRemaining -= config.ramDrainPerSecond * deltaTime
 
-        // 2. Expire timed-out nodes. Daemons penalize; bombs vanish safely.
+        // 2. Expire timed-out nodes. Daemons penalize + break combo; bombs vanish safely.
         let expired = nodes.filter { clock >= $0.expiresAt }
-        for node in expired {
-            if node.type.isHarvestable {
-                ramRemaining -= config.penaltyExpiredDaemon
-                events.append(.nodeExpired(node.type, cell: node.cellIndex))
-            }
+        for node in expired where node.type.isHarvestable {
+            ramRemaining -= config.penaltyExpiredDaemon
+            combo = 0
+            events.append(.nodeExpired(node.type, cell: node.cellIndex))
         }
         if !expired.isEmpty {
             let goneIDs = Set(expired.map(\.id))
             nodes.removeAll { goneIDs.contains($0.id) }
         }
 
-        // 3. Spawn new nodes on cadence, up to the score-scaled ceiling.
+        // 3. Spawn new nodes on cadence. Fever: faster + fuller, golden-only.
         timeSinceLastSpawn += deltaTime
-        let interval = config.spawnInterval(atScore: score)
-        let target = config.targetActiveNodes(atScore: score, gridSize: gridSize)
+        let interval = feverActive ? config.feverSpawnInterval : config.spawnInterval(atScore: score)
+        let target = feverActive
+            ? min(gridSize.cellCount, config.feverActiveNodes)
+            : config.targetActiveNodes(atScore: score, gridSize: gridSize)
         while timeSinceLastSpawn >= interval, nodes.count < target,
               let node = spawnNode() {
             nodes.append(node)
@@ -161,6 +195,7 @@ struct GridEngine {
                 shieldCharges -= 1
                 return [.missAbsorbed(cell: cellIndex)]
             }
+            combo = 0
             ramRemaining -= config.penaltyMiss
             var events: [GameEvent] = [.emptyMiss(cell: cellIndex)]
             if ramRemaining <= 0 { ramRemaining = 0; events.append(endGame(.ramDepleted)) }
@@ -174,29 +209,42 @@ struct GridEngine {
             return [.firewallExploded(cell: cell), endGame(.firewallHit)]
 
         case .standardDaemon:
-            return [decode(at: idx)]
+            return [decode(at: idx)] + checkFever()
 
         case .armoredDaemon:
             if nodes[idx].hitsRemaining > 1 {
                 nodes[idx].hitsRemaining -= 1   // breach the shell
                 return [.nodeBreached(cell: nodes[idx].cellIndex)]
             } else {
-                return [decode(at: idx)]
+                return [decode(at: idx)] + checkFever()
             }
         }
     }
 
+    /// Start Fever Mode if a fresh decode pushed the combo to threshold.
+    /// On trigger: hazards vanish (bombs removed safely), window resets.
+    private mutating func checkFever() -> [GameEvent] {
+        guard !feverActive, combo >= config.feverComboThreshold else { return [] }
+        feverActive = true
+        feverRemaining = config.feverDuration
+        combo = 0
+        nodes.removeAll { $0.type == .firewallBomb }
+        return [.feverStarted]
+    }
+
     // MARK: Helpers
 
-    /// Fully clear the daemon at `idx`: award score + RAM time, remove it.
+    /// Fully clear the daemon at `idx`: bump combo, award score (×fever) + RAM, remove.
     private mutating func decode(at idx: Int) -> GameEvent {
         let node = nodes[idx]
+        combo += 1
+        let multiplier = feverActive ? config.feverScoreMultiplier : 1
         switch node.type {
         case .standardDaemon:
-            score += config.scoreStandard
+            score += config.scoreStandard * multiplier
             ramRemaining = min(ramCapacity, ramRemaining + config.bonusStandardDecode)
         case .armoredDaemon:
-            score += config.scoreArmored
+            score += config.scoreArmored * multiplier
             ramRemaining = min(ramCapacity, ramRemaining + config.bonusArmoredDecode)
         case .firewallBomb:
             break // never decoded
@@ -206,19 +254,24 @@ struct GridEngine {
     }
 
     /// Procedurally pick a free cell + a node type (seeded). Nil if grid full.
+    /// During fever only golden bonus daemons (standard) spawn — no hazards.
     private mutating func spawnNode() -> GridNode? {
         let occupied = Set(nodes.map(\.cellIndex))
         let free = (0..<gridSize.cellCount).filter { !occupied.contains($0) }
         guard let cell = free.randomElement(using: &rng) else { return nil }
 
-        let roll = Double.random(in: 0..<1, using: &rng)
         let type: NodeType
-        if roll < config.firewallSpawnChance {
-            type = .firewallBomb
-        } else if roll < config.firewallSpawnChance + config.armoredSpawnChance {
-            type = .armoredDaemon
-        } else {
+        if feverActive {
             type = .standardDaemon
+        } else {
+            let roll = Double.random(in: 0..<1, using: &rng)
+            if roll < config.firewallSpawnChance {
+                type = .firewallBomb
+            } else if roll < config.firewallSpawnChance + config.armoredSpawnChance {
+                type = .armoredDaemon
+            } else {
+                type = .standardDaemon
+            }
         }
 
         return GridNode(cellIndex: cell,

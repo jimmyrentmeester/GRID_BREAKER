@@ -42,6 +42,12 @@ final class Haptics {
         notify.notificationOccurred(.error)
         #endif
     }
+
+    func success() {
+        #if canImport(UIKit)
+        notify.notificationOccurred(.success)
+        #endif
+    }
 }
 
 // MARK: - Effect model
@@ -168,6 +174,49 @@ struct ShakeEffect: GeometryEffect {
     func effectValue(size: CGSize) -> ProjectionTransform {
         let dx = amplitude * (1 - animatableData) * sin(animatableData * .pi * 2 * shakes)
         return ProjectionTransform(CGAffineTransform(translationX: dx, y: 0))
+    }
+}
+
+// MARK: - Fever Mode presentation
+
+/// A mood-tinted atmosphere layer that cross-fades in during Fever Mode
+/// (skill §2 atmosphere layer — behind the UI, low opacity, never over text).
+struct FeverAtmosphere: View {
+    let active: Bool
+
+    var body: some View {
+        RadialGradient(
+            colors: [NeonTheme.gold.opacity(0.22), NeonTheme.magenta.opacity(0.10), .clear],
+            center: .center, startRadius: 4, endRadius: 520
+        )
+        .opacity(active ? 1 : 0)
+        .animation(.easeInOut(duration: 0.4), value: active)
+        .allowsHitTesting(false)
+    }
+}
+
+/// Top banner announcing Fever Mode + a shrinking window bar (brief §10.2).
+struct FeverBanner: View {
+    let multiplier: Int
+    let fraction: Double
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Text("⚡ FEVER ×\(multiplier) ⚡")
+                .font(.system(size: 22, weight: .heavy, design: .monospaced))
+                .foregroundStyle(NeonTheme.gold)
+                .neonGlow(NeonTheme.gold, radius: 10)
+            GeometryReader { geo in
+                Capsule()
+                    .fill(NeonTheme.gold)
+                    .frame(width: max(0, geo.size.width * fraction))
+                    .neonGlow(NeonTheme.gold, radius: 5)
+            }
+            .frame(width: 180, height: 4)
+        }
+        .padding(.top, 70)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .allowsHitTesting(false)
     }
 }
 

@@ -3,6 +3,24 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #4 — M3 Fever Mode (2026-06-07)
+- `Core/Engine/GridEngine.swift`: combo state + fever (trigger at threshold via
+  `checkFever`, bomb-clear, gold-only dense spawn during fever, ×multiplier in
+  `decode`, countdown+auto-end in `tick`, combo reset on miss/expiry). New events
+  `feverStarted`/`feverEnded`; snapshot fields combo/comboThreshold/feverActive/
+  feverFraction/scoreMultiplier + `comboProgress`.
+- `Core/Models/GameConfig.swift`: `feverSpawnInterval`, `feverActiveNodes`.
+- `UI/GameView.swift`: ComboMeter, HUD ×N badge, fever atmosphere+banner wired,
+  gold node sprites during fever, fever events → success/soft haptics.
+- `UI/Juice.swift`: `FeverAtmosphere`, `FeverBanner`, `Haptics.success()`.
+- **Verified:** clean build (temp perfect-play demo added then reverted). Headless
+  sim across 4 seeds: fever fires 4×/45 s, 4.0 s each, clean end, score ~130 (×2)
+  vs ~87 baseline. On-device capture of full fever state (gold banner + ×2 + shrink
+  bar + gold atmosphere + gold nodes + score burst to 261).
+- Tuning note (Q3, reinforced): early-game spawn is sparse — combos take ~7 s to
+  build at score 0; tighten base spawn/lifespan in a balance pass.
+- Next: M4 — meta progression (Credits → Cyberdeck upgrades, persistence, high scores).
+
 ## Run #3 — M2 game feel & juice (2026-06-07)
 - `UI/Juice.swift` (new): `Haptics` wrapper, `JuiceEffect` model, `EffectsLayer` +
   `EffectView` (hit-flash, neon particle burst, floating "+N"), `ShakeEffect`

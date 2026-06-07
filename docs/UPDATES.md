@@ -2,6 +2,12 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.4 — Fever Mode (2026-06-07)
+- Chain 8 clean decodes to trigger FEVER: the firewall bombs vanish, the grid fills
+  with golden bonus nodes, and your score doubles — a 4-second burst with a shrinking
+  timer. A combo meter shows your progress toward it.
+- Next: spend earned Credits on permanent Cyberdeck upgrades + a high-score table.
+
 ## 0.3 — Juice (2026-06-07)
 - It feels alive now: decodes pop with a flash, neon particle burst and a floating
   "+N"; armored kills land with a hit-stop; firewall hits shake the screen; haptics

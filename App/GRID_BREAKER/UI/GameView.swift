@@ -109,6 +109,10 @@ final class GameViewModel {
                 queued = true
                 if !reduceMotion { freezeRemaining = 0.06; shakeTrigger += 1 }
                 haptics.error()
+            case .feverStarted:
+                haptics.success()
+            case .feverEnded:
+                haptics.impact(.soft)
             case .gameOver:
                 break
             }
@@ -132,6 +136,7 @@ struct GameView: View {
     var body: some View {
         ZStack {
             NeonTheme.background.ignoresSafeArea()
+            FeverAtmosphere(active: model.snapshot.feverActive).ignoresSafeArea()
 
             VStack(spacing: 18) {
                 HUDView(snapshot: model.snapshot)
@@ -148,6 +153,12 @@ struct GameView: View {
                 Spacer(minLength: 0)
             }
             .modifier(ShakeEffect(animatableData: shakeAnim))
+
+            if model.snapshot.feverActive {
+                FeverBanner(multiplier: model.snapshot.scoreMultiplier,
+                            fraction: model.snapshot.feverFraction)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
 
             if model.snapshot.isGameOver {
                 GameOverOverlay(snapshot: model.snapshot,
@@ -171,6 +182,7 @@ struct GameView: View {
             shakeAnim = 0
             withAnimation(.easeOut(duration: 0.4)) { shakeAnim = 1 }
         }
+        .animation(.easeInOut(duration: 0.3), value: model.snapshot.feverActive)
     }
 }
 
@@ -181,7 +193,7 @@ private struct HUDView: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            HStack {
+            HStack(spacing: 8) {
                 Text("SCORE")
                     .font(.system(size: 12, weight: .semibold, design: .monospaced))
                     .foregroundStyle(NeonTheme.textDim)
@@ -189,6 +201,12 @@ private struct HUDView: View {
                     .font(.system(size: 22, weight: .heavy, design: .monospaced))
                     .foregroundStyle(NeonTheme.cyan)
                     .neonGlow(NeonTheme.cyan, radius: 6)
+                if snapshot.scoreMultiplier > 1 {
+                    Text("×\(snapshot.scoreMultiplier)")
+                        .font(.system(size: 16, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                        .neonGlow(NeonTheme.gold, radius: 6)
+                }
                 Spacer()
                 if snapshot.shieldCharges > 0 {
                     Label("\(snapshot.shieldCharges)", systemImage: "shield.fill")
@@ -197,6 +215,38 @@ private struct HUDView: View {
                 }
             }
             RAMBar(fraction: snapshot.ramFraction)
+            ComboMeter(progress: snapshot.comboProgress,
+                       combo: snapshot.combo,
+                       threshold: snapshot.comboThreshold,
+                       feverActive: snapshot.feverActive)
+        }
+    }
+}
+
+/// Combo progress toward the next fever (visible growth, Part 1.4).
+private struct ComboMeter: View {
+    let progress: Double
+    let combo: Int
+    let threshold: Int
+    let feverActive: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(feverActive ? "FEVER" : "COMBO \(combo)/\(threshold)")
+                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                .foregroundStyle(feverActive ? NeonTheme.gold : NeonTheme.textDim)
+                .frame(width: 96, alignment: .leading)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.08))
+                    Capsule()
+                        .fill(feverActive ? NeonTheme.gold : NeonTheme.magenta)
+                        .frame(width: max(0, geo.size.width * (feverActive ? 1 : progress)))
+                        .neonGlow(feverActive ? NeonTheme.gold : NeonTheme.magenta, radius: 4)
+                        .animation(.easeOut(duration: 0.18), value: progress)
+                }
+            }
+            .frame(height: 5)
         }
     }
 }
@@ -263,7 +313,8 @@ private struct GridBoard: View {
                         HStack(spacing: spacing) {
                             ForEach(0..<cols, id: \.self) { col in
                                 let index = row * cols + col
-                                CellView(node: nodesByCell[index], size: cell)
+                                CellView(node: nodesByCell[index], size: cell,
+                                         feverActive: snapshot.feverActive)
                                     // Whole cell is tappable → hitbox is generously
                                     // larger than the sprite (brief §10.7 tolerance).
                                     .contentShape(Rectangle())
@@ -287,6 +338,7 @@ private struct GridBoard: View {
 private struct CellView: View {
     let node: GridNode?
     let size: CGFloat
+    let feverActive: Bool
 
     var body: some View {
         ZStack {
@@ -298,7 +350,7 @@ private struct CellView: View {
                         .fill(Color.white.opacity(0.02))
                 )
             if let node {
-                NodeSprite(node: node)
+                NodeSprite(node: node, feverActive: feverActive)
                     .padding(size * 0.16)   // sprite smaller than the tap cell
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
                     .id(node.id)
@@ -309,19 +361,26 @@ private struct CellView: View {
 }
 
 /// Visual for one daemon/bomb. Mechanics live in the model — this only draws.
+/// During fever, daemons render as golden bonus nodes (brief §10.2).
 private struct NodeSprite: View {
     let node: GridNode
+    let feverActive: Bool
 
     var body: some View {
-        switch node.type {
-        case .standardDaemon:
-            sprite(color: NeonTheme.cyan, symbol: "circle.grid.cross.fill")
-        case .armoredDaemon:
-            sprite(color: node.isBreached ? NeonTheme.gold : NeonTheme.magenta,
-                   symbol: node.isBreached ? "lock.open.fill" : "lock.shield.fill",
-                   ringed: !node.isBreached)
-        case .firewallBomb:
-            sprite(color: NeonTheme.danger, symbol: "exclamationmark.triangle.fill")
+        if feverActive && node.type != .firewallBomb {
+            // Golden bonus node during Fever Mode.
+            sprite(color: NeonTheme.gold, symbol: "bolt.fill", ringed: true)
+        } else {
+            switch node.type {
+            case .standardDaemon:
+                sprite(color: NeonTheme.cyan, symbol: "circle.grid.cross.fill")
+            case .armoredDaemon:
+                sprite(color: node.isBreached ? NeonTheme.gold : NeonTheme.magenta,
+                       symbol: node.isBreached ? "lock.open.fill" : "lock.shield.fill",
+                       ringed: !node.isBreached)
+            case .firewallBomb:
+                sprite(color: NeonTheme.danger, symbol: "exclamationmark.triangle.fill")
+            }
         }
     }
 
