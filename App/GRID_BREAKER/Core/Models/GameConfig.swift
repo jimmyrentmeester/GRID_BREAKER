@@ -23,28 +23,28 @@ struct GameConfig: Sendable {
     var ramDrainPerSecond: TimeInterval = 1.0
 
     // MARK: Time bonuses / penalties
-    var bonusStandardDecode: TimeInterval = 1.2
-    var bonusArmoredDecode: TimeInterval = 2.0
+    var bonusStandardDecode: TimeInterval = 1.05
+    var bonusArmoredDecode: TimeInterval = 1.8
     /// Tapping an empty cell or letting a daemon expire costs buffer time.
     var penaltyMiss: TimeInterval = 1.5
     var penaltyExpiredDaemon: TimeInterval = 1.0
 
     // MARK: Node lifespan & difficulty scaling (brief 10.3)
     /// Initial display duration of an active node, in seconds.
-    var baseNodeLifespan: TimeInterval = 1.6
+    var baseNodeLifespan: TimeInterval = 1.35
     /// Compression coefficient: lifespan = base * exp(-k * score).
     /// Higher = more aggressive difficulty ramp.
-    var lifespanCompression: Double = 0.0025
+    var lifespanCompression: Double = 0.0030
     /// Shortest a node lifespan may ever shrink to (fairness floor).
-    var minNodeLifespan: TimeInterval = 0.45
+    var minNodeLifespan: TimeInterval = 0.50
 
     // MARK: Spawn cadence (how fast new nodes appear)
     /// Seconds between spawns at score 0.
-    var baseSpawnInterval: TimeInterval = 0.85
+    var baseSpawnInterval: TimeInterval = 0.50
     /// Spawn interval compresses with score (more frequent over time).
-    var spawnCompression: Double = 0.0035
+    var spawnCompression: Double = 0.0045
     /// Fastest the spawn cadence may ever get (fairness floor).
-    var minSpawnInterval: TimeInterval = 0.30
+    var minSpawnInterval: TimeInterval = 0.20
 
     // MARK: Score payouts
     var scoreStandard: Int = 1
@@ -87,8 +87,9 @@ struct GameConfig: Sendable {
     }
 
     /// How many nodes may be active at once at a given score (brief §10.3:
-    /// active-node ceiling grows as score/10). Always leaves one free cell.
+    /// active-node ceiling grows with score). Starts at 2 so the board feels
+    /// alive from the first second; always leaves one free cell.
     func targetActiveNodes(atScore score: Int, gridSize: GridSize) -> Int {
-        max(1, min(gridSize.cellCount - 1, 1 + score / 10))
+        max(2, min(gridSize.cellCount - 1, 2 + score / 8))
     }
 }

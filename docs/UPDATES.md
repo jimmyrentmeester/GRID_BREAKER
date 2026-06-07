@@ -2,6 +2,12 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.4.1 — Balance pass (2026-06-07)
+- The opening is no longer sparse: ~2 nodes from the first second, faster cadence,
+  so it feels like a reflex game immediately and your first Fever comes in ~5s.
+- Tuned the difficulty curve so a session runs ~1–2 min and there's a real skill
+  ceiling at high speed. Tuned from automated playtests, not guesswork.
+
 ## 0.4 — Fever Mode (2026-06-07)
 - Chain 8 clean decodes to trigger FEVER: the firewall bombs vanish, the grid fills
   with golden bonus nodes, and your score doubles — a 4-second burst with a shrinking

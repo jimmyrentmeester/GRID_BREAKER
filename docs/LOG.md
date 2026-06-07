@@ -3,6 +3,18 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #5 — Balance pass (2026-06-07)
+- `Core/Models/GameConfig.swift` only (no logic change): retuned spawn cadence,
+  node count, lifespan and RAM economy to fix the sparse early game (Q3). See D10
+  for the exact before→after numbers.
+- Method: deterministic headless sim with realistic-player models (reaction
+  0.20/0.27/0.36 s) over 5 seeds × 180 s; iterated on avgNodes, first-fever time,
+  session length and skill ceiling (ground-truth Part 5.3).
+- **Verified:** clean build; sim shows first fever ~5 s, board density 1.8–2.4 for
+  normal play, casual ~78 s, good play dies ~168 s (ceiling), within 60–120 s target.
+  On-device launch confirms HUD/board render with the new config.
+- Q3 resolved. Next: M4 — meta progression.
+
 ## Run #4 — M3 Fever Mode (2026-06-07)
 - `Core/Engine/GridEngine.swift`: combo state + fever (trigger at threshold via
   `checkFever`, bomb-clear, gold-only dense spawn during fever, ×multiplier in

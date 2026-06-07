@@ -50,6 +50,23 @@ the view (skill §5 / Part 2.5). Effects are queued and the overlay drains them 
 Hit-stop lives in the VM (it owns the frame loop); particles/flash/shake are pure
 view. Reduced-motion snaps the motion-heavy parts off.
 
+## D10 — Balance pass (data-driven via headless sim)
+**2026-06-07.** Fixed the sparse early game (Q3) using the deterministic headless
+sim with realistic-player models (reaction 0.20–0.36 s, taps most-urgent harvestable,
+never bombs) over 5 seeds × 180 s (ground-truth Part 5.3). Changes in `GameConfig`:
+- Spawn cadence: `baseSpawnInterval` 0.85→0.50, `minSpawnInterval` 0.30→0.20,
+  `spawnCompression` 0.0035→0.0045.
+- Node count: `targetActiveNodes` start 1→**2** (`max(2, min(cells-1, 2 + score/8))`).
+- Lifespan: `baseNodeLifespan` 1.6→1.35, `minNodeLifespan` 0.45→0.50,
+  `lifespanCompression` 0.0025→0.0030.
+- Economy (skill ceiling): `bonusStandardDecode` 1.2→1.05, `bonusArmoredDecode`
+  2.0→1.8.
+
+Result: first fever ~5 s (was never reachable in casual screenshots), board density
+avgNodes 1.8–2.4 for normal play (was 0.5–1.2), casual session ~78 s and good play
+dies ~168 s (a real ceiling), within the brief's 60–120 s target. A perfectly
+metronomic 0.20 s player still survives — acceptable (no human sustains that).
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

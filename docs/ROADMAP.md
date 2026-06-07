@@ -53,7 +53,12 @@ All flourishes traced to a real `GameEvent` via `GameViewModel.process(_:)`:
   on-device capture of full fever state (banner, ×2, gold atmosphere, gold nodes,
   score burst). No-bombs-during-fever enforced in `spawnNode`.
 
-## 📋 M4 — Meta progression
+## ✅ Balance pass (done, between M3 and M4)
+Data-driven retune of `GameConfig` (spawn cadence, node count, lifespan, RAM
+economy) via the headless realistic-player sim. Fixed the sparse early game: first
+fever ~5 s, lively board, ~1–2 min sessions with a skill ceiling. See D10 / Q3.
+
+## 🚧 M4 — Meta progression
 Credits payout on session end → upgrade screen (RAM / decode speed / shield),
 deterministic cost scaling, back-compat persistence, local high-score leaderboard.
 
