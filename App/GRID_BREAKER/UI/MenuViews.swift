@@ -212,68 +212,186 @@ private struct PaletteRow: View {
     }
 }
 
-// MARK: - How to play
+// MARK: - Interactive tutorial
 
-struct HowToPlayView: View {
+/// Hands-on, teach-by-doing tutorial: decode a daemon, breach an armored one,
+/// avoid a firewall, then a short recap. Runs on first boot and from the menu.
+struct TutorialView: View {
     let onDone: () -> Void
 
-    private struct Rule: Identifiable { let id = UUID(); let symbol: String; let color: Color; let title: String; let text: String }
-    private let rules: [Rule] = [
-        .init(symbol: "circle.grid.cross.fill", color: NeonTheme.cyan, title: "Decode daemons",
-              text: "Tap glowing nodes to harvest data. Cyan = 1 tap."),
-        .init(symbol: "lock.shield.fill", color: NeonTheme.magenta, title: "Armored = 2 taps",
-              text: "Magenta nodes take two taps — breach, then decode. Worth more."),
-        .init(symbol: "exclamationmark.triangle.fill", color: NeonTheme.danger, title: "Avoid firewalls",
-              text: "NEVER tap a red firewall — it ends the run. Left alone, it's harmless."),
-        .init(symbol: "memorychip.fill", color: NeonTheme.cyan, title: "Watch your RAM",
-              text: "RAM is your clock — it drains constantly. Decoding tops it up; misses cost time."),
-        .init(symbol: "bolt.fill", color: NeonTheme.gold, title: "Chain a Fever",
-              text: "String clean hits to trigger Fever: hazards vanish, golden nodes, score ×2."),
-        .init(symbol: "bitcoinsign.circle.fill", color: NeonTheme.gold, title: "Upgrade your deck",
-              text: "Earn Credits, then boost RAM, decode speed and shields in the Cyberdeck."),
-    ]
+    @State private var step = 0          // 0 decode · 1 armored · 2 firewall · 3 recap
+    @State private var armoredBreached = false
+    @State private var wrongFirewall = false
+    @State private var shakeAnim: CGFloat = 0
+    @State private var flashCell: Int? = nil
+
+    private let centerCell = 4
+    private let firewallCell = 0
+    private let totalSteps = 4
+
+    private var prompt: String {
+        switch step {
+        case 0: return "Tap the glowing daemon to decode it."
+        case 1: return armoredBreached ? "Shell breached — tap again to crack it!"
+                                       : "Armored daemons take two taps. Tap it."
+        case 2: return wrongFirewall ? "✕ That's a firewall — never tap it. Hit the cyan daemon."
+                                     : "Tap the cyan daemon — but NEVER the red firewall."
+        default: return "You're in. A few last things:"
+        }
+    }
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("HOW TO HACK")
+            Text("TUTORIAL")
                 .font(.system(size: 24, weight: .heavy, design: .monospaced))
                 .foregroundStyle(NeonTheme.cyan)
                 .neonGlow(NeonTheme.cyan, radius: 8)
 
-            ScrollView {
-                VStack(spacing: 12) {
-                    ForEach(rules) { rule in
-                        HStack(spacing: 14) {
-                            Image(systemName: rule.symbol)
-                                .font(.system(size: 22))
-                                .foregroundStyle(rule.color)
-                                .neonGlow(rule.color, radius: 4)
-                                .frame(width: 34)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(rule.title)
-                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                    .foregroundStyle(NeonTheme.textPrimary)
-                                Text(rule.text)
-                                    .font(.system(size: 11, weight: .regular, design: .monospaced))
-                                    .foregroundStyle(NeonTheme.textDim)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            Spacer(minLength: 0)
-                        }
-                        .padding(14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color.white.opacity(0.03))
-                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(rule.color.opacity(0.35), lineWidth: 1))
-                        )
-                    }
+            HStack(spacing: 6) {
+                ForEach(0..<totalSteps, id: \.self) { i in
+                    Capsule()
+                        .fill(i <= step ? NeonTheme.cyan : Color.white.opacity(0.15))
+                        .frame(width: i == step ? 18 : 8, height: 5)
                 }
-                .padding(.vertical, 2)
             }
 
-            TerminalButton(title: "GOT IT", color: NeonTheme.cyan, action: onDone)
+            Text(prompt)
+                .font(.system(size: 14, weight: .medium, design: .monospaced))
+                .foregroundStyle(wrongFirewall && step == 2 ? NeonTheme.danger : NeonTheme.textPrimary)
+                .multilineTextAlignment(.center)
+                .frame(height: 40)
+
+            if step < 3 { grid } else { recap }
+
+            Spacer(minLength: 0)
+
+            TerminalButton(title: step < 3 ? "SKIP" : "START HACKING",
+                           color: step < 3 ? NeonTheme.magenta : NeonTheme.cyan,
+                           action: onDone)
         }
         .padding(24)
+    }
+
+    private var grid: some View {
+        GeometryReader { geo in
+            let side = min(geo.size.width, geo.size.height)
+            let spacing: CGFloat = 10
+            let cell = (side - spacing * 2) / 3
+            VStack(spacing: spacing) {
+                ForEach(0..<3, id: \.self) { row in
+                    HStack(spacing: spacing) {
+                        ForEach(0..<3, id: \.self) { col in
+                            let idx = row * 3 + col
+                            cellView(idx, size: cell)
+                                .contentShape(Rectangle())
+                                .onTapGesture { handle(idx) }
+                        }
+                    }
+                }
+            }
+            .frame(width: side, height: side)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .modifier(ShakeEffect(animatableData: shakeAnim))
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .frame(maxHeight: 340)
+    }
+
+    private func cellView(_ idx: Int, size: CGFloat) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(NeonTheme.gridLineDim.opacity(0.5), lineWidth: 1)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.02)))
+            node(idx).padding(size * 0.16)
+            if flashCell == idx {
+                RoundedRectangle(cornerRadius: 12).fill(.white).opacity(0.85).padding(size * 0.16)
+            }
+        }
+        .frame(width: size, height: size)
+    }
+
+    @ViewBuilder private func node(_ idx: Int) -> some View {
+        switch step {
+        case 0 where idx == centerCell:
+            sprite(NeonTheme.cyan, "circle.grid.cross.fill")
+        case 1 where idx == centerCell:
+            sprite(armoredBreached ? NeonTheme.gold : NeonTheme.magenta,
+                   armoredBreached ? "lock.open.fill" : "lock.shield.fill", ringed: !armoredBreached)
+        case 2 where idx == centerCell:
+            sprite(NeonTheme.cyan, "circle.grid.cross.fill")
+        case 2 where idx == firewallCell:
+            sprite(NeonTheme.danger, "exclamationmark.triangle.fill")
+        default:
+            EmptyView()
+        }
+    }
+
+    private func sprite(_ color: Color, _ symbol: String, ringed: Bool = false) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 14, style: .continuous).fill(color.opacity(0.18))
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(color, lineWidth: ringed ? 3 : 2).neonGlow(color, radius: 8)
+            Image(systemName: symbol).font(.system(size: 22, weight: .bold))
+                .foregroundStyle(color).neonGlow(color, radius: 4)
+        }
+    }
+
+    private func handle(_ idx: Int) {
+        guard flashCell == nil else { return }
+        switch step {
+        case 0 where idx == centerCell:
+            decode(idx, .decode) { step = 1 }
+        case 1 where idx == centerCell:
+            if !armoredBreached { armoredBreached = true; AudioEngine.shared.play(.breach) }
+            else { decode(idx, .decodeBig) { armoredBreached = false; step = 2 } }
+        case 2 where idx == firewallCell:
+            wrongFirewall = true
+            AudioEngine.shared.play(.bomb)
+            shakeAnim = 0
+            withAnimation(.easeOut(duration: 0.4)) { shakeAnim = 1 }
+        case 2 where idx == centerCell:
+            decode(idx, .decode) { step = 3 }
+        default:
+            break
+        }
+    }
+
+    private func decode(_ idx: Int, _ sfx: AudioEngine.SFX, then: @escaping () -> Void) {
+        AudioEngine.shared.play(sfx)
+        flashCell = idx
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            flashCell = nil
+            withAnimation(.easeInOut(duration: 0.2)) { then() }
+        }
+    }
+
+    private var recap: some View {
+        VStack(spacing: 10) {
+            recapRow("memorychip.fill", NeonTheme.cyan, "RAM is your clock",
+                     "It drains over time — decoding tops it up, misses cost time.")
+            recapRow("bolt.fill", NeonTheme.gold, "Chain a Fever",
+                     "String clean hits for Fever: hazards vanish, score ×2.")
+            recapRow("bitcoinsign.circle.fill", NeonTheme.gold, "Spend Credits",
+                     "Upgrade your Cyberdeck and buy neon palettes.")
+        }
+    }
+
+    private func recapRow(_ symbol: String, _ color: Color, _ title: String, _ text: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: symbol).font(.system(size: 20)).foregroundStyle(color)
+                .neonGlow(color, radius: 4).frame(width: 30)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textPrimary)
+                Text(text).font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textDim).fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(Color.white.opacity(0.03))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(color.opacity(0.35), lineWidth: 1)))
     }
 }
 

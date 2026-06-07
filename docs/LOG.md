@@ -3,6 +3,17 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #18 — Interactive tutorial (2026-06-07)
+- Replaced the static How-to-Play card with an interactive, teach-by-doing
+  `TutorialView`: step 0 tap a daemon, step 1 armored two-tap (breach→crack), step 2
+  tap the daemon / avoid the firewall (wrong-tap → shake + nudge, no fail), step 3
+  recap (RAM / fever / credits). Real SFX on taps, progress dots, SKIP / START HACKING.
+- Runs on first boot (reuses `tutorialSeen`) and from a menu **TUTORIAL** button
+  (replaced HOW TO PLAY). RootView `.help` → `.tutorial`; `HowToPlayView` removed.
+- **Verified on-device:** step 0 (decode) auto-shows on a fresh install; step 2
+  (firewall + daemon) renders with the avoid prompt. Temp step override reverted,
+  save cleared.
+
 ## Run #17 — Cosmetics: neon palettes (2026-06-07)
 - New **COSMETICS** screen: 5 buyable/equippable neon palettes (Classic free +
   Sunset Drive / Toxic Leak / Glacier / Amber Terminal at 500–1200 CR) that recolor

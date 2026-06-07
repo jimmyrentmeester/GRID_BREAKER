@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.11 — Interactive tutorial (2026-06-07)
+- The how-to is now hands-on: you actually decode a daemon, breach an armored one,
+  and learn to dodge the firewall, with a short recap at the end. Runs on first
+  launch and any time from the TUTORIAL button on the menu.
+
 ## 0.10 — Cosmetics (2026-06-07)
 - Spend your Credits on looks: 5 neon palettes (Sunset Drive, Toxic Leak, Glacier,
   Amber Terminal + the free Classic) that recolor the whole game. Buy and equip from

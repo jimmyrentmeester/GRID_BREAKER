@@ -9,7 +9,7 @@ struct RootView: View {
     @State private var activeCore: DataCore?
     @State private var pulse = false
 
-    private enum Screen { case menu, endless, flow, campaign, core, cyberdeck, cosmetics, scores, help }
+    private enum Screen { case menu, endless, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial }
 
     private func tap() { AudioEngine.shared.play(.uiTap) }
 
@@ -59,8 +59,8 @@ struct RootView: View {
                 CosmeticsView(store: store, onBack: { screen = .menu }).transition(.opacity)
             case .scores:
                 HighScoresView(scores: store.highScores, onBack: { screen = .menu }).transition(.opacity)
-            case .help:
-                HowToPlayView(onDone: { store.markTutorialSeen(); screen = .menu }).transition(.opacity)
+            case .tutorial:
+                TutorialView(onDone: { store.markTutorialSeen(); screen = .menu }).transition(.opacity)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: screen)
@@ -68,7 +68,7 @@ struct RootView: View {
             NeonTheme.current = Palettes.byID(store.equippedPaletteID)   // apply cosmetic
             AudioEngine.shared.enabled = store.soundEnabled
             AudioEngine.shared.start()
-            if !store.tutorialSeen { screen = .help }   // first-launch onboarding
+            if !store.tutorialSeen { screen = .tutorial }   // first-launch onboarding
         }
         .onChange(of: screen) { _, _ in AudioEngine.shared.resume() }
     }
@@ -114,8 +114,8 @@ struct RootView: View {
                     }
                     .buttonStyle(TerminalButtonStyle())
 
-                    Button { tap(); screen = .help } label: {
-                        Label("HOW TO PLAY", systemImage: "questionmark.circle")
+                    Button { tap(); screen = .tutorial } label: {
+                        Label("TUTORIAL", systemImage: "graduationcap")
                             .font(.system(size: 12, weight: .semibold, design: .monospaced))
                             .foregroundStyle(NeonTheme.textDim)
                     }
