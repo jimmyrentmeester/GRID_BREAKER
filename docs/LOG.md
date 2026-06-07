@@ -3,6 +3,25 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #26 — Themed hit-register SFX + combo arpeggio (2026-06-08)
+Redesigned the decode hit sounds (user: make them more appealing / on-theme). Still
+asset-free synthesis (€0 ethos, D12) — no sourced clips.
+- **New `fmBlip` synth helper**: a carrier phase-modulated by a sibling oscillator
+  with a quick downward pitch-glide → a clean metallic/digital "decrypt" timbre,
+  far more musical than the old raw chirp.
+- **Standard decode** = click transient (tactility) + FM body + high sparkle.
+  **Armored kill (`decodeBig`)** = sub-thump + fatter FM body + click (distinct
+  weight). **Breach** = a clean metallic FM tick. Miss/bomb/fever/gameOver/uiTap
+  left as-is.
+- **Combo arpeggio:** `decode` is pre-rendered at a rising A-minor-pentatonic run
+  (A4→A5); `AudioEngine.play(_:step:)` clamps to the top. `GameViewModel.decodeRun`
+  advances per decode and resets on a broken chain (miss / expiry / bomb) and on
+  restart — so a streak audibly climbs and resets exactly with the engine's combo
+  (fed from real state, per the juice skill).
+- **Verified:** clean build; headless render of the exact synth to a WAV demo
+  (peak 0.797, no clip) auditioned by the maintainer and approved. (Final on-device
+  mix still a human listen per Q6 — simulator audio isn't CLI-capturable.)
+
 ## Run #25 — Branded launch screen (ship-prep) (2026-06-07)
 Replaced the blank auto-generated launch screen (a black flash) with a branded one.
 - **`LaunchScreen.storyboard`**: dark background (0.02,0.02,0.05 — the Classic

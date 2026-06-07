@@ -30,6 +30,9 @@ final class GameViewModel {
     let chill: Bool
     private var lastDate: Date?
     private var freezeRemaining: TimeInterval = 0   // hit-stop budget
+    /// Decode-chain length for audio: walks the decode arpeggio up; reset when the
+    /// chain breaks (miss / expiry / bomb), mirroring the engine's combo.
+    private var decodeRun = 0
     private var pendingEffects: [JuiceEffect] = []
     private let haptics = Haptics()
     private let audio = AudioEngine.shared
@@ -87,6 +90,7 @@ final class GameViewModel {
                             targetScore: targetScore, difficultyBias: difficultyBias)
         lastDate = nil
         freezeRemaining = 0
+        decodeRun = 0
         pendingEffects.removeAll()
         snapshot = engine.snapshot
     }
@@ -108,18 +112,21 @@ final class GameViewModel {
                     haptics.impact(.medium); audio.play(.decodeBig)
                     if !reduceMotion { freezeRemaining = 0.08 }   // hit-stop on the heavy kill
                 } else {
-                    haptics.impact(.light); audio.play(.decode)
+                    haptics.impact(.light); audio.play(.decode, step: decodeRun)
                 }
+                decodeRun += 1                                     // chain climbs the arpeggio
             case let .nodeBreached(cell):
                 pendingEffects.append(.init(cell: cell, style: .breach, color: NeonTheme.magenta, points: nil))
                 queued = true
                 haptics.impact(.soft); audio.play(.breach)
             case let .emptyMiss(cell):
+                decodeRun = 0                  // chain broken → arpeggio resets
                 guard !chill else { break }   // no punishing feedback in Flow
                 pendingEffects.append(.init(cell: cell, style: .miss, color: NeonTheme.danger, points: nil))
                 queued = true
                 haptics.impact(.rigid); audio.play(.miss)
             case .nodeExpired:
+                decodeRun = 0                  // chain broken → arpeggio resets
                 guard !chill else { break }   // nodes just fade quietly in Flow
                 haptics.impact(.soft); audio.play(.miss)
             case let .missAbsorbed(cell):
@@ -132,6 +139,7 @@ final class GameViewModel {
                 queued = true
                 haptics.impact(.medium); audio.play(.decodeBig)
             case let .firewallExploded(cell):
+                decodeRun = 0                  // chain broken → arpeggio resets
                 pendingEffects.append(.init(cell: cell, style: .bomb, color: NeonTheme.danger, points: nil))
                 queued = true
                 if !reduceMotion { freezeRemaining = 0.06; shakeTrigger += 1 }

@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.18 — Punchier hit sounds (2026-06-08)
+- The decode hits got a glow-up: a crisp, digital "decrypt" blip with real punch,
+  and a heavier version for armored kills. Best part — a decode streak now climbs a
+  little melody and resets when you break the chain. Still 100% generated in code.
+
 ## 0.17 — Launch screen (2026-06-07)
 - The app now opens on a branded neon launch screen (logo + GRID_BREAKER wordmark on
   the dark grid background) instead of a blank black flash.

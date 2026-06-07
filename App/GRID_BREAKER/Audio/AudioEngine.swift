@@ -23,6 +23,9 @@ final class AudioEngine {
     private var sfxIndex = 0
     private let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
     private var buffers: [SFX: AVAudioPCMBuffer] = [:]
+    /// Decode hit rendered at rising pitches — `play(.decode, step:)` walks up this
+    /// as the combo climbs, so chained decodes sound like an ascending arpeggio.
+    private var decodeSteps: [AVAudioPCMBuffer] = []
 
     private(set) var isRunning = false
     /// Master toggle (persisted in settings). Stops/starts SFX and the music.
@@ -114,8 +117,17 @@ final class AudioEngine {
 
     // MARK: Playback
 
-    func play(_ sfx: SFX) {
-        guard isRunning, enabled, let buffer = buffers[sfx] else { return }
+    /// `step` selects the decode pitch (clamped to the top of the run); ignored by
+    /// every other SFX. Lets a decode chain ascend musically with the combo.
+    func play(_ sfx: SFX, step: Int = 0) {
+        guard isRunning, enabled else { return }
+        let buffer: AVAudioPCMBuffer?
+        if sfx == .decode, !decodeSteps.isEmpty {
+            buffer = decodeSteps[min(max(0, step), decodeSteps.count - 1)]
+        } else {
+            buffer = buffers[sfx]
+        }
+        guard let buffer else { return }
         let node = sfxPool[sfxIndex]
         sfxIndex = (sfxIndex + 1) % sfxPool.count
         node.scheduleBuffer(buffer, at: nil, options: .interrupts, completionHandler: nil)
@@ -138,24 +150,43 @@ final class AudioEngine {
     private func decayEnv(_ t: Double, _ tau: Double) -> Double { exp(-t / tau) }
     private func noise() -> Double { Double.random(in: -1...1) }
 
+    /// A short FM "blip" — a carrier phase-modulated by a sibling oscillator, with a
+    /// quick downward pitch glide. The FM gives a clean metallic/digital timbre
+    /// (on-theme for "decrypting") that's far more musical than a raw chirp.
+    private func fmBlip(_ f: Double, _ t: Double,
+                        glide: Double, index: Double, ratio: Double, decay: Double) -> Double {
+        let fT = f * (1 + glide * decayEnv(t, 0.012))            // pluck: starts sharp, settles
+        let mod = sine(f * ratio, t) * decayEnv(t, decay * 0.6)  // modulator fades faster
+        let carrier = sin(2 * .pi * fT * t + index * mod)
+        return carrier * decayEnv(t, decay)
+    }
+
     private func buildBuffers() {
-        // Bright electrical discharge: upward chirp + crisp sine + a touch of noise.
-        buffers[.decode] = buffer(seconds: 0.10) { _, t in
-            let f = 900 + 2600 * t
-            let body = self.sine(f, t) * self.decayEnv(t, 0.035)
-            let spark = self.noise() * self.decayEnv(t, 0.012)
-            return Float((body * 0.32 + spark * 0.12))
+        // Decode hit: a punchy FM "data-blip" — a click transient for tactility, an
+        // FM body for a clean digital pluck, and a high sparkle. Rendered at a rising
+        // A-minor-pentatonic run so chained decodes climb (see `play(_:step:)`).
+        let decodeScale: [Double] = [440, 523.25, 587.33, 659.25, 783.99, 880]  // A4→A5 pentatonic
+        decodeSteps = decodeScale.map { f in
+            buffer(seconds: 0.11) { _, t in
+                let click = self.noise() * self.decayEnv(t, 0.0035)
+                let body = self.fmBlip(f, t, glide: 0.12, index: 2.2, ratio: 2.01, decay: 0.05)
+                let sparkle = self.sine(f * 3, t) * self.decayEnv(t, 0.02)
+                return Float(click * 0.22 + body * 0.5 + sparkle * 0.12)
+            }
         }
-        // Heavier discharge for armored kills — lower, punchier, a beat longer.
-        buffers[.decodeBig] = buffer(seconds: 0.16) { _, t in
-            let f = 500 + 1400 * t
-            let body = (self.sine(f, t) + 0.5 * self.saw(f * 0.5, t)) * self.decayEnv(t, 0.06)
-            let spark = self.noise() * self.decayEnv(t, 0.02)
-            return Float((body * 0.30 + spark * 0.12))
+        buffers[.decode] = decodeSteps.first    // fallback for step-less callers
+        // Armored kill: heavier, lower decrypt — a sub thump under a fatter FM body
+        // and a crisp click. Distinct "weight" vs. the standard hit.
+        buffers[.decodeBig] = buffer(seconds: 0.18) { _, t in
+            let f = 330.0                                   // E4 — meaty but not muddy
+            let click = self.noise() * self.decayEnv(t, 0.004)
+            let sub = self.sine(f * 0.5, t) * self.decayEnv(t, 0.11)
+            let body = self.fmBlip(f, t, glide: 0.10, index: 3.2, ratio: 1.5, decay: 0.09)
+            return Float(click * 0.24 + body * 0.42 + sub * 0.36)
         }
-        // Soft tick when an armored shell breaches.
-        buffers[.breach] = buffer(seconds: 0.06) { _, t in
-            Float((self.square(2200, t) * self.decayEnv(t, 0.012) * 0.18))
+        // Armored shell breach: a clean metallic FM tick (the shell cracking).
+        buffers[.breach] = buffer(seconds: 0.07) { _, t in
+            Float(self.fmBlip(1568, t, glide: 0.0, index: 1.4, ratio: 2.5, decay: 0.018) * 0.2)
         }
         // Muted analog glitch on a miss — dull downward blip + noise.
         buffers[.miss] = buffer(seconds: 0.14) { _, t in
