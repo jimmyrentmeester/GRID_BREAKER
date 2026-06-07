@@ -3,6 +3,24 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #3 — M2 game feel & juice (2026-06-07)
+- `UI/Juice.swift` (new): `Haptics` wrapper, `JuiceEffect` model, `EffectsLayer` +
+  `EffectView` (hit-flash, neon particle burst, floating "+N"), `ShakeEffect`
+  GeometryEffect, `TerminalButtonStyle` press-dip.
+- `UI/GameView.swift`: `GameViewModel.process(_:)` translates each `GameEvent` →
+  effect + haptic + hit-stop (`freezeRemaining`) + shake (`shakeTrigger`); exposes
+  `effectSeq` + `drainEffects()`. GridBoard hosts EffectsLayer sharing cell
+  geometry; RAM bar gains a ghost trail layer; shake applied to game content;
+  reduced-motion wired from environment.
+- Used skill `game-feel-and-juice` (every flourish traced to a real event; calm at
+  rest; reduced-motion respected).
+- **Verified:** clean build (temp demo/debug hooks added then fully reverted).
+  On-device rapid capture caught an armored decode mid-burst — white flash, gold
+  particle ring, floating "+2", score=2, RAM refilled, firewall bomb left untapped.
+  Debug readout confirmed real tap→decode→score path (score climbed 0→1→2).
+  Tuning note (Q3): early-game spawn cadence feels sparse — revisit in balancing.
+- Next: M3 — Fever Mode (combo → hazards vanish, golden bonus nodes, score ×N).
+
 ## Run #2 — M1 playable grid engine (2026-06-07)
 - `Core/Engine/GridEngine.swift`: rewrote stub → full deterministic authority.
   Added `SeededRNG` (SplitMix64), `SessionSnapshot`, `GameEvent`, `GameOverReason`.

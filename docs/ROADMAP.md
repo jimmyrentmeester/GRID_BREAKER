@@ -24,12 +24,22 @@ The vertical slice that proves the loop. **GridEngine is the authority.**
   (screenshot); headless deterministic sim (seeds 42/1337/999999 run a full 60 s,
   bomb-tap → instant firewallHit, same-seed determinism confirmed).
 
-## 🚧 M2 — Game feel & juice
-hit-flash (2 frames) · hit-pause (~16 ms on armored kill) · screen-shake on bomb ·
-micro-haptics (light hit / heavy error) · neon particle burst on decode · RAM-bar
-ghost layer. Each flourish traced to a `GameEvent` (Part 2.5). Respect reduced-motion.
+## ✅ M2 — Game feel & juice (done)
+All flourishes traced to a real `GameEvent` via `GameViewModel.process(_:)`:
+- Hit-flash (white, ~2-frame) + neon particle burst on decode (cyan standard /
+  gold armored); floating "+N" score pop. Breach/miss/shield/bomb each get a styled
+  effect. `UI/Juice.swift`.
+- Hit-stop (~80 ms) on armored kill, ~60 ms on bomb (engine advance frozen in VM).
+- Screen-shake (`ShakeEffect` GeometryEffect) on firewall hit.
+- Micro-haptics: light decode / medium+stop armored / rigid miss / soft breach /
+  error notification on bomb+game-over.
+- RAM bar ghost layer (slow trail behind fast live fill). Button press micro-dip.
+- Reduced-motion gating (snaps off flash/particles/shake/hit-stop).
+- **Verified:** clean build; on-device capture of an armored decode mid-burst
+  (flash + gold particles + "+2", score=2, RAM refilled, bomb left untapped).
+  Shake/hit-stop ride the same verified event pipeline.
 
-## 📋 M3 — Fever Mode
+## 🚧 M3 — Fever Mode
 combo tracking → fever trigger (hazards vanish, golden bonus nodes, score ×2),
 shrinking display window, distinct audio/visual state.
 

@@ -42,6 +42,14 @@ the tap target and the sprite is drawn inset (~0.7×). Same effect as brief §10
 (forgiving touch) with simpler, drift-free hit-testing. `GameConfig.hitboxPadding`
 is retained for any future precise hit-testing.
 
+## D9 — Juice fed only from engine events, queued via effectSeq
+**2026-06-07 (M2).** All visual/haptic feedback is produced in
+`GameViewModel.process(_:)` from the engine's `GameEvent` stream — never guessed in
+the view (skill §5 / Part 2.5). Effects are queued and the overlay drains them on an
+`effectSeq` counter change (avoids unbounded array growth and view/VM write races).
+Hit-stop lives in the VM (it owns the frame loop); particles/flash/shake are pure
+view. Reduced-motion snaps the motion-heavy parts off.
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

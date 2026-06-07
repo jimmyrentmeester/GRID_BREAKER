@@ -9,14 +9,21 @@ import SwiftUI
 @Observable
 final class GameViewModel {
     private(set) var snapshot: SessionSnapshot
-    /// Events from the most recent tick/tap — the hook the juice layer (M2) reads.
-    private(set) var lastEvents: [GameEvent] = []
+    /// Bumped whenever new visual effects are queued — the overlay drains on change.
+    private(set) var effectSeq = 0
+    /// Bumped to trigger a screen-shake (firewall hit).
+    private(set) var shakeTrigger = 0
+    /// Set by the view from the environment; gates motion-heavy juice.
+    var reduceMotion = false
 
     private var engine: GridEngine
     private let config: GameConfig
     private let deck: Cyberdeck
     private let gridSize: GridSize
     private var lastDate: Date?
+    private var freezeRemaining: TimeInterval = 0   // hit-stop budget
+    private var pendingEffects: [JuiceEffect] = []
+    private let haptics = Haptics()
 
     init(config: GameConfig = .default,
          deck: Cyberdeck = .starter,
@@ -28,6 +35,14 @@ final class GameViewModel {
         let engine = GridEngine(config: config, deck: deck, gridSize: gridSize, seed: seed)
         self.engine = engine
         self.snapshot = engine.snapshot
+        haptics.prepare()
+    }
+
+    /// The overlay pulls queued effects (and clears them) on each `effectSeq` change.
+    func drainEffects() -> [JuiceEffect] {
+        let fx = pendingEffects
+        pendingEffects.removeAll()
+        return fx
     }
 
     /// Called every frame by the TimelineView with the current date.
@@ -37,21 +52,68 @@ final class GameViewModel {
         guard let last = lastDate else { return }          // first frame: just anchor
         let dt = min(date.timeIntervalSince(last), 1.0 / 20.0)  // clamp big stalls
         guard dt > 0 else { return }
-        lastEvents = engine.tick(deltaTime: dt)
+        if freezeRemaining > 0 { freezeRemaining -= dt; return }  // hit-stop: hold the sim
+        process(engine.tick(deltaTime: dt))
         snapshot = engine.snapshot
     }
 
     func tap(cell: Int) {
         guard !snapshot.isGameOver else { return }
-        lastEvents = engine.handleTap(cellIndex: cell)
+        process(engine.handleTap(cellIndex: cell))
         snapshot = engine.snapshot
     }
 
     func restart(seed: UInt64) {
         engine = GridEngine(config: config, deck: deck, gridSize: gridSize, seed: seed)
         lastDate = nil
-        lastEvents = []
+        freezeRemaining = 0
+        pendingEffects.removeAll()
         snapshot = engine.snapshot
+    }
+
+    /// Translate deterministic engine events into presentation: effects, haptics,
+    /// hit-stop and shake. The single place feel is wired to truth (skill §5).
+    private func process(_ events: [GameEvent]) {
+        guard !events.isEmpty else { return }
+        var queued = false
+        for event in events {
+            switch event {
+            case let .nodeDecoded(type, cell):
+                let points = type == .armoredDaemon ? config.scoreArmored : config.scoreStandard
+                pendingEffects.append(.init(cell: cell, style: .pop,
+                                            color: type == .armoredDaemon ? NeonTheme.gold : NeonTheme.cyan,
+                                            points: points))
+                queued = true
+                if type == .armoredDaemon {
+                    haptics.impact(.medium)
+                    if !reduceMotion { freezeRemaining = 0.08 }   // hit-stop on the heavy kill
+                } else {
+                    haptics.impact(.light)
+                }
+            case let .nodeBreached(cell):
+                pendingEffects.append(.init(cell: cell, style: .breach, color: NeonTheme.magenta, points: nil))
+                queued = true
+                haptics.impact(.soft)
+            case let .emptyMiss(cell):
+                pendingEffects.append(.init(cell: cell, style: .miss, color: NeonTheme.danger, points: nil))
+                queued = true
+                haptics.impact(.rigid)
+            case .nodeExpired:
+                haptics.impact(.soft)
+            case let .missAbsorbed(cell):
+                pendingEffects.append(.init(cell: cell, style: .shield, color: NeonTheme.gold, points: nil))
+                queued = true
+                haptics.impact(.soft)
+            case let .firewallExploded(cell):
+                pendingEffects.append(.init(cell: cell, style: .bomb, color: NeonTheme.danger, points: nil))
+                queued = true
+                if !reduceMotion { freezeRemaining = 0.06; shakeTrigger += 1 }
+                haptics.error()
+            case .gameOver:
+                break
+            }
+        }
+        if queued { effectSeq += 1 }
     }
 }
 
@@ -59,6 +121,8 @@ final class GameViewModel {
 
 struct GameView: View {
     @State private var model = GameViewModel(seed: GameView.freshSeed())
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var shakeAnim: CGFloat = 0
     var onExit: () -> Void = {}
 
     static func freshSeed() -> UInt64 {
@@ -74,13 +138,16 @@ struct GameView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
 
-                GridBoard(snapshot: model.snapshot) { cell in
-                    model.tap(cell: cell)
-                }
+                GridBoard(snapshot: model.snapshot,
+                          reduceMotion: reduceMotion,
+                          effectSeq: model.effectSeq,
+                          drainEffects: model.drainEffects,
+                          onTap: { model.tap(cell: $0) })
                 .padding(.horizontal, 16)
 
                 Spacer(minLength: 0)
             }
+            .modifier(ShakeEffect(animatableData: shakeAnim))
 
             if model.snapshot.isGameOver {
                 GameOverOverlay(snapshot: model.snapshot,
@@ -96,6 +163,13 @@ struct GameView: View {
                     }
             }
             .allowsHitTesting(false)
+        }
+        .onAppear { model.reduceMotion = reduceMotion }
+        .onChange(of: reduceMotion) { _, new in model.reduceMotion = new }
+        .onChange(of: model.shakeTrigger) { _, _ in
+            guard !reduceMotion else { return }
+            shakeAnim = 0
+            withAnimation(.easeOut(duration: 0.4)) { shakeAnim = 1 }
         }
     }
 }
@@ -143,12 +217,18 @@ private struct RAMBar: View {
                 .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .foregroundStyle(NeonTheme.textDim)
             GeometryReader { geo in
+                let w = geo.size.width
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.08))
-                    Capsule()
+                    Capsule().fill(Color.white.opacity(0.08))               // track
+                    Capsule()                                              // ghost (slow trail)
+                        .fill(color.opacity(0.32))
+                        .frame(width: max(0, w * fraction))
+                        .animation(.easeOut(duration: 0.6), value: fraction)
+                    Capsule()                                              // live (fast)
                         .fill(color)
-                        .frame(width: max(0, geo.size.width * fraction))
+                        .frame(width: max(0, w * fraction))
                         .neonGlow(color, radius: 6)
+                        .animation(.easeOut(duration: 0.18), value: fraction)
                 }
             }
             .frame(height: 12)
@@ -160,6 +240,9 @@ private struct RAMBar: View {
 
 private struct GridBoard: View {
     let snapshot: SessionSnapshot
+    let reduceMotion: Bool
+    let effectSeq: Int
+    let drainEffects: () -> [JuiceEffect]
     let onTap: (Int) -> Void
 
     var body: some View {
@@ -174,23 +257,28 @@ private struct GridBoard: View {
             let spacing: CGFloat = 10
             let cell = (side - spacing * CGFloat(cols - 1)) / CGFloat(cols)
 
-            VStack(spacing: spacing) {
-                ForEach(0..<snapshot.gridSize.rows, id: \.self) { row in
-                    HStack(spacing: spacing) {
-                        ForEach(0..<cols, id: \.self) { col in
-                            let index = row * cols + col
-                            CellView(node: nodesByCell[index], size: cell)
-                                // Whole cell is tappable → hitbox is generously
-                                // larger than the sprite (brief §10.7 tolerance).
-                                .contentShape(Rectangle())
-                                .onTapGesture { onTap(index) }
+            ZStack {
+                VStack(spacing: spacing) {
+                    ForEach(0..<snapshot.gridSize.rows, id: \.self) { row in
+                        HStack(spacing: spacing) {
+                            ForEach(0..<cols, id: \.self) { col in
+                                let index = row * cols + col
+                                CellView(node: nodesByCell[index], size: cell)
+                                    // Whole cell is tappable → hitbox is generously
+                                    // larger than the sprite (brief §10.7 tolerance).
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { onTap(index) }
+                            }
                         }
                     }
                 }
+                .animation(.easeOut(duration: 0.12), value: snapshot.nodes.map(\.id))
+
+                EffectsLayer(cols: cols, cell: cell, spacing: spacing,
+                             reduceMotion: reduceMotion, seq: effectSeq, drain: drainEffects)
             }
-            .frame(width: side, height: side, alignment: .center)
+            .frame(width: side, height: side, alignment: .topLeading)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .animation(.easeOut(duration: 0.12), value: snapshot.nodes.map(\.id))
         }
         .aspectRatio(1, contentMode: .fit)
     }
@@ -313,7 +401,7 @@ struct TerminalButton: View {
                 )
                 .neonGlow(color, radius: 6)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(TerminalButtonStyle())
     }
 }
 
