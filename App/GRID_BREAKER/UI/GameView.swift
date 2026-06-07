@@ -27,6 +27,7 @@ final class GameViewModel {
     private let gridSize: GridSize
     private let targetScore: Int?
     private let difficultyBias: Int
+    let chill: Bool
     private var lastDate: Date?
     private var freezeRemaining: TimeInterval = 0   // hit-stop budget
     private var pendingEffects: [JuiceEffect] = []
@@ -38,12 +39,14 @@ final class GameViewModel {
          gridSize: GridSize = .threeByThree,
          seed: UInt64,
          targetScore: Int? = nil,
-         difficultyBias: Int = 0) {
+         difficultyBias: Int = 0,
+         chill: Bool = false) {
         self.config = config
         self.deck = deck
         self.gridSize = gridSize
         self.targetScore = targetScore
         self.difficultyBias = difficultyBias
+        self.chill = chill
         let engine = GridEngine(config: config, deck: deck, gridSize: gridSize, seed: seed,
                                 targetScore: targetScore, difficultyBias: difficultyBias)
         self.engine = engine
@@ -112,10 +115,12 @@ final class GameViewModel {
                 queued = true
                 haptics.impact(.soft); audio.play(.breach)
             case let .emptyMiss(cell):
+                guard !chill else { break }   // no punishing feedback in Flow
                 pendingEffects.append(.init(cell: cell, style: .miss, color: NeonTheme.danger, points: nil))
                 queued = true
                 haptics.impact(.rigid); audio.play(.miss)
             case .nodeExpired:
+                guard !chill else { break }   // nodes just fade quietly in Flow
                 haptics.impact(.soft); audio.play(.miss)
             case let .missAbsorbed(cell):
                 pendingEffects.append(.init(cell: cell, style: .shield, color: NeonTheme.gold, points: nil))
@@ -163,15 +168,22 @@ struct GameView: View {
     /// Persist the finished session exactly once; returns what it yielded.
     let recordSession: (_ score: Int, _ won: Bool) -> SessionOutcome
 
+    /// Flow (chill) mode: no clock, no fail, calm pace + presentation.
+    let chill: Bool
+
     init(core: DataCore? = nil,
          deck: Cyberdeck,
+         chill: Bool = false,
          onExit: @escaping () -> Void,
          onNext: (() -> Void)? = nil,
          recordSession: @escaping (_ score: Int, _ won: Bool) -> SessionOutcome) {
         self.core = core
+        self.chill = chill
         self.onNext = onNext
         let model: GameViewModel
-        if let core {
+        if chill {
+            model = GameViewModel(config: .chill(), deck: deck, seed: GameView.freshSeed(), chill: true)
+        } else if let core {
             model = GameViewModel(config: .campaign(timeBudget: core.timeBudget),
                                   deck: deck, seed: GameView.freshSeed(),
                                   targetScore: core.targetScore, difficultyBias: core.difficultyBias)
@@ -204,11 +216,14 @@ struct GameView: View {
     var body: some View {
         ZStack {
             NeonTheme.background.ignoresSafeArea()
+            if chill {
+                ChillAtmosphere().ignoresSafeArea()
+            }
             FeverAtmosphere(active: model.snapshot.feverActive && !model.snapshot.isGameOver).ignoresSafeArea()
 
             VStack(spacing: 0) {
                 HUDView(snapshot: model.snapshot, coreName: core?.name,
-                        showInlineScore: !hasIslandOrNotch)
+                        showInlineScore: !hasIslandOrNotch, chill: chill)
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
 
@@ -231,7 +246,7 @@ struct GameView: View {
             // Score + RAM time framing the Dynamic Island / notch. Only on devices
             // that have one — flat-top devices keep score/RAM inline in the HUD.
             if hasIslandOrNotch && !model.snapshot.isGameOver {
-                IslandFrameRow(snapshot: model.snapshot)
+                IslandFrameRow(snapshot: model.snapshot, chill: chill)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                     .padding(.top, 16)
                     .ignoresSafeArea(.container, edges: .top)
@@ -306,6 +321,7 @@ struct GameView: View {
 /// device gets a worse layout.
 private struct IslandFrameRow: View {
     let snapshot: SessionSnapshot
+    var chill: Bool = false
 
     private var ramColor: Color {
         snapshot.ramFraction > 0.5 ? NeonTheme.cyan
@@ -333,24 +349,37 @@ private struct IslandFrameRow: View {
                 }
             }
             Spacer(minLength: 100)   // leave the centre clear for the Island
-            VStack(alignment: .trailing, spacing: 0) {
-                Text("RAM")
-                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.textDim)
-                HStack(spacing: 5) {
-                    if snapshot.shieldCharges > 0 {
-                        HStack(spacing: 2) {
-                            Image(systemName: "shield.fill")
-                            Text("\(snapshot.shieldCharges)")
+            if chill {
+                // No clock in Flow — a calm marker instead of RAM time.
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text("MODE")
+                        .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textDim)
+                    Text("⌁ FLOW")
+                        .font(.system(size: 16, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.magenta)
+                        .neonGlow(NeonTheme.magenta, radius: 5)
+                }
+            } else {
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text("RAM")
+                        .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textDim)
+                    HStack(spacing: 5) {
+                        if snapshot.shieldCharges > 0 {
+                            HStack(spacing: 2) {
+                                Image(systemName: "shield.fill")
+                                Text("\(snapshot.shieldCharges)")
+                            }
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .foregroundStyle(NeonTheme.gold)
                         }
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .foregroundStyle(NeonTheme.gold)
+                        Text("\(Int(ceil(max(0, snapshot.ramRemaining))))s")
+                            .font(.system(size: 20, weight: .heavy, design: .monospaced))
+                            .foregroundStyle(ramColor)
+                            .neonGlow(ramColor, radius: 6)
+                            .monospacedDigit()
                     }
-                    Text("\(Int(ceil(max(0, snapshot.ramRemaining))))s")
-                        .font(.system(size: 20, weight: .heavy, design: .monospaced))
-                        .foregroundStyle(ramColor)
-                        .neonGlow(ramColor, radius: 6)
-                        .monospacedDigit()
                 }
             }
         }
@@ -366,6 +395,8 @@ private struct HUDView: View {
     /// On flat-top devices (no Island/notch) show score/RAM here instead of
     /// flanking the top.
     var showInlineScore: Bool = false
+    /// Flow mode hides the pressure HUD (RAM bar + combo meter).
+    var chill: Bool = false
 
     var body: some View {
         VStack(spacing: 8) {
@@ -417,12 +448,15 @@ private struct HUDView: View {
                 .padding(.bottom, 2)
             }
             // SCORE and RAM time now live in the IslandFrameRow up top (framing
-            // the Dynamic Island). Here we keep the visual bars + combo.
-            RAMBar(fraction: snapshot.ramFraction)
-            ComboMeter(progress: snapshot.comboProgress,
-                       combo: snapshot.combo,
-                       threshold: snapshot.comboThreshold,
-                       feverActive: snapshot.feverActive)
+            // the Dynamic Island). Here we keep the visual bars + combo — but Flow
+            // mode hides them (no clock, no fever) to stay calm and uncluttered.
+            if !chill {
+                RAMBar(fraction: snapshot.ramFraction)
+                ComboMeter(progress: snapshot.comboProgress,
+                           combo: snapshot.combo,
+                           threshold: snapshot.comboThreshold,
+                           feverActive: snapshot.feverActive)
+            }
         }
     }
 }

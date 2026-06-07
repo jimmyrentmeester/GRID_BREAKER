@@ -9,7 +9,7 @@ struct RootView: View {
     @State private var activeCore: DataCore?
     @State private var pulse = false
 
-    private enum Screen { case menu, endless, campaign, core, cyberdeck, scores, help }
+    private enum Screen { case menu, endless, flow, campaign, core, cyberdeck, scores, help }
 
     private func tap() { AudioEngine.shared.play(.uiTap) }
 
@@ -29,6 +29,12 @@ struct RootView: View {
                              let earned = store.recordSession(score: score, on: Date())
                              return SessionOutcome(creditsEarned: earned, isHighScore: isHigh)
                          })
+                    .transition(.opacity)
+            case .flow:
+                // Chill mode — no clock, no fail, no economy; just play and leave.
+                GameView(deck: store.cyberdeck, chill: true,
+                         onExit: { screen = .menu },
+                         recordSession: { _, _ in SessionOutcome(creditsEarned: 0, isHighScore: false) })
                     .transition(.opacity)
             case .campaign:
                 CampaignView(store: store,
@@ -85,6 +91,7 @@ struct RootView: View {
 
             VStack(spacing: 12) {
                 TerminalButton(title: "JACK IN", color: NeonTheme.cyan) { tap(); screen = .endless }
+                TerminalButton(title: "FLOW STATE", color: NeonTheme.gridLine) { tap(); screen = .flow }
                 TerminalButton(title: "CAMPAIGN", color: NeonTheme.magenta) { tap(); screen = .campaign }
                 TerminalButton(title: "CYBERDECK", color: NeonTheme.gold) { tap(); screen = .cyberdeck }
                 TerminalButton(title: "TOP RUNS", color: NeonTheme.cyan) { tap(); screen = .scores }

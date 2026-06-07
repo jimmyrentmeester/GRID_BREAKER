@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.9 — Flow (chill) mode (2026-06-07)
+- New FLOW STATE: a calm, no-pressure mode with no clock, no failure and no firewall
+  bombs — just a steady, satisfying tap rhythm with a soft living backdrop. Play to
+  unwind for as long as you like; pause or quit whenever.
+
 ## 0.8 — Pause + how-to-play (2026-06-07)
 - You can now pause mid-run (the RAM clock freezes) and quit back to the menu —
   no more having to die to leave a session.

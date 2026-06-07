@@ -3,6 +3,22 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #16 — Flow (chill) mode (2026-06-07)
+- New **FLOW STATE** mode designed for flow (the channel between anxiety & boredom):
+  strip anxiety (no RAM clock / no death, no firewall bombs, no penalties, no
+  escalation, no Fever) while avoiding boredom (3 nodes always present, armored for
+  variety, full satisfying juice/audio). Endless; leave via pause→QUIT.
+- `GameConfig.chill()` (drain 0, penalties 0, firewall 0, flat spawn/lifespan,
+  `fixedActiveNodes` 3, `feverEnabled` false). Engine: `checkFever` honors
+  `feverEnabled`; `targetActiveNodes` honors `fixedActiveNodes`.
+- UI: GameView/GameViewModel `chill` flag — hides RAM bar + combo meter, island
+  row shows "⌁ FLOW" instead of RAM, softens misses (no red pop/haptic/sound), adds
+  a slow `ChillAtmosphere` breath (reduced-motion aware). Menu FLOW STATE button +
+  `.flow` route (no economy/leaderboard).
+- **Verified:** clean build; headless (no death over 180s and 60s idle, 0 bombs,
+  0 fevers); on-device (calm HUD, FLOW marker, soft atmosphere, no bombs). Temp
+  hooks reverted, save cleared.
+
 ## Run #15 — Pause/quit + how-to-play (2026-06-07)
 - **In-run pause/quit:** `GameViewModel.isPaused` (+ `pause()`/`unpause()`); `advance`
   and `tap` guard on it so the sim and RAM clock freeze while paused. Pause button

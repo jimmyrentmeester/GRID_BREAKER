@@ -61,9 +61,15 @@ struct GameConfig: Sendable {
     var feverComboThreshold: Int = 8
     var feverDuration: TimeInterval = 4.0
     var feverScoreMultiplier: Int = 2
+    /// Whether Fever Mode can trigger at all (off in Flow/chill mode).
+    var feverEnabled: Bool = true
     /// During fever: faster spawns + a fuller grid of golden bonus nodes.
     var feverSpawnInterval: TimeInterval = 0.34
     var feverActiveNodes: Int = 4
+
+    /// If set, the active-node ceiling is fixed (no score-based escalation) — used
+    /// by Flow mode to keep a flat, calm pace.
+    var fixedActiveNodes: Int? = nil
 
     // MARK: Input tolerance (brief 10.7 risk mitigation)
     /// Hitbox is enlarged beyond the visual sprite for touch tolerance.
@@ -85,6 +91,30 @@ struct GameConfig: Sendable {
         c.baseRAMSeconds = timeBudget
         c.bonusStandardDecode = 0
         c.bonusArmoredDecode = 0
+        return c
+    }
+
+    /// Config for **Flow (chill) mode**: no failure, no clock, no hazards, a flat
+    /// gentle pace. RAM never drains (no death), no firewall bombs, no miss
+    /// penalties, no difficulty escalation, no Fever. Just a calm, endless tap
+    /// rhythm you leave when you want.
+    static func chill() -> GameConfig {
+        var c = GameConfig.default
+        c.ramDrainPerSecond = 0          // RAM never drains → can't fail
+        c.penaltyMiss = 0
+        c.penaltyExpiredDaemon = 0
+        c.bonusStandardDecode = 0
+        c.bonusArmoredDecode = 0
+        c.firewallSpawnChance = 0        // no hazards
+        c.armoredSpawnChance = 0.22      // light variety
+        c.baseSpawnInterval = 0.9        // calm, constant cadence
+        c.minSpawnInterval = 0.9
+        c.spawnCompression = 0
+        c.baseNodeLifespan = 2.2         // generous, constant
+        c.minNodeLifespan = 2.2
+        c.lifespanCompression = 0
+        c.fixedActiveNodes = 3
+        c.feverEnabled = false
         return c
     }
 
@@ -119,6 +149,9 @@ struct GameConfig: Sendable {
     /// active-node ceiling grows with score). Starts at 2 so the board feels
     /// alive from the first second; always leaves one free cell.
     func targetActiveNodes(atScore score: Int, gridSize: GridSize) -> Int {
-        max(2, min(gridSize.cellCount - 1, 2 + score / 8))
+        if let fixed = fixedActiveNodes {
+            return max(1, min(gridSize.cellCount - 1, fixed))
+        }
+        return max(2, min(gridSize.cellCount - 1, 2 + score / 8))
     }
 }

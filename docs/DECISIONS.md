@@ -120,6 +120,17 @@ keep score/RAM inline in the HUD so nothing overlaps or is lost. A between-runs 
 Activity (Option B) was considered but deferred (needs a widget extension +
 entitlement, and only shows when not playing — awkward for a reflex/time-attack game).
 
+## D15 — Flow (chill) mode: failure-free, flat-pace, calm presentation
+**2026-06-07.** Designed for flow (the channel between anxiety and boredom). Removed
+every anxiety source (RAM never drains → no death; no firewall bombs; no miss
+penalties; no difficulty escalation; no Fever spikes) but kept engagement (3 nodes
+always present, armored for variety, full juice/audio + a gentle score). No win/lose
+→ you leave via pause→QUIT (time-distortion / play-as-long-as-you-like). Decoupled
+from the economy (no Credits, no leaderboard) to keep it pure. Implemented entirely
+via `GameConfig.chill()` + two engine hooks (`feverEnabled`, `fixedActiveNodes`) and
+a `chill` UI flag (calm HUD, soft misses, slow `ChillAtmosphere`). Reuses the whole
+engine — no separate game loop.
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

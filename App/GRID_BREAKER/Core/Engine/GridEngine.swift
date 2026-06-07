@@ -262,7 +262,7 @@ struct GridEngine {
     /// Start Fever Mode if a fresh decode pushed the combo to threshold.
     /// On trigger: hazards vanish (bombs removed safely), window resets.
     private mutating func checkFever() -> [GameEvent] {
-        guard !feverActive, combo >= config.feverComboThreshold else { return [] }
+        guard config.feverEnabled, !feverActive, combo >= config.feverComboThreshold else { return [] }
         feverActive = true
         feverRemaining = config.feverDuration
         combo = 0
