@@ -2,6 +2,10 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.17 — Launch screen (2026-06-07)
+- The app now opens on a branded neon launch screen (logo + GRID_BREAKER wordmark on
+  the dark grid background) instead of a blank black flash.
+
 ## 0.16 — Tap trails are real trails now (2026-06-07)
 - Tap trails now draw a glowing beam *between* your taps (a "data stream" that jumps
   across the grid) instead of leaving lone dots — so they actually look like trails.

@@ -3,6 +3,24 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #25 — Branded launch screen (ship-prep) (2026-06-07)
+Replaced the blank auto-generated launch screen (a black flash) with a branded one.
+- **`LaunchScreen.storyboard`**: dark background (0.02,0.02,0.05 — the Classic
+  palette bg) with a centered vertical stack: the neon app-logo image, the cyan
+  "GRID_BREAKER" wordmark (Menlo-Bold) and the magenta "// netrunner reflex hack"
+  subtitle. Static (OS-rendered pre-launch), so no glow animation — the baked icon
+  art carries the neon.
+- **Reused art:** new `LaunchLogo.imageset` inside `Assets.xcassets` (a folder
+  reference, so no project change) copies the existing `icon1024.png` — one source
+  of truth for the mark.
+- **Wiring:** added the storyboard fileRef/buildFile (ids `0104`/`0105`), to the
+  group + Resources phase, and switched `INFOPLIST_KEY_UILaunchScreen_Generation`
+  → `INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen` (both configs).
+- **Verified on-device (iPhone 16 Pro sim):** captured the launch screen (held it via
+  a temporary `Thread.sleep` in the App init, since it otherwise vanishes the instant
+  the first frame renders) — icon + wordmark + subtitle centered on the dark bg, on
+  brand. Temp delay reverted; final build clean.
+
 ## Run #24 — Tap trails reworked into connecting beams (2026-06-07)
 The old trail dropped an isolated dot at each finger sample — in a tap game that
 read as scattered dots, not a trail. Reworked into a neon "data stream".

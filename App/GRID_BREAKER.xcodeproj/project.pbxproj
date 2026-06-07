@@ -24,6 +24,7 @@
 		GB000000000000000000001E /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000100 /* AudioEngine.swift */; };
 		GB000000000000000000001F /* Music in Resources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000101 /* Music */; };
 		GB0000000000000000000103 /* Campaign.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000102 /* Campaign.swift */; };
+		GB0000000000000000000105 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000104 /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,6 +46,7 @@
 		GB0000000000000000000100 /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
 		GB0000000000000000000101 /* Music */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Music; sourceTree = "<group>"; };
 		GB0000000000000000000102 /* Campaign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Campaign.swift; sourceTree = "<group>"; };
+		GB0000000000000000000104 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,6 +78,7 @@
 				GB0000000000000000000026 /* UI */,
 				GB0000000000000000000101 /* Music */,
 				GB000000000000000000000A /* Assets.xcassets */,
+				GB0000000000000000000104 /* LaunchScreen.storyboard */,
 			);
 			path = GRID_BREAKER;
 			sourceTree = "<group>";
@@ -206,6 +209,7 @@
 			files = (
 				GB0000000000000000000018 /* Assets.xcassets in Resources */,
 				GB000000000000000000001F /* Music in Resources */,
+				GB0000000000000000000105 /* LaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -322,7 +326,7 @@
 				DEVELOPMENT_TEAM = A652HSR4S9;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
@@ -345,7 +349,7 @@
 				DEVELOPMENT_TEAM = A652HSR4S9;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
