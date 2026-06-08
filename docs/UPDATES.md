@@ -2,6 +2,10 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.12 — Tutorial teaches every power-up (2026-06-08)
+- The training now walks you through all three power-ups — ❄ Freeze, ⚡ Overclock and
+  🌀 Purge — instead of only Freeze.
+
 ## 1.0.11 — Gentler campaign (2026-06-08)
 - The whole campaign now plays about 30% slower and more forgiving — daemons linger
   longer, the board fills less frantically, and each core's clock is extended to match —

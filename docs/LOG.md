@@ -3,6 +3,20 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #56 — Tutorial covers all three power-ups (2026-06-08)
+Maintainer: the white lightning-bolt (Overclock) power-up was missing from the tutorial.
+The new OnboardingView's beat 7 only demoed Freeze (snowflake).
+- **All three power-ups now taught in turn** (beat 7): ❄ Freeze → ⚡ Overclock → 🌀 Purge,
+  each rendered as the real white pickup with its glyph; tapping names the effect, then
+  the next pickup appears. Progress shown as "(n/3)". L3 card blurb updated to
+  "grab all three power-ups".
+- **Coverage now:** decode · RAM · firewall · armored · cache · worm · Fever (interactive)
+  · all 3 power-ups → payday → guided Cyberdeck/Cosmetics. (Grid 3×3→4×4 is still taught
+  in-context by campaign core 9's briefing — impractical to demo in the fixed-3×3
+  practice grid.)
+- **Verified:** clean build; on-device the Overclock ⚡ pickup renders at beat 7 step 2/3
+  (temp force reverted).
+
 ## Run #55 — Campaign ~30% slower (friendlier) (2026-06-08)
 Maintainer: tune the whole campaign ~30% slower so it's friendlier to new/starting
 players. Campaign cores are time-attacks, so slowing the pace alone would *hurt*

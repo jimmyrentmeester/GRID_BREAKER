@@ -596,6 +596,15 @@ struct OnboardingView: View {
     @State private var feverOn = false           // beat 6: fever-active phase
     @State private var feverGold: Set<Int> = []  // beat 6: gold nodes to clear in Fever
     @State private var powerLabel: String? = nil // beat 7
+    @State private var powerStep = 0             // beat 7: which power-up (0…2)
+
+    /// The three power-ups, taught one after another in beat 7 (glyph matches the
+    /// real white pickups; label names the effect).
+    private let powerUps: [(symbol: String, label: String)] = [
+        ("snowflake", "❄ FREEZE — the RAM clock pauses!"),
+        ("bolt.fill", "⚡ OVERCLOCK — double points!"),
+        ("wind",      "🌀 PURGE — wipes every firewall!"),
+    ]
 
     private let centerCell = 4
     private let firewallCell = 0
@@ -619,7 +628,7 @@ struct OnboardingView: View {
         case 5: return "The green worm hops — tap it wherever it lands."
         case 6: return feverOn ? "FEVER! Tap the gold nodes for double points!"
                                : "Chain decodes to charge Fever — keep tapping!"
-        case 7: return powerLabel ?? "Grab the white power-up pickup for a burst."
+        case 7: return powerLabel ?? "Grab the power-up pickup (\(powerStep + 1)/\(powerUps.count)) — tap it!"
         default: return ""
         }
     }
@@ -693,7 +702,7 @@ struct OnboardingView: View {
             case 2: return ("square.grid.3x3.fill", "Read the Grid",
                             "Armored shells, gold caches, and worms that hop.")
             default: return ("bolt.fill", "Overload",
-                             "Chain a Fever, then grab a power-up.")
+                             "Chain a Fever, then grab all three power-ups.")
             }
         }()
         return VStack(spacing: 18) {
@@ -818,7 +827,7 @@ struct OnboardingView: View {
             case 6 where idx == feverCell:
                 sprite(NeonTheme.cyan, "circle.grid.cross.fill")
             case 7 where idx == centerCell:
-                sprite(NeonTheme.textPrimary, "snowflake", ringed: true)
+                sprite(NeonTheme.textPrimary, powerUps[powerStep].symbol, ringed: true)
             default:
                 EmptyView()
             }
@@ -883,11 +892,15 @@ struct OnboardingView: View {
                 }
             }
         case 7 where idx == centerCell:
+            // Teach all three power-ups in turn: tap → name its effect → next pickup.
             AudioEngine.shared.play(.fever)
-            withAnimation(.easeInOut(duration: 0.2)) { powerLabel = "❄ FREEZE — the clock pauses!" }
+            withAnimation(.easeInOut(duration: 0.2)) { powerLabel = powerUps[powerStep].label }
             flashCell = idx
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
-                flashCell = nil; advance()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                flashCell = nil
+                withAnimation(.easeInOut(duration: 0.2)) { powerLabel = nil }
+                if powerStep + 1 < powerUps.count { powerStep += 1 }
+                else { advance() }
             }
         default:
             break
