@@ -24,6 +24,26 @@ mostly via targets).
   the new targets/times, core 1 briefing ("DECODE THE GRID", target 25) held the clock
   at 40 s, JACK IN started the run.
 
+## Run #41 — Audio freeze/music fix + tutorial power-ups (2026-06-08)
+Two reported issues.
+- **Freeze-on-button + music drops (fix):** `RootView` called `AudioEngine.resume()`
+  on **every** screen navigation (`.onChange(of: screen)`), and `GameView.onAppear`
+  again. `resume()` toggles the audio session and can restart the `AVAudioEngine` on
+  the main thread — doing that per-tap caused the intermittent hang, and the engine
+  restart interrupted the music player (whose `isPlaying` then read stale-true, so it
+  never restarted → permanent silence). Removed both per-navigation calls; `resume()`
+  now fires only from the three resilience observers (interruption-end / config-change
+  / foreground). Added a reentrancy guard so a restart can't loop via the config-change
+  notification. Made `MusicPlayer.resume()` robust: force `play()` (no-op if already
+  playing) and recreate the player only if that fails — no longer trusts `isPlaying`.
+- **Tutorial power-ups:** added a recap row — "Grab power-ups: ❄ Freeze, ⚡ Overclock
+  (×2), 🌀 Purge bombs" — so the how-to covers them.
+- **Verified:** clean build. The freeze was intermittent/device-specific (not
+  reproducible on the simulator); the fix removes its trigger and is logic-only. The
+  tutorial row is a trivial addition to the existing recap (on-device walkthrough not
+  captured — the SETTINGS→tutorial path is gated behind a sub-44pt utility button that
+  computer-use couldn't reliably tap).
+
 ## Run #40 — Campaign difficulty re-tune (2026-06-08)
 Data-driven re-tune of the 10-core ladder via a **multi-skill** headless sim
 (strong 0.20 / good 0.30 / casual 0.42 reaction, seed-averaged, starter deck).

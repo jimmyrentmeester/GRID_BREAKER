@@ -624,6 +624,8 @@ struct TutorialView: View {
                      "It drains over time — decoding tops it up, misses cost time.")
             recapRow("bolt.fill", NeonTheme.gold, "Chain a Fever",
                      "String clean hits for Fever: hazards vanish, score ×2.")
+            recapRow("sparkles", NeonTheme.textPrimary, "Grab power-ups",
+                     "Tap a white pickup for a burst: ❄ Freeze, ⚡ Overclock (×2), 🌀 Purge bombs.")
             recapRow("bitcoinsign.circle.fill", NeonTheme.gold, "Spend Credits",
                      "Upgrade your Cyberdeck and buy neon palettes.")
         }

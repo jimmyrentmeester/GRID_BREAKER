@@ -385,7 +385,6 @@ struct GameView: View {
         }
         .onAppear {
             model.reduceMotion = reduceMotion
-            AudioEngine.shared.resume()
             if showBriefing { model.pause() }   // hold the clock until the briefing is dismissed
         }
         .onChange(of: reduceMotion) { _, new in model.reduceMotion = new }

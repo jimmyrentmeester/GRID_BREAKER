@@ -94,7 +94,6 @@ struct RootView: View {
             AudioEngine.shared.start()
             if !store.tutorialSeen { screen = .tutorial }   // first-launch onboarding
         }
-        .onChange(of: screen) { _, _ in AudioEngine.shared.resume() }
     }
 
     private var titleScreen: some View {

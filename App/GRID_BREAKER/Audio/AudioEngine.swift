@@ -87,10 +87,17 @@ final class AudioEngine {
         registerObservers()
     }
 
+    private var isResuming = false
+
     /// Self-heal: recover audio after an interruption / route or config change /
-    /// returning to the foreground. Safe to call any time (idempotent-ish).
+    /// returning to the foreground — NOT on every screen navigation (that churn caused
+    /// intermittent main-thread hangs + dropped music). The reentrancy guard stops a
+    /// restart from looping via the configuration-change notification it can emit.
     func resume() {
         guard isRunning else { start(); return }
+        guard !isResuming else { return }
+        isResuming = true
+        defer { isResuming = false }
         #if canImport(UIKit)
         try? AVAudioSession.sharedInstance().setActive(true)
         #endif
@@ -300,15 +307,16 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
         player = nil
     }
 
-    /// Resume after an interruption: replay if paused, or start the next track if
-    /// the player was torn down. No-op if music is off or already playing.
+    /// Resume after an interruption. Robust against a stale player: `isPlaying` can
+    /// lie (read true after the audio was torn down by a session/engine churn), so we
+    /// force `play()` — a no-op if genuinely playing, a resume if paused — and only if
+    /// that fails do we recreate the player. This is what keeps the music from going
+    /// permanently silent after an interruption.
     func resume() {
         guard enabled else { return }
-        if let p = player {
-            if !p.isPlaying { p.play() }
-        } else {
-            playCurrent()
-        }
+        if let p = player, p.play() { return }   // (re)started or already playing
+        player = nil                             // dead player → rebuild
+        playCurrent()
     }
 
     private func playCurrent() {
