@@ -8,6 +8,11 @@ Short, human-readable changelog (newest first).
   briefing the first time you meet it. Levels run longer with higher score targets,
   ramping to the finale.
 
+## 1.0.1 — Campaign difficulty re-tuned (2026-06-08)
+- Smoothed the campaign curve: gentler early/mid cores so you can actually progress
+  through and learn each mechanic, with the late cores (and the finale) tightening
+  into a real challenge. Tuned across player skill levels.
+
 ## 1.0 — App Store readiness (2026-06-08)
 - Prepped for submission: opaque app icon (App Store requirement), version set to 1.0,
   export-compliance declared, and iPhone-only targeting. Remaining steps (Apple account,

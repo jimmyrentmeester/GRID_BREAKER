@@ -24,6 +24,22 @@ mostly via targets).
   the new targets/times, core 1 briefing ("DECODE THE GRID", target 25) held the clock
   at 40 s, JACK IN started the run.
 
+## Run #40 — Campaign difficulty re-tune (2026-06-08)
+Data-driven re-tune of the 10-core ladder via a **multi-skill** headless sim
+(strong 0.20 / good 0.30 / casual 0.42 reaction, seed-averaged, starter deck).
+- **Problem (old curve):** strong players coasted (won every core in 30–50% of the
+  budget), yet a "good" player cleared only 4/10 and "casual" 2/10 — most players
+  never reached the worm/power-up cores the campaign exists to teach. Late cores were
+  pinned at the difficulty floor (bias ≤700 → 0.5 s lifespans) which slow players
+  can't physically keep up with.
+- **Fix:** much gentler early/mid pace (`difficultyBias` 20→700 ⇒ 0→300), moderately
+  lower targets (25→200 ⇒ 22→180), and **tighter late budgets** for tension.
+- **Result (sim):** everyone clears the intro (1–4); casual ~core 5, good ~7–8,
+  strong finishes with the **finale a real test (~80%)**; clear times ramp 10s→29s.
+  Cyberdeck upgrades (not in the sim) make it more forgiving in practice.
+- **Verified:** clean build; multi-skill sim shows a smooth gradient (no
+  impossible-for-everyone or trivial-for-all cores). Human playtest still pending.
+
 ## Run #39 — App Store readiness pass (2026-06-08)
 Fixed the in-repo blockers; documented the account/store steps in
 `docs/RELEASE_CHECKLIST.md`.
