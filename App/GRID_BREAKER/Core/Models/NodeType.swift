@@ -25,6 +25,10 @@ enum NodeType: String, Codable, CaseIterable, Sendable {
     /// One tap to decode (wherever it currently is); a real daemon otherwise.
     case wormDaemon
 
+    /// A rare power-up pickup. One tap triggers its `PowerUpKind` effect (it carries
+    /// no score). Harvestable; a missed one expires harmlessly.
+    case powerUp
+
     /// How many taps are required to fully clear this node.
     var requiredTaps: Int {
         switch self {
@@ -33,6 +37,7 @@ enum NodeType: String, Codable, CaseIterable, Sendable {
         case .firewallBomb:   return 0 // never a valid target
         case .dataCache:      return 1
         case .wormDaemon:     return 1
+        case .powerUp:        return 1
         }
     }
 
@@ -45,4 +50,11 @@ enum NodeType: String, Codable, CaseIterable, Sendable {
     var penalizesOnExpiry: Bool {
         self == .standardDaemon || self == .armoredDaemon || self == .wormDaemon
     }
+}
+
+/// The effect a `.powerUp` node grants when tapped.
+enum PowerUpKind: String, Codable, CaseIterable, Sendable {
+    case timeFreeze   // RAM + node decay pause for a few seconds (a safe window)
+    case overclock    // score multiplier ×N for a few seconds
+    case purge        // instantly clears all firewall bombs on the board
 }

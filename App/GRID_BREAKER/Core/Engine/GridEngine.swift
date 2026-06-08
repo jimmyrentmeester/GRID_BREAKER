@@ -40,6 +40,7 @@ enum GameEvent: Sendable, Equatable {
     case feverStarted                       // combo hit threshold → Fever Mode
     case feverEnded                         // Fever Mode window elapsed
     case gridExpanded                       // grid grew 3×3 → 4×4 (endless escalation)
+    case powerUpCollected(PowerUpKind)      // a power-up pickup was tapped
     case gameOver(GameOverReason)
 }
 
@@ -58,7 +59,9 @@ struct SessionSnapshot: Sendable {
     var comboThreshold: Int
     var feverActive: Bool
     var feverFraction: Double          // remaining fever window, 0…1
-    var scoreMultiplier: Int           // 1, or feverScoreMultiplier during fever
+    var scoreMultiplier: Int           // combined fever × overclock multiplier
+    var freezeActive: Bool             // time-freeze power-up running
+    var overclockActive: Bool          // overclock power-up running
     var targetScore: Int?              // campaign goal (nil in endless)
     var isGameOver: Bool
     var gameOverReason: GameOverReason?
@@ -114,6 +117,8 @@ struct GridEngine {
     private(set) var combo: Int = 0
     private(set) var feverActive = false
     private var feverRemaining: TimeInterval = 0
+    private var powerFreezeRemaining: TimeInterval = 0     // time-freeze window
+    private var powerOverclockRemaining: TimeInterval = 0  // bonus-multiplier window
     private(set) var isGameOver = false
     private(set) var gameOverReason: GameOverReason?
 
@@ -147,11 +152,19 @@ struct GridEngine {
             feverActive: feverActive,
             feverFraction: feverActive && config.feverDuration > 0
                 ? max(0, feverRemaining / config.feverDuration) : 0,
-            scoreMultiplier: feverActive ? config.feverScoreMultiplier : 1,
+            scoreMultiplier: effectiveMultiplier,
+            freezeActive: powerFreezeRemaining > 0,
+            overclockActive: powerOverclockRemaining > 0,
             targetScore: targetScore,
             isGameOver: isGameOver,
             gameOverReason: gameOverReason
         )
+    }
+
+    /// Combined score multiplier: fever × overclock (each ×N while active).
+    private var effectiveMultiplier: Int {
+        (feverActive ? config.feverScoreMultiplier : 1)
+        * (powerOverclockRemaining > 0 ? config.overclockMultiplier : 1)
     }
 
     /// Score used for difficulty scaling (campaign cores can start faster).
@@ -164,10 +177,17 @@ struct GridEngine {
     mutating func tick(deltaTime: TimeInterval) -> [GameEvent] {
         guard !isGameOver, deltaTime > 0 else { return [] }
         var events: [GameEvent] = []
-        clock += deltaTime
 
-        // 0. Fever window countdown.
-        if feverActive {
+        // Power-up timers run in real time. Time-freeze stops the simulation clock,
+        // which pauses node expiry + worm hops automatically; RAM drain and the fever
+        // countdown are paused explicitly below. Spawns continue → a safe burst window.
+        let frozen = powerFreezeRemaining > 0
+        if powerFreezeRemaining > 0 { powerFreezeRemaining = max(0, powerFreezeRemaining - deltaTime) }
+        if powerOverclockRemaining > 0 { powerOverclockRemaining = max(0, powerOverclockRemaining - deltaTime) }
+        if !frozen { clock += deltaTime }
+
+        // 0. Fever window countdown (paused while frozen).
+        if feverActive && !frozen {
             feverRemaining -= deltaTime
             if feverRemaining <= 0 {
                 feverActive = false
@@ -177,8 +197,8 @@ struct GridEngine {
             }
         }
 
-        // 1. Drain the RAM buffer.
-        ramRemaining -= config.ramDrainPerSecond * deltaTime
+        // 1. Drain the RAM buffer (paused while frozen).
+        if !frozen { ramRemaining -= config.ramDrainPerSecond * deltaTime }
 
         // 2. Expire timed-out nodes. Daemons penalize + break combo; bombs vanish safely.
         let expired = nodes.filter { clock >= $0.expiresAt }
@@ -254,6 +274,11 @@ struct GridEngine {
         case .standardDaemon, .dataCache, .wormDaemon:
             return [decode(at: idx)] + checkFever() + checkTarget() + checkGridEscalation()
 
+        case .powerUp:
+            let kind = nodes[idx].powerKind ?? .timeFreeze
+            nodes.remove(at: idx)
+            return applyPowerUp(kind)
+
         case .armoredDaemon:
             if nodes[idx].hitsRemaining > 1 {
                 nodes[idx].hitsRemaining -= 1   // breach the shell
@@ -262,6 +287,17 @@ struct GridEngine {
                 return [decode(at: idx)] + checkFever() + checkTarget() + checkGridEscalation()
             }
         }
+    }
+
+    /// Apply a tapped power-up's effect. Pickups carry no score — the effect is the
+    /// reward. (No combo/decode bump: a power-up isn't a daemon decode.)
+    private mutating func applyPowerUp(_ kind: PowerUpKind) -> [GameEvent] {
+        switch kind {
+        case .timeFreeze: powerFreezeRemaining = config.freezeDuration
+        case .overclock:  powerOverclockRemaining = config.overclockDuration
+        case .purge:      nodes.removeAll { $0.type == .firewallBomb }
+        }
+        return [.powerUpCollected(kind)]
     }
 
     /// Campaign win: reaching the target score cracks the core.
@@ -300,7 +336,7 @@ struct GridEngine {
     private mutating func decode(at idx: Int) -> GameEvent {
         let node = nodes[idx]
         combo += 1
-        let multiplier = feverActive ? config.feverScoreMultiplier : 1
+        let multiplier = effectiveMultiplier
         switch node.type {
         case .standardDaemon:
             score += config.scoreStandard * multiplier
@@ -314,8 +350,8 @@ struct GridEngine {
         case .wormDaemon:
             score += config.scoreWorm * multiplier
             ramRemaining = min(ramCapacity, ramRemaining + config.bonusStandardDecode + decodeTimeBonus)
-        case .firewallBomb:
-            break // never decoded
+        case .firewallBomb, .powerUp:
+            break // never decoded (power-ups go through applyPowerUp)
         }
         nodes.remove(at: idx)
         return .nodeDecoded(node.type, cell: node.cellIndex)
@@ -353,26 +389,31 @@ struct GridEngine {
                 type = .dataCache
             } else if roll < config.firewallSpawnChance + config.armoredSpawnChance + config.cacheSpawnChance + config.wormSpawnChance {
                 type = .wormDaemon
+            } else if roll < config.firewallSpawnChance + config.armoredSpawnChance + config.cacheSpawnChance + config.wormSpawnChance + config.powerUpSpawnChance {
+                type = .powerUp
             } else {
                 type = .standardDaemon
             }
         }
 
-        // Cache lives briefly (grab it fast); a worm lives a touch longer and gets a
-        // hop schedule so it can move before timing out.
+        // Cache + power-ups live briefly (grab fast); a worm lives a touch longer and
+        // gets a hop schedule; a power-up carries a random kind.
         let baseLife = config.nodeLifespan(atScore: scaledScore)
         let lifespan: TimeInterval
-        let nextHop: TimeInterval?
+        var nextHop: TimeInterval?
+        var kind: PowerUpKind?
         switch type {
-        case .dataCache:  lifespan = baseLife * config.cacheLifespanFactor; nextHop = nil
+        case .dataCache:  lifespan = baseLife * config.cacheLifespanFactor
         case .wormDaemon: lifespan = baseLife * config.wormLifespanFactor;  nextHop = clock + config.wormHopInterval
-        default:          lifespan = baseLife;                              nextHop = nil
+        case .powerUp:    lifespan = baseLife * config.powerLifespanFactor; kind = PowerUpKind.allCases.randomElement(using: &rng)
+        default:          lifespan = baseLife
         }
         return GridNode(cellIndex: cell,
                         type: type,
                         lifespan: lifespan,
                         spawnedAt: clock,
-                        nextHopAt: nextHop)
+                        nextHopAt: nextHop,
+                        powerKind: kind)
     }
 
     private mutating func endGame(_ reason: GameOverReason) -> GameEvent {

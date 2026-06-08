@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.23 — Power-up pickups (2026-06-08)
+- Grab a rare white pickup for a burst of power: ❄ FREEZE (time stops draining your
+  RAM for a few seconds), ⚡ OVERCLOCK (double score), or 🌀 PURGE (wipes every
+  firewall bomb off the board). (Endless only.)
+
 ## 0.22 — Worm daemons (2026-06-08)
 - A new green "worm" daemon scuttles across the grid — it hops to a neighbouring
   cell if you're too slow, so you have to chase it down. Worth a little extra.

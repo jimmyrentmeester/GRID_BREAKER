@@ -96,6 +96,14 @@ struct GameConfig: Sendable {
     var wormSpawnChance: Double = 0.08
     var wormHopInterval: TimeInterval = 0.55
     var wormLifespanFactor: Double = 1.25
+    /// Chance a spawn is a power-up pickup (a random `PowerUpKind`). Short-lived.
+    var powerUpSpawnChance: Double = 0.04
+    var powerLifespanFactor: Double = 0.8
+
+    // MARK: Power-up effects
+    var freezeDuration: TimeInterval = 3.0      // time-freeze window
+    var overclockDuration: TimeInterval = 4.0   // bonus-multiplier window
+    var overclockMultiplier: Int = 2            // ×N during overclock (stacks w/ fever)
 
     static let `default` = GameConfig()
 
@@ -112,6 +120,7 @@ struct GameConfig: Sendable {
         c.bonusCacheDecode = 0
         c.cacheSpawnChance = 0           // cores are sim-tuned; no bonus caches
         c.wormSpawnChance = 0            // …and no worms (fixed mechanical mix)
+        c.powerUpSpawnChance = 0         // …and no power-ups
         c.gridEscalationScore = nil      // cores are hand-tuned for a fixed 3×3
         return c
     }
@@ -138,6 +147,7 @@ struct GameConfig: Sendable {
         c.fixedActiveNodes = 3
         c.feverEnabled = false
         c.wormSpawnChance = 0            // no chasing targets — Flow stays calm
+        c.powerUpSpawnChance = 0         // no power-ups — Flow stays calm
         c.gridEscalationScore = nil      // Flow stays a calm, fixed 3×3
         return c
     }

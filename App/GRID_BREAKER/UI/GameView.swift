@@ -158,6 +158,8 @@ final class GameViewModel {
                 haptics.impact(.soft)
             case .gridExpanded:
                 haptics.success(); audio.play(.fever)   // a positive "grid grew" cue
+            case .powerUpCollected:
+                haptics.success(); audio.play(.fever)   // bright sting on pickup
             case .gameOver:
                 audio.play(.gameOver)
             }
@@ -252,6 +254,11 @@ struct GameView: View {
                 ChillAtmosphere().ignoresSafeArea()
             }
             FeverAtmosphere(active: model.snapshot.feverActive && !model.snapshot.isGameOver).ignoresSafeArea()
+            if model.snapshot.freezeActive && !model.snapshot.isGameOver {
+                // Icy frost while time is frozen.
+                Color(red: 0.5, green: 0.85, blue: 1.0).opacity(0.12)
+                    .ignoresSafeArea().allowsHitTesting(false).transition(.opacity)
+            }
 
             VStack(spacing: 0) {
                 HUDView(snapshot: model.snapshot, coreName: core?.name, chill: chill)
@@ -265,7 +272,9 @@ struct GameView: View {
                     BigScoreView(snapshot: model.snapshot)
                     DataCoreView(progress: coreProgress,
                                  feverActive: model.snapshot.feverActive,
-                                 label: chill ? "FLOW"
+                                 label: model.snapshot.freezeActive ? "FREEZE"
+                                       : model.snapshot.overclockActive ? "OVERCLOCK"
+                                       : chill ? "FLOW"
                                        : model.snapshot.feverActive ? "FEVER"
                                        : core != nil ? "DECRYPT" : "CHARGE",
                                  decodeToken: model.snapshot.score,
@@ -355,6 +364,7 @@ struct GameView: View {
             withAnimation(.easeOut(duration: 0.4)) { shakeAnim = 1 }
         }
         .animation(.easeInOut(duration: 0.3), value: model.snapshot.feverActive)
+        .animation(.easeInOut(duration: 0.3), value: model.snapshot.freezeActive)
         // Trail follows the finger WITHOUT consuming taps (simultaneous, 0 distance).
         .simultaneousGesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .local)
@@ -767,7 +777,19 @@ private struct NodeSprite: View {
             case .wormDaemon:
                 // Acid-green squiggle — a distinct, moving target.
                 sprite(color: NeonTheme.worm, symbol: "scribble.variable", ringed: true)
+            case .powerUp:
+                // White "special pickup" — kind shown by its glyph.
+                sprite(color: NeonTheme.textPrimary, symbol: Self.powerSymbol(node.powerKind), ringed: true)
             }
+        }
+    }
+
+    static func powerSymbol(_ kind: PowerUpKind?) -> String {
+        switch kind {
+        case .timeFreeze: return "snowflake"
+        case .overclock:  return "bolt.fill"
+        case .purge:      return "wind"
+        case .none:       return "sparkles"
         }
     }
 

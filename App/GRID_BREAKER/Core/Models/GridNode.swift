@@ -20,13 +20,16 @@ struct GridNode: Identifiable, Codable, Sendable, Equatable {
     let spawnedAt: TimeInterval
     /// For a worm: the next clock value at which it hops to an adjacent cell.
     var nextHopAt: TimeInterval?
+    /// For a `.powerUp`: which effect it grants when tapped.
+    let powerKind: PowerUpKind?
 
     init(id: UUID = UUID(),
          cellIndex: Int,
          type: NodeType,
          lifespan: TimeInterval,
          spawnedAt: TimeInterval,
-         nextHopAt: TimeInterval? = nil) {
+         nextHopAt: TimeInterval? = nil,
+         powerKind: PowerUpKind? = nil) {
         self.id = id
         self.cellIndex = cellIndex
         self.type = type
@@ -34,6 +37,7 @@ struct GridNode: Identifiable, Codable, Sendable, Equatable {
         self.lifespan = lifespan
         self.spawnedAt = spawnedAt
         self.nextHopAt = nextHopAt
+        self.powerKind = powerKind
     }
 
     /// True once an armored daemon's shell has been breached (1 hit taken).

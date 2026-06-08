@@ -3,6 +3,27 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #31 — Power-up pickups (gameplay 3/4) (2026-06-08)
+Rare power-up pickups, all three kinds. Modeled as one `.powerUp` NodeType carrying
+a `PowerUpKind` (timeFreeze / overclock / purge), so the per-type switches stay thin.
+- **Time-freeze:** freezing the *simulation clock* pauses node expiry + worm hops for
+  free; RAM drain and the fever countdown are gated on it explicitly. Spawns continue
+  → a safe scoring window. `freezeDuration` 3 s.
+- **Overclock:** a timed extra ×N. `effectiveMultiplier` = fever × overclock, used by
+  `decode()` and exposed as `snapshot.scoreMultiplier` (so the score "×N" reflects
+  it). `overclockDuration` 4 s, `overclockMultiplier` 2.
+- **Purge:** instantly clears all firewall bombs.
+- Pickups carry no score and don't touch combo (handled via `applyPowerUp`, separate
+  from `decode`). Short-lived; a missed one expires harmlessly. Spawn-rolled after
+  worm (chance 0.04, random kind). Disabled in campaign + Flow.
+- **Snapshot:** added `freezeActive`/`overclockActive`. **Juice:** white "special
+  pickup" sprites (snowflake/bolt/wind), the Data Core label shows FREEZE/OVERCLOCK,
+  a light frost overlay while frozen, success haptic + sting on pickup.
+- **Verified:** clean build; headless sim — overclock ×2 (decode pays score·mult),
+  freeze holds RAM constant with zero expiries, purge clears bombs → 0. On-device:
+  white pickup sprites render distinctly; collecting showed the FREEZE label + "×2"
+  score with RAM held. Temp spawn/RAM/duration boosts + autoplay reverted.
+
 ## Run #30 — Worm daemon (gameplay 2/4) (2026-06-08)
 A moving target: a "worm" that scuttles to an adjacent free cell on a timer.
 - **`NodeType.wormDaemon`** (1 tap, harvestable, penalizes on expiry like a daemon).
