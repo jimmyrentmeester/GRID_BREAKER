@@ -191,25 +191,34 @@ struct GameView: View {
 
     /// Flow (chill) mode: no clock, no fail, calm pace + presentation.
     let chill: Bool
+    /// Daily challenge: endless rules on a fixed, date-derived seed (everyone gets the
+    /// same board). Replays reuse the seed so it stays "today's" board.
+    let daily: Bool
+    /// Fixed RNG seed (daily challenge). nil → a fresh seed each run/replay.
+    let fixedSeed: UInt64?
 
     init(core: DataCore? = nil,
          deck: Cyberdeck,
          chill: Bool = false,
+         seed: UInt64? = nil,
+         daily: Bool = false,
          onExit: @escaping () -> Void,
          onNext: (() -> Void)? = nil,
          recordSession: @escaping (_ score: Int, _ won: Bool) -> SessionOutcome) {
         self.core = core
         self.chill = chill
+        self.daily = daily
+        self.fixedSeed = seed
         self.onNext = onNext
         let model: GameViewModel
         if chill {
-            model = GameViewModel(config: .chill(), deck: deck, seed: GameView.freshSeed(), chill: true)
+            model = GameViewModel(config: .chill(), deck: deck, seed: seed ?? GameView.freshSeed(), chill: true)
         } else if let core {
             model = GameViewModel(config: .campaign(timeBudget: core.timeBudget),
-                                  deck: deck, seed: GameView.freshSeed(),
+                                  deck: deck, seed: seed ?? GameView.freshSeed(),
                                   targetScore: core.targetScore, difficultyBias: core.difficultyBias)
         } else {
-            model = GameViewModel(deck: deck, seed: GameView.freshSeed())
+            model = GameViewModel(deck: deck, seed: seed ?? GameView.freshSeed())
         }
         _model = State(initialValue: model)
         self.onExit = onExit
@@ -332,9 +341,10 @@ struct GameView: View {
             if model.snapshot.isGameOver {
                 GameOverOverlay(snapshot: model.snapshot,
                                 core: core,
+                                daily: daily,
                                 outcome: outcome,
                                 isFinalCore: core.map { $0.id >= Campaign.count } ?? false,
-                                onReplay: { outcome = nil; model.restart(seed: GameView.freshSeed()) },
+                                onReplay: { outcome = nil; model.restart(seed: fixedSeed ?? GameView.freshSeed()) },
                                 onNext: (model.snapshot.didWin && onNext != nil) ? onNext : nil,
                                 onExit: onExit)
             }
@@ -839,6 +849,7 @@ private struct PauseOverlay: View {
 private struct GameOverOverlay: View {
     let snapshot: SessionSnapshot
     let core: DataCore?
+    var daily: Bool = false
     let outcome: SessionOutcome?
     let isFinalCore: Bool
     let onReplay: () -> Void
@@ -868,6 +879,7 @@ private struct GameOverOverlay: View {
             Color.black.opacity(0.80).ignoresSafeArea()
             VStack(spacing: 16) {
                 Text(isFinale ? "CAMPAIGN COMPLETE"
+                              : daily ? "DAILY CHALLENGE"
                               : (core != nil ? (core?.name.uppercased() ?? "") : "CONNECTION TERMINATED"))
                     .font(.system(size: 13, weight: .semibold, design: .monospaced))
                     .foregroundStyle(NeonTheme.textDim)
@@ -888,7 +900,7 @@ private struct GameOverOverlay: View {
                         .foregroundStyle(NeonTheme.gold)
                         .neonGlow(NeonTheme.gold, radius: 8)
                 } else if outcome?.isHighScore == true {
-                    Text("◆ NEW HIGH SCORE ◆")
+                    Text(daily ? "◆ NEW DAILY BEST ◆" : "◆ NEW HIGH SCORE ◆")
                         .font(.system(size: 14, weight: .heavy, design: .monospaced))
                         .foregroundStyle(NeonTheme.gold)
                         .neonGlow(NeonTheme.gold, radius: 8)

@@ -3,6 +3,22 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #33 — Daily challenge seed (gameplay 4/4) (2026-06-08)
+The last of the four gameplay additions. A shared, deterministic daily run.
+- **Seed:** `RootView.today()` → a "yyyy-MM-dd" key + a date-derived seed
+  (`y*10000+m*100+d`); every player gets the same board on a given day (D20). Endless
+  rules + all the new mechanics.
+- **`GameView`** gained `seed:`/`daily:` params (endless path uses `seed ?? freshSeed`);
+  replays reuse the fixed seed so it stays today's board. `GameOverOverlay` shows
+  "DAILY CHALLENGE" + "NEW DAILY BEST".
+- **Persistence:** `SaveData.dailyBestScore`/`dailyBestDay` (+ tolerant decode);
+  `GameStore.recordDaily`/`dailyBest(forDay:)` — pays Credits (shared economy), tracks
+  the day's best, but stays out of TOP RUNS. Resets with progress.
+- **UI:** gold DAILY HACK menu button; the title shows "DAILY n" when today's best > 0.
+- **Verified:** clean build; headless sim — same seed → identical board sequence,
+  different day → different board; on-device — DAILY HACK launches the seeded run, menu
+  button + best line render.
+
 ## Run #32 — Independent music/SFX volume (2026-06-08)
 - **Per-channel volumes:** `AudioEngine.sfxVolume` (applied to the SFX player-node
   pool) and `musicVolume` (applied to `MusicPlayer` live + to each new track).

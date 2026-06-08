@@ -9,9 +9,17 @@ struct RootView: View {
     @State private var activeCore: DataCore?
     @State private var pulse = false
 
-    private enum Screen { case menu, endless, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial, settings }
+    private enum Screen { case menu, endless, daily, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial, settings }
 
     private func tap() { AudioEngine.shared.play(.uiTap) }
+
+    /// Today's deterministic daily challenge: a day key ("yyyy-MM-dd") shared by all
+    /// players, and a seed derived from it (the engine's SplitMix64 mixes it well).
+    private static func today() -> (key: String, seed: UInt64) {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        let y = c.year ?? 2000, m = c.month ?? 1, d = c.day ?? 1
+        return (String(format: "%04d-%02d-%02d", y, m, d), UInt64(y * 10000 + m * 100 + d))
+    }
 
     var body: some View {
         ZStack {
@@ -29,6 +37,13 @@ struct RootView: View {
                              let earned = store.recordSession(score: score, on: Date())
                              return SessionOutcome(creditsEarned: earned, isHighScore: isHigh)
                          })
+                    .transition(.opacity)
+            case .daily:
+                // Daily challenge — endless rules on today's shared seed; its own best.
+                let today = Self.today()
+                GameView(deck: store.cyberdeck, seed: today.seed, daily: true,
+                         onExit: { screen = .menu },
+                         recordSession: { score, _ in store.recordDaily(score: score, day: today.key) })
                     .transition(.opacity)
             case .flow:
                 // Chill mode — no clock, no fail, no economy; just play and leave.
@@ -93,15 +108,23 @@ struct RootView: View {
                 .foregroundStyle(NeonTheme.magenta)
                 .neonGlow(NeonTheme.magenta, radius: 6)
 
-            if let best = store.highScores.first {
-                Text("BEST  \(best.score)")
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.gold)
-                    .padding(.top, 4)
+            HStack(spacing: 16) {
+                if let best = store.highScores.first {
+                    Text("BEST  \(best.score)")
+                        .foregroundStyle(NeonTheme.gold)
+                }
+                let db = store.dailyBest(forDay: Self.today().key)
+                if db > 0 {
+                    Text("DAILY  \(db)")
+                        .foregroundStyle(NeonTheme.cyan)
+                }
             }
+            .font(.system(size: 13, weight: .bold, design: .monospaced))
+            .padding(.top, 4)
 
             VStack(spacing: 12) {
                 TerminalButton(title: "JACK IN", color: NeonTheme.cyan, wide: true) { tap(); screen = .endless }
+                TerminalButton(title: "DAILY HACK", color: NeonTheme.gold, wide: true) { tap(); screen = .daily }
                 TerminalButton(title: "FLOW STATE", color: NeonTheme.gridLine, wide: true) { tap(); screen = .flow }
                 TerminalButton(title: "CAMPAIGN", color: NeonTheme.magenta, wide: true) { tap(); screen = .campaign }
                 TerminalButton(title: "CYBERDECK", color: NeonTheme.gold, wide: true) { tap(); screen = .cyberdeck }

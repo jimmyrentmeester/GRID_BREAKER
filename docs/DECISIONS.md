@@ -181,6 +181,18 @@ sting + animated resize) traces to engine truth, not a guess. Threshold lives in
 `GameConfig` (one tunable place); verified via the deterministic headless sim + an
 on-device visual check.
 
+## D20 — Daily challenge: one shared seed per day, separate best
+**2026-06-08.** The daily challenge is normal endless rules (all mechanics incl. the
+new node types/power-ups) run on a **date-derived seed** (`y*10000+m*100+d`, mixed by
+the engine's SplitMix64), so every player gets the identical board on a given day and
+scores are comparable — leaning on the existing deterministic engine (D4) rather than
+any backend. Tracked with its own best (`dailyBestScore` + `dailyBestDay`); a new day
+resets the comparison. Replays reuse the day's seed (still "today's" board). It pays
+Credits like endless (shared economy) but is kept **out of the TOP RUNS leaderboard**
+(separate `recordDaily`, its own best) so the daily stays a distinct challenge. No
+server needed now; a future cross-device leaderboard could sync `dailyBestScore` by
+day key.
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

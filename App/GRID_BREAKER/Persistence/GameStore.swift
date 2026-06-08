@@ -150,6 +150,26 @@ final class GameStore {
         return earned
     }
 
+    // MARK: Daily challenge
+
+    /// Today's best on the daily challenge (0 if the stored best is from another day).
+    func dailyBest(forDay day: String) -> Int {
+        save.dailyBestDay == day ? save.dailyBestScore : 0
+    }
+
+    /// Record a finished daily run: pays Credits (shared economy) and updates the
+    /// day's best. `isHighScore` in the outcome means "new daily best".
+    @discardableResult
+    func recordDaily(score: Int, day: String) -> SessionOutcome {
+        let earned = config.credits(forScore: score)
+        save.cyberdeck.credits += earned
+        let prev = dailyBest(forDay: day)
+        let isBest = score > prev
+        if isBest { save.dailyBestDay = day; save.dailyBestScore = score }
+        persist()
+        return SessionOutcome(creditsEarned: earned, isHighScore: isBest)
+    }
+
     /// Attempt to buy one level of an upgrade. Returns true on success.
     @discardableResult
     func purchase(_ upgrade: CyberdeckUpgrade) -> Bool {

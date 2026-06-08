@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.25 — Daily Hack challenge (2026-06-08)
+- New DAILY HACK: one shared board per day (everyone gets the same daemon sequence),
+  with its own best score to beat. Comes back fresh every day. Replay as much as you
+  like to top your run.
+
 ## 0.24 — Separate music & effects volume (2026-06-08)
 - Settings now has independent MUSIC and EFFECTS volume sliders, so you can mix them
   to taste. Gameplay sounds are a touch quieter by default too.
