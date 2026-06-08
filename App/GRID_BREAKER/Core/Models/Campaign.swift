@@ -33,12 +33,13 @@ struct DataCore: Identifiable, Sendable, Equatable {
 
 enum Campaign {
     /// The tuned ladder. Mechanics are introduced one at a time and explained; targets
-    /// rise (sustain a higher score) and the pace (`difficultyBias`) ramps. Runs at a
-    /// deliberately friendly pace — see `GameConfig.campaignPace` (~30% slower than the
-    /// other modes: longer-lived nodes, calmer spawns); the time budgets below are sized
-    /// to match so targets stay reachable. Calibrated with the multi-skill headless sim
-    /// (strong/good/casual reaction on a starter deck): everyone clears the intro and
-    /// learns the mechanics, casual reaches ~core 6, good ~core 9, a strong player
+    /// rise and the per-core `difficultyBias` drives a deliberate, gradual difficulty
+    /// curve. The campaign starts deliberately gentle — see `GameConfig.campaign` — with
+    /// long ~1.1 s pauses between spawns and 2 s node lifespans, and the bias compresses
+    /// both toward a ~0.30 s frantic finale (difficulty = spawn speed + board density +
+    /// hazards, climbing together). Time budgets are generous so a real beginner has
+    /// margin. Calibrated with the multi-skill headless sim (strong/good/casual reaction
+    /// on a starter deck): casual clears ~core 7, good ~core 9–10, a strong player
     /// finishes; Cyberdeck upgrades make it more forgiving still. Human playtest pending.
     static let cores: [DataCore] = [
         DataCore(id: 1, name: "Sector-7 Cache", targetScore: 22, timeBudget: 52, difficultyBias: 0,

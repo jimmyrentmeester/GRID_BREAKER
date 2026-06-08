@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.14 — Much gentler early campaign (2026-06-08)
+- The campaign now starts a lot calmer — early cores leave roughly twice as long between
+  daemons (and they linger longer), so beginners have real room to breathe. Each core
+  then ramps up the speed and density gradually toward a frantic finale.
+
 ## 1.0.13 — Smoother end of training (2026-06-08)
 - In training you now press CONTINUE after each power-up, so you can read what it does at
   your own pace instead of it skipping ahead.

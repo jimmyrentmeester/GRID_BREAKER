@@ -3,6 +3,24 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #58 — Campaign pacing rebuilt: gentle start, gradual ramp (2026-06-08)
+Maintainer: campaign still felt as fast as before — wanted the pauses between clicks
+much slower (~-50%) for beginners, ramping up gradually. Also asked me to re-test via
+computer-use (the input bridge was down for many runs).
+- **New campaign pace curve** (`GameConfig.campaign`): replaced the flat ×1.30 multiplier
+  with explicit slow base values — `baseSpawnInterval 1.10`, `minSpawnInterval 0.30`,
+  `baseNodeLifespan 2.00`, `minNodeLifespan 0.60`, slower worm/fever. The per-core
+  `difficultyBias` compresses both toward the floors, so the spawn pause ramps **1.10 s
+  (core 1) → 0.30 s (core 10)** — early cores ~2× slower than the other modes. Budgets +
+  targets unchanged from Run #55.
+- **Re-validated via multi-skill sim** (per-core start→end spawn pause printed): smooth
+  ramp; casual clears ~core 7, good ~core 9–10, strong all; no crashes (~1,200 plays).
+- **Computer-use input bridge is BACK:** drove the real app (skip onboarding → menu →
+  campaign → core 1) — taps register again. Confirmed the new budgets display and the
+  early board is calm (1–2 daemons). Caveat: a reflex game can't be *played* at tool
+  latency (~10 s/round-trip ≫ 2 s node lifespan → the RAM clock drains before I can score),
+  so the sim remains the tool for clearability/feel; computer-use is for input/visual checks.
+
 ## Run #57 — Power-up "press to continue" + streamlined finale (2026-06-08)
 Two maintainer fixes to the tutorial close.
 - **Read-before-advance power-ups:** beat 7 no longer auto-advances. Tapping a pickup

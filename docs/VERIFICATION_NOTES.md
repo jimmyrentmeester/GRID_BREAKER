@@ -2,7 +2,14 @@
 
 How to verify GRID_BREAKER reliably on the iOS Simulator, and a known tooling issue.
 
-## Known issue: computer-use → Simulator input is flaky
+## UPDATE (Run #58): the computer-use input bridge works again
+As of 2026-06-08 the computer-use → Simulator tap bridge is functional again — menu
+navigation and in-game taps register. BUT a fast reflex game can't be *played* through it:
+each tool round-trip is ~10 s, far longer than a ~2 s node lifespan, so the RAM clock
+drains before you can score. Use computer-use for input/navigation/on-screen-state checks;
+use the headless multi-skill sim for pacing/clearability. History kept below.
+
+## Known issue (historical): computer-use → Simulator input was flaky
 Driving taps via the computer-use bridge degraded mid-session (it worked early, then
 stopped delivering touches). Diagnosed concretely:
 1. **`left_click` mis-maps Y** — a click aimed at `(x, 383)` lands at `(x, 0)`
