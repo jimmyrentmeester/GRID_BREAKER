@@ -192,6 +192,8 @@ struct RootView: View {
                 Text(label).font(.system(size: 10, weight: .semibold, design: .monospaced))
             }
             .foregroundStyle(NeonTheme.textDim)
+            .frame(minWidth: 72, minHeight: 44)   // ≥44pt tap target (Apple HIG)
+            .contentShape(Rectangle())
         }
         .buttonStyle(TerminalButtonStyle())
     }

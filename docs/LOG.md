@@ -24,6 +24,15 @@ mostly via targets).
   the new targets/times, core 1 briefing ("DECODE THE GRID", target 25) held the clock
   at 40 s, JACK IN started the run.
 
+## Run #42 — Utility buttons ≥44 pt tap target (2026-06-08)
+The menu's TOP RUNS / SETTINGS utility icons had a sub-44 pt hit area (below Apple's
+HIG minimum) — fiddly to tap. Gave `utilityButton` a `frame(minWidth: 72,
+minHeight: 44)` + `contentShape(Rectangle())` so the whole padded area is tappable.
+- **Verified:** clean build. On-device tap confirmation was blocked by a computer-use
+  → Simulator input-delivery quirk (a fresh launch stopped responding to synthetic
+  clicks even on the large primary button — a tooling issue, not the app: it renders
+  fine and `start()` is unchanged). The fix is a standard frame/contentShape change.
+
 ## Run #41 — Audio freeze/music fix + tutorial power-ups (2026-06-08)
 Two reported issues.
 - **Freeze-on-button + music drops (fix):** `RootView` called `AudioEngine.resume()`
