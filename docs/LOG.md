@@ -24,6 +24,27 @@ mostly via targets).
   the new targets/times, core 1 briefing ("DECODE THE GRID", target 25) held the clock
   at 40 s, JACK IN started the run.
 
+## Run #43 — Full-mode QA pass (fuzz + review) (2026-06-08)
+A "playthrough of all modes" done as a rigorous audit (live tap-through was blocked by
+the same computer-use→Simulator input quirk).
+- **Engine fuzz:** a chaotic player (random taps incl. bombs/empty/spam, power-up grabs)
+  over endless + flow + all 10 campaign cores, ~thousands of steps × many seeds, with
+  per-step invariants (cellIndex in range, no duplicate cells, nodes ≤ cells, RAM finite
+  & ≤ capacity, score ≥ 0, multiplier ≥ 1, feverFraction ∈ [0,1]). **All held — no
+  crashes, no violations.** Plus targeted checks: overclock×fever ⇒ ×4; Flow never ends,
+  RAM never drains, no bombs.
+- **Code review of every mode flow** (RootView routing, record-once on game-over,
+  campaign NEXT-CORE advance + briefing gating, daily replay seed, restart resets,
+  pause/briefing overlay gating): no functional bugs. Only 2 force-unwraps, both
+  AVFoundation calls with known-valid inputs (safe).
+- **Fix applied:** Cyberdeck upgrade buy-button now has a ≥44 pt tap target
+  (`frame(minHeight: 44)` + `contentShape`), matching the Run #42 menu fix. (Cosmetics
+  rows are already whole-row buttons.)
+- **Improvement backlog (not done, noted for later):** explain worm/cache in the
+  tutorial too (only power-ups added so far); an on-screen "GRID EXPANDED" toast for the
+  4×4 milestone (currently audio+haptic+animation only); a unified stats view (TOP RUNS
+  is endless-only); a Flow session summary.
+
 ## Run #42 — Utility buttons ≥44 pt tap target (2026-06-08)
 The menu's TOP RUNS / SETTINGS utility icons had a sub-44 pt hit area (below Apple's
 HIG minimum) — fiddly to tap. Gave `utilityButton` a `frame(minWidth: 72,

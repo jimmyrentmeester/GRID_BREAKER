@@ -180,6 +180,8 @@ private struct UpgradeRow: View {
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(affordable ? NeonTheme.gold : Color.white.opacity(0.15), lineWidth: 1.5)
                     )
+                    .frame(minHeight: 44)          // ≥44pt tap target (Apple HIG)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(TerminalButtonStyle())
             .disabled(!affordable)
