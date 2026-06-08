@@ -474,15 +474,19 @@ private struct PaletteRow: View {
 struct TutorialView: View {
     let onDone: () -> Void
 
-    @State private var step = 0          // 0 decode · 1 armored · 2 firewall · 3 recap
+    @State private var step = 0          // 0 decode · 1 armored · 2 firewall · 3 worm · 4 recap
     @State private var armoredBreached = false
     @State private var wrongFirewall = false
     @State private var shakeAnim: CGFloat = 0
     @State private var flashCell: Int? = nil
+    @State private var wormCell = 4      // the worm step: it hops between cells on a timer
 
     private let centerCell = 4
     private let firewallCell = 0
-    private let totalSteps = 4
+    private let totalSteps = 5
+
+    /// Drives the tutorial worm's hops (only acts during the worm step).
+    private let hopTimer = Timer.publish(every: 0.7, on: .main, in: .common).autoconnect()
 
     private var prompt: String {
         switch step {
@@ -491,8 +495,20 @@ struct TutorialView: View {
                                        : "Armored daemons take two taps. Tap it."
         case 2: return wrongFirewall ? "✕ That's a firewall — never tap it. Hit the cyan daemon."
                                      : "Tap the cyan daemon — but NEVER the red firewall."
+        case 3: return "The green worm hops around — tap it wherever it lands."
         default: return "You're in. A few last things:"
         }
+    }
+
+    /// Orthogonal in-bounds neighbours of a 3×3 cell (for the worm's hops).
+    private func neighbours(of idx: Int) -> [Int] {
+        let r = idx / 3, c = idx % 3
+        var out: [Int] = []
+        if r > 0 { out.append(idx - 3) }
+        if r < 2 { out.append(idx + 3) }
+        if c > 0 { out.append(idx - 1) }
+        if c < 2 { out.append(idx + 1) }
+        return out
     }
 
     var body: some View {
@@ -516,15 +532,21 @@ struct TutorialView: View {
                 .multilineTextAlignment(.center)
                 .frame(height: 40)
 
-            if step < 3 { grid } else { recap }
+            if step < 4 { grid } else { recap }
 
             Spacer(minLength: 0)
 
-            TerminalButton(title: step < 3 ? "SKIP" : "START HACKING",
-                           color: step < 3 ? NeonTheme.magenta : NeonTheme.cyan,
+            TerminalButton(title: step < 4 ? "SKIP" : "START HACKING",
+                           color: step < 4 ? NeonTheme.magenta : NeonTheme.cyan,
                            action: onDone)
         }
         .padding(24)
+        .onReceive(hopTimer) { _ in
+            guard step == 3, flashCell == nil else { return }
+            if let dest = neighbours(of: wormCell).randomElement() {
+                withAnimation(.easeOut(duration: 0.12)) { wormCell = dest }
+            }
+        }
     }
 
     private var grid: some View {
@@ -576,6 +598,8 @@ struct TutorialView: View {
             sprite(NeonTheme.cyan, "circle.grid.cross.fill")
         case 2 where idx == firewallCell:
             sprite(NeonTheme.danger, "exclamationmark.triangle.fill")
+        case 3 where idx == wormCell:
+            sprite(NeonTheme.worm, "scribble.variable", ringed: true)
         default:
             EmptyView()
         }
@@ -606,6 +630,8 @@ struct TutorialView: View {
             withAnimation(.easeOut(duration: 0.4)) { shakeAnim = 1 }
         case 2 where idx == centerCell:
             decode(idx, .decode) { step = 3 }
+        case 3 where idx == wormCell:
+            decode(idx, .decodeWorm) { step = 4 }
         default:
             break
         }
@@ -621,18 +647,37 @@ struct TutorialView: View {
     }
 
     private var recap: some View {
-        VStack(spacing: 10) {
-            recapRow("memorychip.fill", NeonTheme.cyan, "RAM is your clock",
-                     "It drains over time — decoding tops it up, misses cost time.")
-            recapRow("bolt.fill", NeonTheme.gold, "Chain a Fever",
-                     "String clean hits for Fever: hazards vanish, score ×2.")
-            recapRow("square.stack.3d.up.fill", NeonTheme.gold, "Special daemons",
-                     "Gold data caches are big bonus points; green worms hop — tap where they land.")
-            recapRow("sparkles", NeonTheme.textPrimary, "Grab power-ups",
-                     "Tap a white pickup for a burst: ❄ Freeze, ⚡ Overclock (×2), 🌀 Purge bombs.")
-            recapRow("bitcoinsign.circle.fill", NeonTheme.gold, "Spend Credits",
-                     "Upgrade your Cyberdeck and buy neon palettes.")
+        ScrollView {
+            VStack(spacing: 10) {
+                recapRow("memorychip.fill", NeonTheme.cyan, "RAM is your clock",
+                         "It drains over time — decoding tops it up, misses cost time.")
+                recapRow("bolt.fill", NeonTheme.gold, "Chain a Fever",
+                         "String clean hits for Fever: hazards vanish, score ×2.")
+                recapRow("square.stack.3d.up.fill", NeonTheme.gold, "Gold data caches",
+                         "A rare, fast-vanishing prize — one tap for a big score spike.")
+                recapRow("scribble.variable", NeonTheme.worm, "Green worms hop",
+                         "They scuttle to a nearby cell — tap them wherever they land.")
+                sectionDivider("POWER-UPS — tap a white pickup for a burst")
+                recapRow("snowflake", NeonTheme.cyan, "❄ Freeze",
+                         "Stops the clock: your RAM and the daemons pause for a few seconds.")
+                recapRow("bolt.fill", NeonTheme.worm, "⚡ Overclock",
+                         "Doubles every point you score for a few seconds.")
+                recapRow("wind", NeonTheme.magenta, "🌀 Purge",
+                         "Instantly wipes every firewall bomb off the board.")
+                recapRow("bitcoinsign.circle.fill", NeonTheme.gold, "Spend Credits",
+                         "Upgrade your Cyberdeck and buy neon palettes.")
+            }
+            .padding(.vertical, 4)
         }
+        .frame(maxHeight: .infinity)
+    }
+
+    private func sectionDivider(_ s: String) -> some View {
+        Text(s)
+            .font(.system(size: 9, weight: .semibold, design: .monospaced))
+            .foregroundStyle(NeonTheme.textDim).tracking(1.5)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 4)
     }
 
     private func recapRow(_ symbol: String, _ color: Color, _ title: String, _ text: String) -> some View {

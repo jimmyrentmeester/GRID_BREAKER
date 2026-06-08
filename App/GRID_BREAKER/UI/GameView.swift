@@ -124,7 +124,9 @@ final class GameViewModel {
                     if !reduceMotion { freezeRemaining = 0.08 }   // hit-stop on the heavy kill
                 case .dataCache:
                     haptics.impact(.medium); audio.play(.decodeBig)   // a weighty grab
-                default:                                              // standard + worm: nimble
+                case .wormDaemon:
+                    haptics.impact(.light); audio.play(.decodeWorm)   // its own squirming chirp
+                default:                                              // standard daemon: nimble
                     haptics.impact(.light); audio.play(.decode, step: decodeRun)
                 }
                 decodeRun += 1                                     // chain climbs the arpeggio
@@ -845,8 +847,8 @@ private struct NodeSprite: View {
                 // A bright golden prize — stacked data, ringed, to read as "grab me".
                 sprite(color: NeonTheme.gold, symbol: "square.stack.3d.up.fill", ringed: true)
             case .wormDaemon:
-                // Acid-green squiggle — a distinct, moving target.
-                sprite(color: NeonTheme.worm, symbol: "scribble.variable", ringed: true)
+                // Acid-green squiggle that visibly squirms — a distinct, moving target.
+                WormNodeSprite()
             case .powerUp:
                 // White "special pickup" — kind shown by its glyph.
                 sprite(color: NeonTheme.textPrimary, symbol: Self.powerSymbol(node.powerKind), ringed: true)
@@ -874,6 +876,34 @@ private struct NodeSprite: View {
                 .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(color)
                 .neonGlow(color, radius: 4)
+        }
+    }
+}
+
+/// The worm daemon's sprite: the acid-green squiggle with a gentle, continuous
+/// squirm (rotate + sway) so it reads as a living, moving target at a glance —
+/// the visual counterpart to its distinct decode chirp. Snaps still for Reduce Motion.
+private struct WormNodeSprite: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var wiggle = false
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(NeonTheme.worm.opacity(0.18))
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(NeonTheme.worm, lineWidth: 3)
+                .neonGlow(NeonTheme.worm, radius: 8)
+            Image(systemName: "scribble.variable")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundStyle(NeonTheme.worm)
+                .neonGlow(NeonTheme.worm, radius: 4)
+                .rotationEffect(.degrees(wiggle ? 7 : -7))
+                .offset(x: wiggle ? 2.5 : -2.5)
+        }
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 0.4).repeatForever(autoreverses: true)) { wiggle = true }
         }
     }
 }

@@ -2,6 +2,12 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.4 — The worm bites back + clearer power-ups (2026-06-08)
+- The green worm is now unmistakable: it visibly squirms in its cell, and decoding one
+  plays its own wet "slither" chirp instead of the normal hit sound.
+- The how-to-play now teaches the worm hands-on (it hops around — you chase it) and
+  explains each power-up on its own line: ❄ Freeze, ⚡ Overclock, 🌀 Purge.
+
 ## 0.27 — Campaign reworked (2026-06-08)
 - Campaign now teaches itself: each core introduces one new mechanic at a time
   (armored → bombs → fever → cache → worm → power-ups → grid expansion), with a quick

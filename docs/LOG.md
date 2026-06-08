@@ -3,6 +3,30 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #46 — Worm distinction + power-ups taught separately (2026-06-08)
+Maintainer flagged the green worm as "generic" — unsure it even works, and no
+visual/auditory difference from standard daemons — and asked that every power-up be
+explained separately in the tutorial.
+- **Verified the worm works** (it was doubted): it's a `.wormDaemon`, not a power-up —
+  every `wormHopInterval` (0.55 s) it hops to a random adjacent free cell, lives ×1.25
+  longer, worth `scoreWorm`, one tap to decode wherever it lands. Headless sim (worm
+  chance forced high, zero taps, 8 s) → **18 autonomous hops across 10 worms. PASS.**
+- **Auditory distinction:** worm decode now plays a dedicated `AudioEngine.SFX.decodeWorm`
+  — a wet, vibrato "slither" chirp that sweeps upward — instead of the standard `.decode`
+  pentatonic blip. Wired in `GameView.process` (own `.wormDaemon` case). The tutorial
+  worm step plays it too.
+- **Visual distinction:** the worm sprite is now `WormNodeSprite` — the acid-green
+  squiggle with a continuous gentle squirm (rotate ±7° + sway), Reduce-Motion-gated, so
+  it reads as alive/moving at a glance vs. the static cyan daemon.
+- **Tutorial — worm is now hands-on:** new interactive step (3 of 5) where a green worm
+  actually hops between cells on a 0.7 s timer and you must tap it wherever it lands.
+- **Tutorial — power-ups each get their own line:** the recap was two lumped rows; it's
+  now a scrollable list with separate rows under a "POWER-UPS" divider — ❄ Freeze (pauses
+  the RAM clock + decay), ⚡ Overclock (×2 score), 🌀 Purge (wipes all bombs) — plus
+  separated Gold-data-cache and Green-worm rows.
+- **Verified:** clean build; engine sim (above); on-device screenshot of the recap shows
+  all rows + the divider rendering and scrolling correctly on iPhone 16 Pro.
+
 ## Run #35 — Campaign overhaul: granular mechanics + briefings + longer (2026-06-08)
 Reworked the 10-core campaign (D21) per the maintainer's steer (keep 10 cores, longer
 mostly via targets).

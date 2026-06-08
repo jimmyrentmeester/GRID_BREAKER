@@ -15,7 +15,7 @@ final class AudioEngine {
     static let shared = AudioEngine()
 
     /// One-shot SFX, each traced to a real game event (mirrors the juice layer).
-    enum SFX { case decode, decodeBig, breach, miss, bomb, fever, gameOver, uiTap, purchase }
+    enum SFX { case decode, decodeWorm, decodeBig, breach, miss, bomb, fever, gameOver, uiTap, purchase }
 
     private let engine = AVAudioEngine()
     private let musicPlayer = MusicPlayer()
@@ -193,6 +193,16 @@ final class AudioEngine {
             }
         }
         buffers[.decode] = decodeSteps.first    // fallback for step-less callers
+        // Worm decode: a wet, wobbling "slither" chirp — an upward sweep with a fast
+        // vibrato so it reads as a living, squirming target, audibly unlike the clean
+        // pentatonic standard hit. (Same FM family, distinct character.)
+        buffers[.decodeWorm] = buffer(seconds: 0.15) { _, t in
+            let vib = 1 + 0.07 * self.sine(34, t)                    // fast vibrato → "alive"
+            let f = (500.0 + 430 * min(1, t / 0.085)) * vib         // squirms upward
+            let body = self.fmBlip(f, t, glide: -0.06, index: 1.7, ratio: 1.51, decay: 0.07)
+            let click = self.noise() * self.decayEnv(t, 0.003)
+            return Float(click * 0.16 + body * 0.46)
+        }
         // Armored kill: heavier, lower decrypt — a sub thump under a fatter FM body
         // and a crisp click. Distinct "weight" vs. the standard hit.
         buffers[.decodeBig] = buffer(seconds: 0.18) { _, t in
