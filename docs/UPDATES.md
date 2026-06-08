@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.19 — Full sound set matched (2026-06-08)
+- The rest of the sound effects now match the new hit sounds: a darker "denied"
+  miss, a heavier digital firewall blast, a brighter fever sting, a moody game-over
+  fall, and a cleaner menu blip. The whole set finally feels like one instrument.
+
 ## 0.18 — Punchier hit sounds (2026-06-08)
 - The decode hits got a glow-up: a crisp, digital "decrypt" blip with real punch,
   and a heavier version for armored kills. Best part — a decode streak now climbs a

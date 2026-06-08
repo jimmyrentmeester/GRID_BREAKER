@@ -3,6 +3,22 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #27 — Full SFX set matched to the FM theme (2026-06-08)
+Brought the remaining SFX into the Run #26 FM "decrypt" family (asset-free synth):
+- **miss** = low downward-bending FM "denied" blip (G3, subharmonic ratio) + grit,
+  replacing the dull square.
+- **bomb** = sub-boom + a dissonant **tritone** metallic FM crash + noise blast —
+  heavier/more digital than the old rumble.
+- **fever** = bright ascending FM arpeggio (C5 F5 A5 C6) via `fmBlip`, the decrypt
+  "breaking open."
+- **gameOver** = slow descending FM minor fall (carrier + saw).
+- **uiTap** = a clean, quiet member of the FM family (was a bare sine).
+- decode/decodeBig/breach unchanged (Run #26). Shared FM timbre + A-minor tonality
+  so the whole set sits together.
+- **Verified:** clean build; headless render of the exact synth for the full set to a
+  WAV demo (peak 0.805, no clip), auditioned by the maintainer. (On-device mix vs.
+  music = a human listen per Q6.)
+
 ## Run #26 — Themed hit-register SFX + combo arpeggio (2026-06-08)
 Redesigned the decode hit sounds (user: make them more appealing / on-theme). Still
 asset-free synthesis (€0 ethos, D12) — no sourced clips.

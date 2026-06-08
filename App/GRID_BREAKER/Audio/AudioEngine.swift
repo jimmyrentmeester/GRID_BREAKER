@@ -188,35 +188,42 @@ final class AudioEngine {
         buffers[.breach] = buffer(seconds: 0.07) { _, t in
             Float(self.fmBlip(1568, t, glide: 0.0, index: 1.4, ratio: 2.5, decay: 0.018) * 0.2)
         }
-        // Muted analog glitch on a miss — dull downward blip + noise.
-        buffers[.miss] = buffer(seconds: 0.14) { _, t in
-            let f = 320 - 160 * t
-            let body = self.square(f, t) * self.decayEnv(t, 0.05)
-            let grit = self.noise() * self.decayEnv(t, 0.03)
-            return Float((body * 0.18 + grit * 0.10))
+        // Miss: a low, downward-bending FM "denied" blip with a little grit — same
+        // FM family as the hits but dark and dropping (G3, subharmonic ratio).
+        buffers[.miss] = buffer(seconds: 0.16) { _, t in
+            let body = self.fmBlip(196, t, glide: 0.45, index: 1.1, ratio: 0.5, decay: 0.06)
+            let grit = self.noise() * self.decayEnv(t, 0.045)
+            return Float(body * 0.22 + grit * 0.10)
         }
-        // Firewall detonation: low rumble + downward noise sweep.
+        // Firewall detonation: a sub boom + a dissonant metallic FM crash (tritone
+        // ratio = alarm) + a noise blast. Heavier and more "digital" than a rumble.
         buffers[.bomb] = buffer(seconds: 0.55) { _, t in
-            let rumble = self.sine(70 + 30 * self.decayEnv(t, 0.2), t) * self.decayEnv(t, 0.28)
-            let blast = self.noise() * self.decayEnv(t, 0.18)
-            return Float((rumble * 0.35 + blast * 0.30) * min(1, t * 60)) // tiny attack
+            let sub = self.sine(55 + 40 * self.decayEnv(t, 0.15), t) * self.decayEnv(t, 0.30)
+            let crash = self.fmBlip(140, t, glide: 0.6, index: 4.0, ratio: 1.414, decay: 0.22)
+            let blast = self.noise() * self.decayEnv(t, 0.16)
+            return Float((sub * 0.34 + crash * 0.18 + blast * 0.26) * min(1, t * 60)) // tiny attack
         }
-        // Fever sting: bright rising arpeggio.
-        buffers[.fever] = buffer(seconds: 0.45) { _, t in
-            let steps = [440.0, 587.33, 659.25, 880.0]
+        // Fever sting: a bright ascending FM arpeggio (the decrypt "breaks open").
+        buffers[.fever] = buffer(seconds: 0.5) { _, t in
+            let steps = [523.25, 698.46, 880.0, 1046.5]   // C5 F5 A5 C6 — bright, rising
             let idx = min(steps.count - 1, Int(t / 0.11))
             let f = steps[idx]
             let local = t - Double(idx) * 0.11
-            return Float((self.saw(f, t) * 0.5 + self.sine(f * 2, t) * 0.5) * self.decayEnv(local, 0.09) * 0.22)
+            let body = self.fmBlip(f, local, glide: 0.05, index: 2.4, ratio: 2.0, decay: 0.10)
+            let shimmer = self.sine(f * 2, t) * self.decayEnv(local, 0.05)
+            return Float((body * 0.5 + shimmer * 0.16) * 0.5)
         }
-        // Game over: descending minor tone.
-        buffers[.gameOver] = buffer(seconds: 0.7) { _, t in
-            let f = 330 * pow(2.0, -t * 1.2)
-            return Float((self.saw(f, t) * 0.5 + self.sine(f, t) * 0.5) * self.decayEnv(t, 0.4) * 0.24)
+        // Game over: a slow descending FM minor fall (connection lost).
+        buffers[.gameOver] = buffer(seconds: 0.8) { _, t in
+            let f = 392 * pow(2.0, -t * 1.1)
+            let mod = self.sine(f * 1.5, t) * self.decayEnv(t, 0.35)
+            let carrier = sin(2 * .pi * f * t + 1.8 * mod)
+            let body = (carrier * 0.6 + self.saw(f, t) * 0.3) * self.decayEnv(t, 0.45)
+            return Float(body * 0.24)
         }
-        // Subtle UI blip.
-        buffers[.uiTap] = buffer(seconds: 0.05) { _, t in
-            Float((self.sine(1200, t) * self.decayEnv(t, 0.02) * 0.14))
+        // Subtle UI blip: a clean, quiet member of the FM family.
+        buffers[.uiTap] = buffer(seconds: 0.06) { _, t in
+            Float(self.fmBlip(1318.5, t, glide: 0.06, index: 1.2, ratio: 2.0, decay: 0.013) * 0.14)
         }
     }
 }
