@@ -17,15 +17,25 @@ enum NodeType: String, Codable, CaseIterable, Sendable {
     /// natural expiry is always safe (brief 10.3 — anti-frustration rule).
     case firewallBomb
 
+    /// A rare, short-lived bonus "data cache": one tap for a big score (and RAM)
+    /// spike — a tempting grab under time pressure. Harvestable like a daemon.
+    case dataCache
+
     /// How many taps are required to fully clear this node.
     var requiredTaps: Int {
         switch self {
         case .standardDaemon: return 1
         case .armoredDaemon:  return 2
         case .firewallBomb:   return 0 // never a valid target
+        case .dataCache:      return 1
         }
     }
 
     /// Whether tapping this node is a scoring action (vs. a mistake/hazard).
     var isHarvestable: Bool { self != .firewallBomb }
+
+    /// Whether letting this node expire costs you (RAM + combo). Only real daemons
+    /// punish a timeout — a bomb expires safely (brief 10.3) and a missed bonus
+    /// cache is just a missed opportunity, not a failure.
+    var penalizesOnExpiry: Bool { self == .standardDaemon || self == .armoredDaemon }
 }

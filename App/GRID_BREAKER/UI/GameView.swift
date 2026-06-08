@@ -103,16 +103,23 @@ final class GameViewModel {
         for event in events {
             switch event {
             case let .nodeDecoded(type, cell):
-                let points = type == .armoredDaemon ? config.scoreArmored : config.scoreStandard
+                let points: Int
+                switch type {
+                case .armoredDaemon: points = config.scoreArmored
+                case .dataCache:     points = config.scoreCache
+                default:             points = config.scoreStandard
+                }
+                let golden = type == .armoredDaemon || type == .dataCache
                 pendingEffects.append(.init(cell: cell, style: .pop,
-                                            color: type == .armoredDaemon ? NeonTheme.gold : NeonTheme.cyan,
+                                            color: golden ? NeonTheme.gold : NeonTheme.cyan,
                                             points: points))
                 queued = true
-                if type == .armoredDaemon {
-                    haptics.impact(.medium); audio.play(.decodeBig)
-                    if !reduceMotion { freezeRemaining = 0.08 }   // hit-stop on the heavy kill
-                } else {
+                if type == .standardDaemon {
                     haptics.impact(.light); audio.play(.decode, step: decodeRun)
+                } else {
+                    // Armored kill or cache grab — a heavier, golden hit.
+                    haptics.impact(.medium); audio.play(.decodeBig)
+                    if type == .armoredDaemon, !reduceMotion { freezeRemaining = 0.08 }   // hit-stop
                 }
                 decodeRun += 1                                     // chain climbs the arpeggio
             case let .nodeBreached(cell):
@@ -752,6 +759,9 @@ private struct NodeSprite: View {
                        ringed: !node.isBreached)
             case .firewallBomb:
                 sprite(color: NeonTheme.danger, symbol: "exclamationmark.triangle.fill")
+            case .dataCache:
+                // A bright golden prize — stacked data, ringed, to read as "grab me".
+                sprite(color: NeonTheme.gold, symbol: "square.stack.3d.up.fill", ringed: true)
             }
         }
     }

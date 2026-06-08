@@ -182,7 +182,7 @@ struct GridEngine {
 
         // 2. Expire timed-out nodes. Daemons penalize + break combo; bombs vanish safely.
         let expired = nodes.filter { clock >= $0.expiresAt }
-        for node in expired where node.type.isHarvestable {
+        for node in expired where node.type.penalizesOnExpiry {
             ramRemaining -= config.penaltyExpiredDaemon
             combo = 0
             events.append(.nodeExpired(node.type, cell: node.cellIndex))
@@ -242,7 +242,7 @@ struct GridEngine {
             }
             return [.firewallExploded(cell: cell), endGame(.firewallHit)]
 
-        case .standardDaemon:
+        case .standardDaemon, .dataCache:
             return [decode(at: idx)] + checkFever() + checkTarget() + checkGridEscalation()
 
         case .armoredDaemon:
@@ -303,6 +303,9 @@ struct GridEngine {
         case .armoredDaemon:
             score += config.scoreArmored * multiplier
             ramRemaining = min(ramCapacity, ramRemaining + config.bonusArmoredDecode + decodeTimeBonus)
+        case .dataCache:
+            score += config.scoreCache * multiplier
+            ramRemaining = min(ramCapacity, ramRemaining + config.bonusCacheDecode + decodeTimeBonus)
         case .firewallBomb:
             break // never decoded
         }
@@ -326,14 +329,19 @@ struct GridEngine {
                 type = .firewallBomb
             } else if roll < config.firewallSpawnChance + config.armoredSpawnChance {
                 type = .armoredDaemon
+            } else if roll < config.firewallSpawnChance + config.armoredSpawnChance + config.cacheSpawnChance {
+                type = .dataCache
             } else {
                 type = .standardDaemon
             }
         }
 
+        // A data cache lives only a fraction of the normal lifespan — grab it fast.
+        let baseLife = config.nodeLifespan(atScore: scaledScore)
+        let lifespan = type == .dataCache ? baseLife * config.cacheLifespanFactor : baseLife
         return GridNode(cellIndex: cell,
                         type: type,
-                        lifespan: config.nodeLifespan(atScore: scaledScore),
+                        lifespan: lifespan,
                         spawnedAt: clock)
     }
 

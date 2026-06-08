@@ -3,6 +3,24 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #29 — Bonus "data cache" node (gameplay 1/4) (2026-06-08)
+First of four requested gameplay additions. A rare, short-lived golden bonus node.
+- **`NodeType.dataCache`** (1 tap, harvestable). New `penalizesOnExpiry` property:
+  only real daemons cost you on timeout — a bomb (always) and a **missed cache** now
+  expire harmlessly (a missed bonus isn't a failure). Engine expiry loop uses it.
+- **Config:** `scoreCache` (5), `bonusCacheDecode` (2.5 s RAM), `cacheSpawnChance`
+  (0.05), `cacheLifespanFactor` (0.65 → a fast grab). Carved out of the spawn roll
+  after firewall/armored. Disabled in campaign (`cacheSpawnChance`/`bonusCacheDecode`
+  = 0 — cores are sim-tuned); allowed in endless + Flow.
+- **Engine:** spawn roll + shorter cache lifespan; `decode()` pays cache score+RAM;
+  one-tap clear via the standard path (counts toward combo).
+- **Juice:** gold `square.stack.3d.up.fill` sprite (ringed "grab me"); decode shows
+  the gold "+5" pop with the heavier `decodeBig` sound + medium haptic (no hit-stop).
+- **Verified:** clean build; headless sim — cache payout exact (score == std·1 +
+  cache·5) and a missed cache emits no `.nodeExpired`, no combo break, no RAM
+  penalty; on-device the gold cache sprite reads as a distinct prize. Temp
+  spawn/lifespan boost (for the screenshot) reverted.
+
 ## Run #28 — 4×4 grid escalation (Q2) (2026-06-08)
 Endless now escalates 3×3 → 4×4 mid-session for a late-game difficulty step.
 - **Config:** `GameConfig.gridEscalationScore` (default 40; nil in `campaign()` and

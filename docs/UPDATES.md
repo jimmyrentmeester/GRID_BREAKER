@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.21 — Bonus data caches (2026-06-08)
+- Keep an eye out for golden data caches: a rare, fast-disappearing bonus worth a
+  big score (and extra RAM). Grab it in time for a spike — or let it slip, no harm
+  done. (Endless & Flow.)
+
 ## 0.20 — The grid grows (2026-06-08)
 - Push your score far enough in an endless run and the grid expands from 3×3 to 4×4
   — more targets, faster hands, a real late-game gear shift. Your current daemons

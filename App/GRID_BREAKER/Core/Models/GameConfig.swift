@@ -25,6 +25,7 @@ struct GameConfig: Sendable {
     // MARK: Time bonuses / penalties
     var bonusStandardDecode: TimeInterval = 1.05
     var bonusArmoredDecode: TimeInterval = 1.8
+    var bonusCacheDecode: TimeInterval = 2.5     // a data cache also refills more RAM
     /// Tapping an empty cell or letting a daemon expire costs buffer time.
     var penaltyMiss: TimeInterval = 1.5
     var penaltyExpiredDaemon: TimeInterval = 1.0
@@ -49,6 +50,7 @@ struct GameConfig: Sendable {
     // MARK: Score payouts
     var scoreStandard: Int = 1
     var scoreArmored: Int = 2
+    var scoreCache: Int = 5            // bonus "data cache" — a points spike
 
     // MARK: Meta progression
     /// Credits earned per point of decode score at session end.
@@ -83,6 +85,10 @@ struct GameConfig: Sendable {
     // MARK: Spawn mix (procedural selection, brief 10.3)
     var armoredSpawnChance: Double = 0.20
     var firewallSpawnChance: Double = 0.15
+    /// Chance a spawn is a bonus data cache. It also lives a fraction of the normal
+    /// lifespan (`cacheLifespanFactor`) so it's a quick reflex grab.
+    var cacheSpawnChance: Double = 0.05
+    var cacheLifespanFactor: Double = 0.65
 
     static let `default` = GameConfig()
 
@@ -96,6 +102,8 @@ struct GameConfig: Sendable {
         c.baseRAMSeconds = timeBudget
         c.bonusStandardDecode = 0
         c.bonusArmoredDecode = 0
+        c.bonusCacheDecode = 0
+        c.cacheSpawnChance = 0           // cores are sim-tuned; no bonus caches
         c.gridEscalationScore = nil      // cores are hand-tuned for a fixed 3×3
         return c
     }
