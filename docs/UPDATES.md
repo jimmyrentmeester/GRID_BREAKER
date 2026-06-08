@@ -2,6 +2,13 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.6 — Streaks feel bigger (2026-06-08)
+- The deeper your decode streak runs, the more it builds: haptics ramp from a soft tick
+  to a sharp punch as you near Fever, hits throw more sparks with a bigger "+N", and the
+  pop colour warms cyan → gold. A brief gold border pulse marks streak milestones.
+- The arena itself warms at the edges the higher your score climbs — calm early, dense
+  late. All of it respects Reduce Motion.
+
 ## 1.0.5 — VoiceOver support (2026-06-08)
 - The game now works with VoiceOver: every menu, shop, setting and the in-game HUD has
   proper spoken labels (e.g. "Glacier palette, equipped", "Music volume, 80 percent",

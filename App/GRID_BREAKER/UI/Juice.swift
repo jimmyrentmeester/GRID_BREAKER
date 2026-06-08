@@ -42,6 +42,39 @@ final class Haptics {
         #endif
     }
 
+    /// Fire a tap at an explicit intensity (0…1). Used to ramp feel with a streak.
+    func impact(_ tap: Tap, intensity: Double) {
+        guard Haptics.enabled else { return }
+        #if canImport(UIKit)
+        let i = CGFloat(max(0, min(1, intensity)))
+        switch tap {
+        case .light:  light.impactOccurred(intensity: i)
+        case .medium: medium.impactOccurred(intensity: i)
+        case .rigid:  rigid.impactOccurred(intensity: i)
+        case .soft:   soft.impactOccurred(intensity: i)
+        }
+        #endif
+    }
+
+    /// A nimble decode's tactile weight, ramped by the clean-hit `streak` toward the
+    /// fever `threshold` (mirrors the rising decode arpeggio). The chain climbs through
+    /// generator *bands* (light → medium → rigid) so milestones land as felt "notches",
+    /// with a smooth intensity ramp inside each band. Fever decodes hit sharp + full.
+    func decodeStreak(_ streak: Int, threshold: Int, fever: Bool) {
+        guard Haptics.enabled else { return }
+        let denom = threshold > 0 ? Double(threshold) : 8
+        let t = min(1, Double(max(0, streak)) / denom)
+        if fever {
+            impact(.rigid, intensity: 1.0)            // fever: every hit sharp + full
+        } else if t >= 0.75 {
+            impact(.rigid, intensity: 0.7 + 0.3 * t)  // near fever: sharp notch
+        } else if t >= 0.40 {
+            impact(.medium, intensity: 0.55 + 0.45 * t)
+        } else {
+            impact(.light, intensity: 0.5 + 0.4 * t)
+        }
+    }
+
     func error() {
         guard Haptics.enabled else { return }
         #if canImport(UIKit)
@@ -68,8 +101,27 @@ struct JuiceEffect: Identifiable {
     let color: Color
     /// Score gained, for the floating "+N" pop (nil when not a decode).
     let points: Int?
+    /// Streak "heat", 0…1 — scales the burst (more particles, brighter flash, bigger
+    /// pop) the deeper into a clean-hit chain you are. 0 for non-decode effects.
+    var intensity: Double = 0
 
     enum Style: Equatable { case pop, breach, miss, shield, bomb }
+}
+
+extension Color {
+    /// Linear RGB blend a→b at t∈0…1 (for the streak's cyan→gold "heating up" shift).
+    static func blend(_ a: Color, _ b: Color, _ t: Double) -> Color {
+        #if canImport(UIKit)
+        let f = CGFloat(max(0, min(1, t)))
+        var ar: CGFloat = 0, ag: CGFloat = 0, ab: CGFloat = 0, aa: CGFloat = 0
+        var br: CGFloat = 0, bg: CGFloat = 0, bb: CGFloat = 0, ba: CGFloat = 0
+        UIColor(a).getRed(&ar, green: &ag, blue: &ab, alpha: &aa)
+        UIColor(b).getRed(&br, green: &bg, blue: &bb, alpha: &ba)
+        return Color(red: ar + (br - ar) * f, green: ag + (bg - ag) * f, blue: ab + (bb - ab) * f)
+        #else
+        return t < 0.5 ? a : b
+        #endif
+    }
 }
 
 // MARK: - Effects overlay (particles, flash, floating numbers)
@@ -122,8 +174,15 @@ private struct EffectView: View {
     let reduceMotion: Bool
     @State private var p: CGFloat = 0
 
-    private var particleCount: Int { fx.style == .bomb ? 18 : 12 }
+    // Burst grows with the streak heat: more sparks, a brighter flash, a bigger pop —
+    // so a long chain visibly throws more energy. Capped to stay readable (skill §2).
+    private var particleCount: Int {
+        fx.style == .bomb ? 18 : 12 + Int((fx.intensity * 14).rounded())   // 12…26
+    }
     private var showsBurst: Bool { !reduceMotion && (fx.style == .pop || fx.style == .bomb) }
+    private var flashPeak: Double { fx.style == .pop ? 0.85 + fx.intensity * 0.15 : 0.85 }
+    private var popSize: CGFloat { 20 + CGFloat(fx.intensity) * 12 }
+    private var popGlow: CGFloat { 4 + CGFloat(fx.intensity) * 6 }
 
     var body: some View {
         ZStack {
@@ -131,7 +190,7 @@ private struct EffectView: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(.white)
                 .frame(width: cellSize * 0.66, height: cellSize * 0.66)
-                .opacity(Double(max(0, 0.85 - p * 3.2)))
+                .opacity(Double(max(0, flashPeak - Double(p) * 3.2)))
 
             if showsBurst {
                 ForEach(0..<particleCount, id: \.self) { i in
@@ -146,9 +205,9 @@ private struct EffectView: View {
 
             if let pts = fx.points {
                 Text("+\(pts)")
-                    .font(.system(size: 20, weight: .heavy, design: .monospaced))
+                    .font(.system(size: popSize, weight: .heavy, design: .monospaced))
                     .foregroundStyle(fx.color)
-                    .neonGlow(fx.color, radius: 4)
+                    .neonGlow(fx.color, radius: popGlow)
                     .offset(y: -p * 46)
                     .opacity(Double(1 - p))
             }
@@ -164,8 +223,51 @@ private struct EffectView: View {
 
     private func offset(_ i: Int) -> CGSize {
         let angle = (Double(i) / Double(particleCount)) * 2 * .pi
-        let dist = Double(p) * Double(cellSize) * (fx.style == .bomb ? 0.95 : 0.7)
+        let spread = fx.style == .bomb ? 0.95 : (0.7 + fx.intensity * 0.35)   // streak throws wider
+        let dist = Double(p) * Double(cellSize) * spread
         return CGSize(width: cos(angle) * dist, height: sin(angle) * dist)
+    }
+}
+
+// MARK: - Longevity + streak ambience
+
+/// A subtle warm edge-glow that grows with your score — the arena quietly densifies
+/// the longer (and higher) you play. Behind the grid and text, low opacity, and
+/// dampened while Fever owns the screen with its own gold atmosphere.
+struct HeatVignette: View {
+    let level: Double          // 0…1 from score
+    var dampened: Bool = false // true during Fever
+    var body: some View {
+        RadialGradient(
+            colors: [.clear, NeonTheme.magenta.opacity(0.18)],
+            center: .center, startRadius: 200, endRadius: 540
+        )
+        .opacity(max(0, min(1, level)) * (dampened ? 0.35 : 1))
+        .animation(.easeInOut(duration: 0.8), value: level)
+        .animation(.easeInOut(duration: 0.4), value: dampened)
+        .allowsHitTesting(false)
+    }
+}
+
+/// A brief neon border pulse at a streak milestone — momentum you can see building
+/// before Fever triggers. One-shot per `trigger` bump; snaps off under Reduce Motion.
+struct StreakPulseBorder: View {
+    let trigger: Int
+    let reduceMotion: Bool
+    @State private var glow: Double = 0
+
+    var body: some View {
+        Rectangle()
+            .stroke(NeonTheme.gold, lineWidth: 3)
+            .blur(radius: 7)
+            .opacity(glow * 0.55)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .onChange(of: trigger) { _, new in
+                guard !reduceMotion, new > 0 else { return }
+                glow = 1
+                withAnimation(.easeOut(duration: 0.5)) { glow = 0 }
+            }
     }
 }
 

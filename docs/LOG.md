@@ -3,6 +3,32 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #48 — Streak-scaled haptics + visual density (2026-06-08)
+Maintainer asked to improve haptic feedback levels and visual density "during streaks /
+the longer you play". Both were flat: the decode audio already climbed an arpeggio with
+the chain, but haptics and per-hit juice never moved, and the only atmospheres were
+Chill/Fever. Drove everything off state the engine already exposes (`combo`,
+`comboThreshold`, `decodeRun`, `score`). Maintainer picked "Everything".
+- **Haptics ramp with the streak:** new `Haptics.impact(_:intensity:)` and
+  `decodeStreak(streak:threshold:fever:)` — a nimble decode climbs generator *bands*
+  (light → medium → rigid) as the chain nears the fever threshold (felt "notches") with
+  a smooth intensity ramp inside each band; Fever decodes hit sharp + full; armored/cache
+  also sharpen in Fever. Wired in `GameView.process`.
+- **Bursts scale with the streak:** `JuiceEffect.intensity` (heat 0…1) grows the particle
+  count (12→26, capped), flash peak, "+N" pop size + glow, and spread — so a long chain
+  visibly throws more energy. Reduce-Motion still snaps it all off.
+- **"Heating up" colour:** standard/worm pops blend cyan/green → gold as the chain nears
+  fever (`Color.blend` helper), telegraphing the build-up.
+- **Longevity ambience:** new `HeatVignette` warms the arena edges as score climbs
+  (endless/daily; dampened during Fever); behind the grid + text, low opacity.
+- **Mid-streak momentum:** new `StreakPulseBorder` gives a brief gold edge pulse at
+  chain milestones (every 4, excluding the fever-trigger hit) — momentum you see building
+  before Fever. Reduce-Motion → no pulse.
+- **Verified:** clean build; on-device (temp autoplay hook + force-endless, then reverted)
+  confirmed the scaled gold burst, "+N" pop, and heat vignette render correctly with no
+  layout regression. Haptics aren't observable in the simulator — sound by construction,
+  best felt on hardware.
+
 ## Run #47 — Accessibility pass (VoiceOver) (2026-06-08)
 Added VoiceOver support across the navigable UI (the last code-quality gap before 1.0;
 no Apple account needed). Reduce Motion was already honoured app-wide; this run covers

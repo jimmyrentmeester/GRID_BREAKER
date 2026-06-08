@@ -21,6 +21,8 @@ final class GameViewModel {
     private(set) var powerUpFlashSeq = 0
     /// Bumped when the grid expands 3×3 → 4×4 (drives a brief toast).
     private(set) var gridExpandedSeq = 0
+    /// Bumped at a mid-streak milestone (drives a brief border pulse before Fever).
+    private(set) var streakPulseSeq = 0
     /// Set by the view from the environment; gates motion-heavy juice.
     var reduceMotion = false
     /// Paused → the sim (and its RAM clock) is frozen until unpaused.
@@ -108,28 +110,48 @@ final class GameViewModel {
         for event in events {
             switch event {
             case let .nodeDecoded(type, cell):
+                // Streak "heat" 0…1: how deep into a clean-hit chain this decode is,
+                // relative to the fever threshold. Drives haptic weight, burst density,
+                // and the cyan→gold "heating up" pop color.
+                let chain = decodeRun + 1
+                let fever = snapshot.feverActive
+                let threshold = snapshot.comboThreshold
+                let heat = threshold > 0 ? min(1, Double(chain) / Double(threshold))
+                                         : min(1, Double(chain) / 8)
                 let points: Int
                 let popColor: Color
                 switch type {
                 case .armoredDaemon: points = config.scoreArmored; popColor = NeonTheme.gold
                 case .dataCache:     points = config.scoreCache;   popColor = NeonTheme.gold
-                case .wormDaemon:    points = config.scoreWorm;    popColor = NeonTheme.worm
-                default:             points = config.scoreStandard; popColor = NeonTheme.cyan
+                case .wormDaemon:    points = config.scoreWorm
+                                     popColor = .blend(NeonTheme.worm, NeonTheme.gold, heat)
+                default:             points = config.scoreStandard
+                                     popColor = .blend(NeonTheme.cyan, NeonTheme.gold, heat)
                 }
-                pendingEffects.append(.init(cell: cell, style: .pop, color: popColor, points: points))
+                pendingEffects.append(.init(cell: cell, style: .pop, color: popColor,
+                                            points: points, intensity: heat))
                 queued = true
                 switch type {
                 case .armoredDaemon:
-                    haptics.impact(.medium); audio.play(.decodeBig)
+                    haptics.impact(fever ? .rigid : .medium, intensity: fever ? 1.0 : 0.9)
+                    audio.play(.decodeBig)
                     if !reduceMotion { freezeRemaining = 0.08 }   // hit-stop on the heavy kill
                 case .dataCache:
-                    haptics.impact(.medium); audio.play(.decodeBig)   // a weighty grab
+                    haptics.impact(fever ? .rigid : .medium, intensity: fever ? 1.0 : 0.9)
+                    audio.play(.decodeBig)                        // a weighty grab
                 case .wormDaemon:
-                    haptics.impact(.light); audio.play(.decodeWorm)   // its own squirming chirp
-                default:                                              // standard daemon: nimble
-                    haptics.impact(.light); audio.play(.decode, step: decodeRun)
+                    haptics.decodeStreak(chain, threshold: threshold, fever: fever)
+                    audio.play(.decodeWorm)                       // its own squirming chirp
+                default:                                          // standard daemon: nimble
+                    haptics.decodeStreak(chain, threshold: threshold, fever: fever)
+                    audio.play(.decode, step: decodeRun)
                 }
                 decodeRun += 1                                     // chain climbs the arpeggio
+                // Mid-streak momentum pulse (before Fever owns the screen); skip the
+                // exact fever-trigger hit so the pulse doesn't clash with the sting.
+                if !fever && chain >= 4 && chain % 4 == 0 && chain != threshold {
+                    streakPulseSeq += 1
+                }
             case let .nodeBreached(cell):
                 pendingEffects.append(.init(cell: cell, style: .breach, color: NeonTheme.magenta, points: nil))
                 queued = true
@@ -282,6 +304,13 @@ struct GameView: View {
             }
             FeverAtmosphere(active: model.snapshot.feverActive && !model.snapshot.isGameOver)
                 .ignoresSafeArea().accessibilityHidden(true)
+            // Longevity buildup: the arena warms as your score climbs (endless/daily;
+            // dampened during Fever so its gold owns the screen).
+            if !chill && !model.snapshot.isGameOver {
+                HeatVignette(level: min(1, Double(model.snapshot.score) / 100),
+                             dampened: model.snapshot.feverActive)
+                    .ignoresSafeArea().accessibilityHidden(true)
+            }
 
             VStack(spacing: 0) {
                 HUDView(snapshot: model.snapshot, coreName: core?.name, chill: chill)
@@ -339,6 +368,12 @@ struct GameView: View {
             // Tap trail (over the grid, under the banners/overlays).
             TrailLayer(points: trailPoints, skin: TrailSkins.equipped, lifetime: 0.6)
                 .accessibilityHidden(true)
+
+            // Mid-streak momentum: a brief gold border pulse before Fever triggers.
+            if !model.snapshot.isGameOver {
+                StreakPulseBorder(trigger: model.streakPulseSeq, reduceMotion: reduceMotion)
+                    .accessibilityHidden(true)
+            }
 
             // Fever / power-ups are shown diegetically: Fever surges the Data Core;
             // Freeze frosts the (already-stopped) grid; Overclock energizes it; Purge
