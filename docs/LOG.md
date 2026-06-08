@@ -3,6 +3,23 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #62 — More rewarding hit-register sounds (2026-06-08)
+Maintainer: make all hit-register SFX more rewarding, on-theme. Applied mobile-game
+hit-feedback principles (layered transient + tonal body + consonant bell sweetener +
+bright sparkle + short shimmer tail; rising pitch on a chain; sub for weight; short
+envelopes) within the existing FM "decrypt" palette. All still 100% code-synth.
+- **`.decode`** (standard, chain-climbing): reworked into 5 layers — click attack, FM
+  pluck, an octave **bell ring**, a high data-bit sparkle, and a shimmer tail. The rising
+  run is extended to **1.5 octaves** (8 notes) so a long clean chain climbs an ever-
+  brighter melody.
+- **`.decodeBig`** (armored/cache kill): sub thump + fat FM body + a consonant 12th bell
+  ring + bright top → a weightier, more satisfying "big unlock".
+- **`.decodeWorm`**: added a bell + sparkle so the catch feels rewarding (was a bare chirp).
+- **`.breach`**: FM tick + a small ring, slightly louder — a crisper shell-crack.
+- **Verified:** clean build; standalone peak-amplitude check of the new synthesis — no
+  clipping and a sensible balance (decode 0.80, decodeBig 0.85, worm 0.64, breach 0.33).
+  Audio can't be auditioned through the tooling — confirm by ear on device.
+
 ## Run #61 — Endless depth: streak multiplier + score milestones (2026-06-08)
 Built the two maintainer-approved endless improvements (engine-first, view dresses it).
 - **Clean-streak base multiplier:** engine tracks `cleanStreak` (decodes since the last

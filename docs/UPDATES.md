@@ -2,6 +2,12 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.17 — Juicier hit sounds (2026-06-08)
+- Every decode now sounds more rewarding: the hit SFX got richer and brighter (a punchy
+  attack, a bell-like ring, a sparkle and a little shimmer tail), armored/cache kills hit
+  with more weight, and a clean chain climbs a longer, brighter melody. Still 100%
+  generated in code.
+
 ## 1.0.16 — Endless: streaks & milestones (2026-06-08)
 - New clean-streak multiplier in Endless: keep decoding without a miss and your base score
   multiplier climbs (×2 → ×5), stacking on top of Fever — so long, clean runs are rewarded

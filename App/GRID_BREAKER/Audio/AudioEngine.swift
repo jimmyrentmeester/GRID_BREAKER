@@ -180,41 +180,49 @@ final class AudioEngine {
     }
 
     private func buildBuffers() {
-        // Decode hit: a punchy FM "data-blip" — a click transient for tactility, an
-        // FM body for a clean digital pluck, and a high sparkle. Rendered at a rising
-        // A-minor-pentatonic run so chained decodes climb (see `play(_:step:)`).
-        let decodeScale: [Double] = [440, 523.25, 587.33, 659.25, 783.99, 880]  // A4→A5 pentatonic
+        // Decode hit: a rewarding, layered "decrypt unlocked" — a click transient for
+        // tactility, an FM pluck body, a consonant octave bell, a bright data-bit sparkle,
+        // and a short shimmer tail for polish. Rendered up a rising minor-pentatonic run
+        // (now 1.5 octaves) so a chain climbs an ever-brighter melody (see `play(_:step:)`).
+        let decodeScale: [Double] = [440, 523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66]
         decodeSteps = decodeScale.map { f in
-            buffer(seconds: 0.11) { _, t in
-                let click = self.noise() * self.decayEnv(t, 0.0035)
-                let body = self.fmBlip(f, t, glide: 0.12, index: 2.2, ratio: 2.01, decay: 0.05)
-                let sparkle = self.sine(f * 3, t) * self.decayEnv(t, 0.02)
-                return Float(click * 0.22 + body * 0.5 + sparkle * 0.12)
+            buffer(seconds: 0.15) { _, t in
+                let click   = self.noise() * self.decayEnv(t, 0.003)                        // attack
+                let body    = self.fmBlip(f, t, glide: 0.10, index: 2.0, ratio: 2.0, decay: 0.05)
+                let bell    = self.sine(f * 2, t) * self.decayEnv(t, 0.06)                   // reward ring
+                let sparkle = self.sine(f * 4.01, t) * self.decayEnv(t, 0.018)               // data-bit
+                let tail    = self.sine(f * 3, t) * self.decayEnv(t, 0.085)                  // shimmer tail
+                return Float(click * 0.16 + body * 0.40 + bell * 0.16 + sparkle * 0.10 + tail * 0.06)
             }
         }
         buffers[.decode] = decodeSteps.first    // fallback for step-less callers
-        // Worm decode: a wet, wobbling "slither" chirp — an upward sweep with a fast
-        // vibrato so it reads as a living, squirming target, audibly unlike the clean
-        // pentatonic standard hit. (Same FM family, distinct character.)
-        buffers[.decodeWorm] = buffer(seconds: 0.15) { _, t in
+        // Worm decode: a wet, wobbling "slither" chirp — an upward vibrato sweep, now with
+        // a bright sparkle so the catch still feels rewarding. Distinct from the clean hit.
+        buffers[.decodeWorm] = buffer(seconds: 0.16) { _, t in
             let vib = 1 + 0.07 * self.sine(34, t)                    // fast vibrato → "alive"
             let f = (500.0 + 430 * min(1, t / 0.085)) * vib         // squirms upward
-            let body = self.fmBlip(f, t, glide: -0.06, index: 1.7, ratio: 1.51, decay: 0.07)
-            let click = self.noise() * self.decayEnv(t, 0.003)
-            return Float(click * 0.16 + body * 0.46)
+            let click   = self.noise() * self.decayEnv(t, 0.003)
+            let body    = self.fmBlip(f, t, glide: -0.06, index: 1.7, ratio: 1.51, decay: 0.07)
+            let bell    = self.sine(f * 2, t) * self.decayEnv(t, 0.05)   // reward ring
+            let sparkle = self.sine(f * 3, t) * self.decayEnv(t, 0.03)
+            return Float(click * 0.15 + body * 0.42 + bell * 0.14 + sparkle * 0.10)
         }
-        // Armored kill: heavier, lower decrypt — a sub thump under a fatter FM body
-        // and a crisp click. Distinct "weight" vs. the standard hit.
-        buffers[.decodeBig] = buffer(seconds: 0.18) { _, t in
+        // Armored / cache kill: heavier, lower "big unlock" — a sub thump for weight, a
+        // fat FM body, a consonant 12th bell ring and a bright top, so the payoff lands.
+        buffers[.decodeBig] = buffer(seconds: 0.22) { _, t in
             let f = 330.0                                   // E4 — meaty but not muddy
-            let click = self.noise() * self.decayEnv(t, 0.004)
-            let sub = self.sine(f * 0.5, t) * self.decayEnv(t, 0.11)
-            let body = self.fmBlip(f, t, glide: 0.10, index: 3.2, ratio: 1.5, decay: 0.09)
-            return Float(click * 0.24 + body * 0.42 + sub * 0.36)
+            let click   = self.noise() * self.decayEnv(t, 0.004)
+            let sub     = self.sine(f * 0.5, t) * self.decayEnv(t, 0.12)     // weight
+            let body    = self.fmBlip(f, t, glide: 0.09, index: 3.0, ratio: 1.5, decay: 0.10)
+            let bell    = self.sine(f * 3, t) * self.decayEnv(t, 0.11)       // rewarding ring
+            let sparkle = self.sine(f * 6, t) * self.decayEnv(t, 0.03)       // bright top
+            return Float(click * 0.18 + sub * 0.30 + body * 0.34 + bell * 0.13 + sparkle * 0.09)
         }
-        // Armored shell breach: a clean metallic FM tick (the shell cracking).
-        buffers[.breach] = buffer(seconds: 0.07) { _, t in
-            Float(self.fmBlip(1568, t, glide: 0.0, index: 1.4, ratio: 2.5, decay: 0.018) * 0.2)
+        // Armored shell breach: a clean metallic FM tick + a tiny ring (the shell cracking).
+        buffers[.breach] = buffer(seconds: 0.09) { _, t in
+            let tick = self.fmBlip(1568, t, glide: 0.0, index: 1.4, ratio: 2.5, decay: 0.016)
+            let ring = self.sine(2349.32, t) * self.decayEnv(t, 0.035)
+            return Float(tick * 0.22 + ring * 0.12)
         }
         // Miss: a low, downward-bending FM "denied" blip with a little grit — same
         // FM family as the hits but dark and dropping (G3, subharmonic ratio).
