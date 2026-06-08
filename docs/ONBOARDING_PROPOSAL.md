@@ -77,9 +77,12 @@ Surfaced from the game-over screen (one-time), so CR is earned and motivated:
   guided tour (or a one-tap prompt to start it).
 
 ## Suggested implementation phasing (fits the one-task-per-run cadence)
-- **Phase A:** 3 practice levels + OnboardingFlow coordinator + state flags +
-  skippable/revisitable. (Largest chunk.)
-- **Phase B:** Payday starter-CR grant + count-up + post-first-run meta-loop surfacing.
+- **Phase A — DONE (Run #49):** 3 practice levels + `OnboardingView` coordinator +
+  level cards + 3-dot progress + skip/revisit. Reused `tutorialSeen` for the seen-flag;
+  new save flags deferred to Phase B. Practice scenes are scripted (incl. a scripted
+  Fever + power-up demo in L3).
+- **Phase B:** Payday starter-CR grant + count-up + post-first-run meta-loop surfacing
+  (add `firstRealRunDone` / `metaIntroSeen` to SaveData; `grantStarterCredits`).
 - **Phase C:** Guided Cyberdeck purchase + Cosmetics equip (GuidedHint banners).
 
 ## Deferred / minor open questions

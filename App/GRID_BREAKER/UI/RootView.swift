@@ -80,7 +80,7 @@ struct RootView: View {
                                campaignTotal: Campaign.count,
                                onBack: { screen = .menu }).transition(.opacity)
             case .tutorial:
-                TutorialView(onDone: { store.markTutorialSeen(); screen = .menu }).transition(.opacity)
+                OnboardingView(onDone: { store.markTutorialSeen(); screen = .menu }).transition(.opacity)
             case .settings:
                 SettingsView(store: store,
                              onTutorial: { tap(); screen = .tutorial },

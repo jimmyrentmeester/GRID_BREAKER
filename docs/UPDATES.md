@@ -2,6 +2,13 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.7 — New onboarding: 3 practice levels (2026-06-08)
+- First launch now walks you through three short, no-pressure training levels — Level 1
+  teaches decoding, your RAM clock and the firewall; Level 2 covers armored daemons,
+  gold caches and worms; Level 3 lets you charge a Fever and grab a power-up. Each opens
+  with a quick level card, and you can skip anytime. (Replaces the old quick tutorial;
+  still available from Settings ▸ How to Play.)
+
 ## 1.0.6 — Streaks feel bigger (2026-06-08)
 - The deeper your decode streak runs, the more it builds: haptics ramp from a soft tick
   to a sharp punch as you near Fever, hits throw more sparks with a bigger "+N", and the

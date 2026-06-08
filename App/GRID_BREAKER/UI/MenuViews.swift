@@ -483,40 +483,59 @@ private struct PaletteRow: View {
     }
 }
 
-// MARK: - Interactive tutorial
+// MARK: - Onboarding (3 practice levels)
 
-/// Hands-on, teach-by-doing tutorial: decode a daemon, breach an armored one,
-/// avoid a firewall, then a short recap. Runs on first boot and from the menu.
-struct TutorialView: View {
+/// Hands-on first-time experience: three slow, no-fail practice levels that teach the
+/// fundamentals one theme at a time (decode + RAM + firewall → armored + cache + worm →
+/// fever + power-up), each opened by a short level card. Runs on first boot and from
+/// Settings ▸ How to Play. The meta-loop tour (CR/Cyberdeck/Cosmetics) is surfaced
+/// separately after the first real run (see ONBOARDING_PROPOSAL.md, Acts 1.5–2).
+///
+/// Beat map: 0 decode · 1 ram · 2 firewall | 3 armored · 4 cache · 5 worm | 6 fever ·
+/// 7 power-up | 8 outro. Beats 0/3/6 open with a level card.
+struct OnboardingView: View {
     let onDone: () -> Void
 
-    @State private var step = 0          // 0 decode · 1 armored · 2 firewall · 3 worm · 4 recap
+    @State private var beat = 0
+    @State private var showCard = true          // level-intro card gating
     @State private var armoredBreached = false
     @State private var wrongFirewall = false
     @State private var shakeAnim: CGFloat = 0
     @State private var flashCell: Int? = nil
-    @State private var wormCell = 4      // the worm step: it hops between cells on a timer
+    @State private var wormCell = 4
+    @State private var ram: Double = 0.5         // beat 1: the RAM-clock demo bar
+    @State private var feverHits = 0             // beat 6: chain progress
+    @State private var feverCell = 4
+    @State private var feverOn = false           // beat 6: celebration latch
+    @State private var powerLabel: String? = nil // beat 7
 
     private let centerCell = 4
     private let firewallCell = 0
-    private let totalSteps = 5
+    private let feverTarget = 4
 
-    /// Drives the tutorial worm's hops (only acts during the worm step).
+    /// Drives the worm's hops (beat 5 only).
     private let hopTimer = Timer.publish(every: 0.7, on: .main, in: .common).autoconnect()
 
+    private var level: Int { beat <= 2 ? 1 : beat <= 5 ? 2 : 3 }   // 1…3 (outro stays 3)
+    private var isOutro: Bool { beat == 8 }
+
     private var prompt: String {
-        switch step {
+        switch beat {
         case 0: return "Tap the glowing daemon to decode it."
-        case 1: return armoredBreached ? "Shell breached — tap again to crack it!"
+        case 1: return "Decoding refills your RAM — your clock. Tap to decode."
+        case 2: return wrongFirewall ? "✕ Firewall! Never tap red. Hit the cyan daemon."
+                                     : "Decode the cyan daemon — but NEVER the red firewall."
+        case 3: return armoredBreached ? "Shell breached — tap again to crack it!"
                                        : "Armored daemons take two taps. Tap it."
-        case 2: return wrongFirewall ? "✕ That's a firewall — never tap it. Hit the cyan daemon."
-                                     : "Tap the cyan daemon — but NEVER the red firewall."
-        case 3: return "The green worm hops around — tap it wherever it lands."
-        default: return "You're in. A few last things:"
+        case 4: return "Gold data cache — a big bonus. Grab it!"
+        case 5: return "The green worm hops — tap it wherever it lands."
+        case 6: return feverOn ? "FEVER! Hazards clear and your score doubles."
+                               : "Chain decodes to charge Fever — keep tapping!"
+        case 7: return powerLabel ?? "Grab the white power-up pickup for a burst."
+        default: return ""
         }
     }
 
-    /// Orthogonal in-bounds neighbours of a 3×3 cell (for the worm's hops).
     private func neighbours(of idx: Int) -> [Int] {
         let r = idx / 3, c = idx % 3
         var out: [Int] = []
@@ -529,41 +548,125 @@ struct TutorialView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("TUTORIAL")
+            Text("TRAINING")
                 .font(.system(size: 24, weight: .heavy, design: .monospaced))
                 .foregroundStyle(NeonTheme.cyan)
                 .neonGlow(NeonTheme.cyan, radius: 8)
 
-            HStack(spacing: 6) {
-                ForEach(0..<totalSteps, id: \.self) { i in
+            // Level progress (3 dots).
+            HStack(spacing: 8) {
+                ForEach(1...3, id: \.self) { i in
                     Capsule()
-                        .fill(i <= step ? NeonTheme.cyan : Color.white.opacity(0.15))
-                        .frame(width: i == step ? 18 : 8, height: 5)
+                        .fill(i <= level ? NeonTheme.cyan : Color.white.opacity(0.15))
+                        .frame(width: i == level && !isOutro ? 22 : 9, height: 5)
                 }
             }
 
-            Text(prompt)
-                .font(.system(size: 14, weight: .medium, design: .monospaced))
-                .foregroundStyle(wrongFirewall && step == 2 ? NeonTheme.danger : NeonTheme.textPrimary)
-                .multilineTextAlignment(.center)
-                .frame(height: 40)
+            if isOutro {
+                outro
+            } else if showCard {
+                levelCard
+            } else {
+                Text(prompt)
+                    .font(.system(size: 14, weight: .medium, design: .monospaced))
+                    .foregroundStyle(wrongFirewall && beat == 2 ? NeonTheme.danger
+                                     : feverOn ? NeonTheme.gold : NeonTheme.textPrimary)
+                    .multilineTextAlignment(.center)
+                    .frame(height: 40)
 
-            if step < 4 { grid } else { recap }
+                if beat == 1 { ramBar }
+                if beat == 6 { comboMeter }
 
-            Spacer(minLength: 0)
+                grid
 
-            TerminalButton(title: step < 4 ? "SKIP" : "START HACKING",
-                           color: step < 4 ? NeonTheme.magenta : NeonTheme.cyan,
-                           action: onDone)
+                Spacer(minLength: 0)
+            }
+
+            if !isOutro {
+                TerminalButton(title: "SKIP", color: NeonTheme.magenta, action: onDone)
+            }
         }
         .padding(24)
         .onReceive(hopTimer) { _ in
-            guard step == 3, flashCell == nil else { return }
+            guard beat == 5, !showCard, flashCell == nil else { return }
             if let dest = neighbours(of: wormCell).randomElement() {
                 withAnimation(.easeOut(duration: 0.12)) { wormCell = dest }
             }
         }
     }
+
+    // MARK: Level intro card
+
+    private var levelCard: some View {
+        let (icon, title, blurb): (String, String, String) = {
+            switch level {
+            case 1: return ("hand.tap.fill", "First Contact",
+                            "Decode daemons, watch your RAM clock, and dodge the firewall.")
+            case 2: return ("square.grid.3x3.fill", "Read the Grid",
+                            "Armored shells, gold caches, and worms that hop.")
+            default: return ("bolt.fill", "Overload",
+                             "Chain a Fever, then grab a power-up.")
+            }
+        }()
+        return VStack(spacing: 18) {
+            Spacer(minLength: 0)
+            Image(systemName: icon)
+                .font(.system(size: 46, weight: .bold))
+                .foregroundStyle(NeonTheme.cyan)
+                .neonGlow(NeonTheme.cyan, radius: 10)
+            Text("LEVEL \(level)")
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim).tracking(3)
+            Text(title)
+                .font(.system(size: 22, weight: .heavy, design: .monospaced))
+                .foregroundStyle(NeonTheme.textPrimary)
+            Text(blurb)
+                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 12)
+            Spacer(minLength: 0)
+            TerminalButton(title: "BEGIN", color: NeonTheme.cyan, wide: true) {
+                AudioEngine.shared.play(.uiTap)
+                withAnimation(.easeInOut(duration: 0.25)) { showCard = false }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: RAM-clock + combo demos
+
+    private var ramBar: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("RAM").font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.08))
+                    Capsule().fill(ram > 0.5 ? NeonTheme.cyan : NeonTheme.gold)
+                        .frame(width: max(0, geo.size.width * ram))
+                        .neonGlow(ram > 0.5 ? NeonTheme.cyan : NeonTheme.gold, radius: 5)
+                        .animation(.easeOut(duration: 0.4), value: ram)
+                }
+            }
+            .frame(height: 10)
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private var comboMeter: some View {
+        HStack(spacing: 6) {
+            ForEach(0..<feverTarget, id: \.self) { i in
+                Capsule()
+                    .fill(i < feverHits ? NeonTheme.gold : Color.white.opacity(0.15))
+                    .frame(height: 6)
+                    .neonGlow(i < feverHits ? NeonTheme.gold : .clear, radius: 3)
+            }
+        }
+        .padding(.horizontal, 4)
+    }
+
+    // MARK: Grid
 
     private var grid: some View {
         GeometryReader { geo in
@@ -587,7 +690,7 @@ struct TutorialView: View {
             .modifier(ShakeEffect(animatableData: shakeAnim))
         }
         .aspectRatio(1, contentMode: .fit)
-        .frame(maxHeight: 340)
+        .frame(maxHeight: 320)
     }
 
     private func cellView(_ idx: Int, size: CGFloat) -> some View {
@@ -604,20 +707,33 @@ struct TutorialView: View {
     }
 
     @ViewBuilder private func node(_ idx: Int) -> some View {
-        switch step {
-        case 0 where idx == centerCell:
-            sprite(NeonTheme.cyan, "circle.grid.cross.fill")
-        case 1 where idx == centerCell:
-            sprite(armoredBreached ? NeonTheme.gold : NeonTheme.magenta,
-                   armoredBreached ? "lock.open.fill" : "lock.shield.fill", ringed: !armoredBreached)
-        case 2 where idx == centerCell:
-            sprite(NeonTheme.cyan, "circle.grid.cross.fill")
-        case 2 where idx == firewallCell:
-            sprite(NeonTheme.danger, "exclamationmark.triangle.fill")
-        case 3 where idx == wormCell:
-            sprite(NeonTheme.worm, "scribble.variable", ringed: true)
-        default:
-            EmptyView()
+        // Fever celebration: the board lights up golden (brief §10.2 look).
+        if feverOn && beat == 6 {
+            if idx == feverCell || idx == 0 || idx == 8 {
+                sprite(NeonTheme.gold, "bolt.fill", ringed: true)
+            }
+        } else {
+            switch beat {
+            case 0 where idx == centerCell, 1 where idx == centerCell:
+                sprite(NeonTheme.cyan, "circle.grid.cross.fill")
+            case 2 where idx == centerCell:
+                sprite(NeonTheme.cyan, "circle.grid.cross.fill")
+            case 2 where idx == firewallCell:
+                sprite(NeonTheme.danger, "exclamationmark.triangle.fill")
+            case 3 where idx == centerCell:
+                sprite(armoredBreached ? NeonTheme.gold : NeonTheme.magenta,
+                       armoredBreached ? "lock.open.fill" : "lock.shield.fill", ringed: !armoredBreached)
+            case 4 where idx == centerCell:
+                sprite(NeonTheme.gold, "square.stack.3d.up.fill", ringed: true)
+            case 5 where idx == wormCell:
+                sprite(NeonTheme.worm, "scribble.variable", ringed: true)
+            case 6 where idx == feverCell:
+                sprite(NeonTheme.cyan, "circle.grid.cross.fill")
+            case 7 where idx == centerCell:
+                sprite(NeonTheme.textPrimary, "snowflake", ringed: true)
+            default:
+                EmptyView()
+            }
         }
     }
 
@@ -631,26 +747,59 @@ struct TutorialView: View {
         }
     }
 
+    // MARK: Input
+
     private func handle(_ idx: Int) {
-        guard flashCell == nil else { return }
-        switch step {
+        guard flashCell == nil, !showCard, !feverOn else { return }
+        switch beat {
         case 0 where idx == centerCell:
-            decode(idx, .decode) { step = 1 }
+            decode(idx, .decode) { advance() }
         case 1 where idx == centerCell:
-            if !armoredBreached { armoredBreached = true; AudioEngine.shared.play(.breach) }
-            else { decode(idx, .decodeBig) { armoredBreached = false; step = 2 } }
+            ram = min(1, ram + 0.35)            // decoding tops up the RAM clock
+            decode(idx, .decode) { advance() }
         case 2 where idx == firewallCell:
             wrongFirewall = true
             AudioEngine.shared.play(.bomb)
             shakeAnim = 0
             withAnimation(.easeOut(duration: 0.4)) { shakeAnim = 1 }
         case 2 where idx == centerCell:
-            decode(idx, .decode) { step = 3 }
-        case 3 where idx == wormCell:
-            decode(idx, .decodeWorm) { step = 4 }
+            decode(idx, .decode) { advance() }
+        case 3 where idx == centerCell:
+            if !armoredBreached { armoredBreached = true; AudioEngine.shared.play(.breach) }
+            else { decode(idx, .decodeBig) { armoredBreached = false; advance() } }
+        case 4 where idx == centerCell:
+            decode(idx, .decodeBig) { advance() }
+        case 5 where idx == wormCell:
+            decode(idx, .decodeWorm) { advance() }
+        case 6 where idx == feverCell:
+            feverHits += 1
+            if feverHits >= feverTarget {
+                decode(idx, .decode) {
+                    AudioEngine.shared.play(.fever)
+                    withAnimation(.easeInOut(duration: 0.3)) { feverOn = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { advance() }
+                }
+            } else {
+                decode(idx, .decode) {
+                    if let dest = neighbours(of: feverCell).randomElement() { feverCell = dest }
+                }
+            }
+        case 7 where idx == centerCell:
+            AudioEngine.shared.play(.fever)
+            withAnimation(.easeInOut(duration: 0.2)) { powerLabel = "❄ FREEZE — the clock pauses!" }
+            flashCell = idx
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
+                flashCell = nil; advance()
+            }
         default:
             break
         }
+    }
+
+    /// Advance to the next beat; re-show the level card when a new level starts.
+    private func advance() {
+        beat += 1
+        if beat == 3 || beat == 6 { showCard = true }
     }
 
     private func decode(_ idx: Int, _ sfx: AudioEngine.SFX, then: @escaping () -> Void) {
@@ -662,56 +811,28 @@ struct TutorialView: View {
         }
     }
 
-    private var recap: some View {
-        ScrollView {
-            VStack(spacing: 10) {
-                recapRow("memorychip.fill", NeonTheme.cyan, "RAM is your clock",
-                         "It drains over time — decoding tops it up, misses cost time.")
-                recapRow("bolt.fill", NeonTheme.gold, "Chain a Fever",
-                         "String clean hits for Fever: hazards vanish, score ×2.")
-                recapRow("square.stack.3d.up.fill", NeonTheme.gold, "Gold data caches",
-                         "A rare, fast-vanishing prize — one tap for a big score spike.")
-                recapRow("scribble.variable", NeonTheme.worm, "Green worms hop",
-                         "They scuttle to a nearby cell — tap them wherever they land.")
-                sectionDivider("POWER-UPS — tap a white pickup for a burst")
-                recapRow("snowflake", NeonTheme.cyan, "❄ Freeze",
-                         "Stops the clock: your RAM and the daemons pause for a few seconds.")
-                recapRow("bolt.fill", NeonTheme.worm, "⚡ Overclock",
-                         "Doubles every point you score for a few seconds.")
-                recapRow("wind", NeonTheme.magenta, "🌀 Purge",
-                         "Instantly wipes every firewall bomb off the board.")
-                recapRow("bitcoinsign.circle.fill", NeonTheme.gold, "Spend Credits",
-                         "Upgrade your Cyberdeck and buy neon palettes.")
-            }
-            .padding(.vertical, 4)
-        }
-        .frame(maxHeight: .infinity)
-    }
+    // MARK: Outro
 
-    private func sectionDivider(_ s: String) -> some View {
-        Text(s)
-            .font(.system(size: 9, weight: .semibold, design: .monospaced))
-            .foregroundStyle(NeonTheme.textDim).tracking(1.5)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 4)
-    }
-
-    private func recapRow(_ symbol: String, _ color: Color, _ title: String, _ text: String) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: symbol).font(.system(size: 20)).foregroundStyle(color)
-                .neonGlow(color, radius: 4).frame(width: 30)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.textPrimary)
-                Text(text).font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(NeonTheme.textDim).fixedSize(horizontal: false, vertical: true)
-            }
+    private var outro: some View {
+        VStack(spacing: 16) {
             Spacer(minLength: 0)
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 52, weight: .bold))
+                .foregroundStyle(NeonTheme.gold)
+                .neonGlow(NeonTheme.gold, radius: 12)
+            Text("TRAINING COMPLETE")
+                .font(.system(size: 20, weight: .heavy, design: .monospaced))
+                .foregroundStyle(NeonTheme.cyan)
+                .neonGlow(NeonTheme.cyan, radius: 8)
+            Text("You're ready to jack in. Every run banks CR to spend in the Cyberdeck and on Cosmetics — keep playing to grow your netrunner.")
+                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
+            Spacer(minLength: 0)
+            TerminalButton(title: "JACK IN", color: NeonTheme.cyan, wide: true, action: onDone)
         }
-        .padding(14)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(Color.white.opacity(0.03))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(color.opacity(0.35), lineWidth: 1)))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

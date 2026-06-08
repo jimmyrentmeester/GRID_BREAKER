@@ -3,6 +3,27 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #49 — Onboarding Phase A: 3 practice levels (2026-06-08)
+First slice of the onboarding proposal (docs/ONBOARDING_PROPOSAL.md). Replaced the old
+single-grid `TutorialView` with a new **`OnboardingView`** — a paced, teach-by-doing
+first-time experience structured as three practice levels, each opened by a level card.
+- **Level 1 · First Contact:** decode a daemon; a RAM-clock demo bar tops up when you
+  decode; dodge the firewall (red = never tap).
+- **Level 2 · Read the Grid:** armored (2-tap), gold data cache, hopping worm.
+- **Level 3 · Overload:** chain decodes to charge a combo meter → a Fever celebration
+  (board goes golden, ×2); then grab a power-up pickup (❄ Freeze).
+- **Coordinator:** a 9-beat state machine (0–8) grouped into the 3 levels + an outro
+  ("Training complete" → JACK IN, foreshadowing the CR/Cyberdeck/Cosmetics tour). Level
+  cards gate each level's start; 3-dot level progress; SKIP at every step.
+- **Wiring:** `RootView` first-launch branch + Settings ▸ How to Play now show
+  `OnboardingView`; completion still flips `tutorialSeen`. No save-schema change yet
+  (Phase B adds `firstRealRunDone`/`metaIntroSeen` + the starter-CR payday).
+- **Scope note:** practice scenes are scripted (deterministic teaching) per the
+  proposal; the meta-loop tour (Acts 1.5–2) is Phases B/C, not in this run.
+- **Verified:** clean build; on-device — fresh first launch shows the Level 1 card; a
+  temp beat override (then reverted) confirmed the Fever beat renders its combo meter +
+  grid correctly on iPhone 16 Pro.
+
 ## Run #48 — Streak-scaled haptics + visual density (2026-06-08)
 Maintainer asked to improve haptic feedback levels and visual density "during streaks /
 the longer you play". Both were flat: the decode audio already climbed an arpeggio with
