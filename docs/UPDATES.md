@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.22 — Worm daemons (2026-06-08)
+- A new green "worm" daemon scuttles across the grid — it hops to a neighbouring
+  cell if you're too slow, so you have to chase it down. Worth a little extra.
+  (Endless only; campaign & Flow are unchanged.)
+
 ## 0.21 — Bonus data caches (2026-06-08)
 - Keep an eye out for golden data caches: a rare, fast-disappearing bonus worth a
   big score (and extra RAM). Grab it in time for a spike — or let it slip, no harm

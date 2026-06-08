@@ -204,6 +204,15 @@ struct GridEngine {
             timeSinceLastSpawn -= interval
         }
 
+        // 3.5 Worms scuttle to an adjacent free cell on their hop timer.
+        for i in nodes.indices where nodes[i].type == .wormDaemon {
+            guard let next = nodes[i].nextHopAt, clock >= next else { continue }
+            let occupied = Set(nodes.map(\.cellIndex))
+            let dests = adjacentCells(nodes[i].cellIndex).filter { !occupied.contains($0) }
+            if let dest = dests.randomElement(using: &rng) { nodes[i].cellIndex = dest }
+            nodes[i].nextHopAt = clock + config.wormHopInterval   // reschedule even if boxed in
+        }
+
         // 4. RAM depletion ends the run.
         if ramRemaining <= 0 {
             ramRemaining = 0
@@ -242,7 +251,7 @@ struct GridEngine {
             }
             return [.firewallExploded(cell: cell), endGame(.firewallHit)]
 
-        case .standardDaemon, .dataCache:
+        case .standardDaemon, .dataCache, .wormDaemon:
             return [decode(at: idx)] + checkFever() + checkTarget() + checkGridEscalation()
 
         case .armoredDaemon:
@@ -268,12 +277,8 @@ struct GridEngine {
         guard !isGameOver, gridSize == .threeByThree,
               let threshold = config.gridEscalationScore, score >= threshold else { return [] }
         gridSize = .fourByFour
-        nodes = nodes.map { node in
-            let remapped = (node.cellIndex / 3) * 4 + (node.cellIndex % 3)
-            var n = GridNode(id: node.id, cellIndex: remapped, type: node.type,
-                             lifespan: node.lifespan, spawnedAt: node.spawnedAt)
-            n.hitsRemaining = node.hitsRemaining   // preserve a breached shell
-            return n
+        for i in nodes.indices {                   // keep top-left layout as the grid grows
+            nodes[i].cellIndex = (nodes[i].cellIndex / 3) * 4 + (nodes[i].cellIndex % 3)
         }
         return [.gridExpanded]
     }
@@ -306,11 +311,26 @@ struct GridEngine {
         case .dataCache:
             score += config.scoreCache * multiplier
             ramRemaining = min(ramCapacity, ramRemaining + config.bonusCacheDecode + decodeTimeBonus)
+        case .wormDaemon:
+            score += config.scoreWorm * multiplier
+            ramRemaining = min(ramCapacity, ramRemaining + config.bonusStandardDecode + decodeTimeBonus)
         case .firewallBomb:
             break // never decoded
         }
         nodes.remove(at: idx)
         return .nodeDecoded(node.type, cell: node.cellIndex)
+    }
+
+    /// Orthogonal in-bounds neighbors of a flattened cell index (for worm hops).
+    private func adjacentCells(_ index: Int) -> [Int] {
+        let cols = gridSize.columns, rows = gridSize.rows
+        let r = index / cols, c = index % cols
+        var out: [Int] = []
+        if r > 0 { out.append(index - cols) }
+        if r < rows - 1 { out.append(index + cols) }
+        if c > 0 { out.append(index - 1) }
+        if c < cols - 1 { out.append(index + 1) }
+        return out
     }
 
     /// Procedurally pick a free cell + a node type (seeded). Nil if grid full.
@@ -331,18 +351,28 @@ struct GridEngine {
                 type = .armoredDaemon
             } else if roll < config.firewallSpawnChance + config.armoredSpawnChance + config.cacheSpawnChance {
                 type = .dataCache
+            } else if roll < config.firewallSpawnChance + config.armoredSpawnChance + config.cacheSpawnChance + config.wormSpawnChance {
+                type = .wormDaemon
             } else {
                 type = .standardDaemon
             }
         }
 
-        // A data cache lives only a fraction of the normal lifespan — grab it fast.
+        // Cache lives briefly (grab it fast); a worm lives a touch longer and gets a
+        // hop schedule so it can move before timing out.
         let baseLife = config.nodeLifespan(atScore: scaledScore)
-        let lifespan = type == .dataCache ? baseLife * config.cacheLifespanFactor : baseLife
+        let lifespan: TimeInterval
+        let nextHop: TimeInterval?
+        switch type {
+        case .dataCache:  lifespan = baseLife * config.cacheLifespanFactor; nextHop = nil
+        case .wormDaemon: lifespan = baseLife * config.wormLifespanFactor;  nextHop = clock + config.wormHopInterval
+        default:          lifespan = baseLife;                              nextHop = nil
+        }
         return GridNode(cellIndex: cell,
                         type: type,
                         lifespan: lifespan,
-                        spawnedAt: clock)
+                        spawnedAt: clock,
+                        nextHopAt: nextHop)
     }
 
     private mutating func endGame(_ reason: GameOverReason) -> GameEvent {

@@ -51,6 +51,7 @@ struct GameConfig: Sendable {
     var scoreStandard: Int = 1
     var scoreArmored: Int = 2
     var scoreCache: Int = 5            // bonus "data cache" — a points spike
+    var scoreWorm: Int = 2             // a worm is harder to catch → worth a bit more
 
     // MARK: Meta progression
     /// Credits earned per point of decode score at session end.
@@ -89,6 +90,12 @@ struct GameConfig: Sendable {
     /// lifespan (`cacheLifespanFactor`) so it's a quick reflex grab.
     var cacheSpawnChance: Double = 0.05
     var cacheLifespanFactor: Double = 0.65
+    /// Chance a spawn is a worm. It hops to an adjacent free cell every
+    /// `wormHopInterval` seconds, and lives a touch longer (`wormLifespanFactor`)
+    /// so it gets to move before timing out.
+    var wormSpawnChance: Double = 0.08
+    var wormHopInterval: TimeInterval = 0.55
+    var wormLifespanFactor: Double = 1.25
 
     static let `default` = GameConfig()
 
@@ -104,6 +111,7 @@ struct GameConfig: Sendable {
         c.bonusArmoredDecode = 0
         c.bonusCacheDecode = 0
         c.cacheSpawnChance = 0           // cores are sim-tuned; no bonus caches
+        c.wormSpawnChance = 0            // …and no worms (fixed mechanical mix)
         c.gridEscalationScore = nil      // cores are hand-tuned for a fixed 3×3
         return c
     }
@@ -129,6 +137,7 @@ struct GameConfig: Sendable {
         c.lifespanCompression = 0
         c.fixedActiveNodes = 3
         c.feverEnabled = false
+        c.wormSpawnChance = 0            // no chasing targets — Flow stays calm
         c.gridEscalationScore = nil      // Flow stays a calm, fixed 3×3
         return c
     }

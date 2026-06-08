@@ -104,22 +104,23 @@ final class GameViewModel {
             switch event {
             case let .nodeDecoded(type, cell):
                 let points: Int
+                let popColor: Color
                 switch type {
-                case .armoredDaemon: points = config.scoreArmored
-                case .dataCache:     points = config.scoreCache
-                default:             points = config.scoreStandard
+                case .armoredDaemon: points = config.scoreArmored; popColor = NeonTheme.gold
+                case .dataCache:     points = config.scoreCache;   popColor = NeonTheme.gold
+                case .wormDaemon:    points = config.scoreWorm;    popColor = NeonTheme.worm
+                default:             points = config.scoreStandard; popColor = NeonTheme.cyan
                 }
-                let golden = type == .armoredDaemon || type == .dataCache
-                pendingEffects.append(.init(cell: cell, style: .pop,
-                                            color: golden ? NeonTheme.gold : NeonTheme.cyan,
-                                            points: points))
+                pendingEffects.append(.init(cell: cell, style: .pop, color: popColor, points: points))
                 queued = true
-                if type == .standardDaemon {
-                    haptics.impact(.light); audio.play(.decode, step: decodeRun)
-                } else {
-                    // Armored kill or cache grab — a heavier, golden hit.
+                switch type {
+                case .armoredDaemon:
                     haptics.impact(.medium); audio.play(.decodeBig)
-                    if type == .armoredDaemon, !reduceMotion { freezeRemaining = 0.08 }   // hit-stop
+                    if !reduceMotion { freezeRemaining = 0.08 }   // hit-stop on the heavy kill
+                case .dataCache:
+                    haptics.impact(.medium); audio.play(.decodeBig)   // a weighty grab
+                default:                                              // standard + worm: nimble
+                    haptics.impact(.light); audio.play(.decode, step: decodeRun)
                 }
                 decodeRun += 1                                     // chain climbs the arpeggio
             case let .nodeBreached(cell):
@@ -701,7 +702,8 @@ private struct GridBoard: View {
                         }
                     }
                 }
-                .animation(.easeOut(duration: 0.12), value: snapshot.nodes.map(\.id))
+                // Keyed on id+cell so a worm hop (same id, new cell) also transitions.
+                .animation(.easeOut(duration: 0.12), value: snapshot.nodes.map { "\($0.id)@\($0.cellIndex)" })
                 .animation(reduceMotion ? nil : .easeInOut(duration: 0.45), value: snapshot.gridSize)
 
                 EffectsLayer(cols: cols, cell: cell, spacing: spacing,
@@ -762,6 +764,9 @@ private struct NodeSprite: View {
             case .dataCache:
                 // A bright golden prize — stacked data, ringed, to read as "grab me".
                 sprite(color: NeonTheme.gold, symbol: "square.stack.3d.up.fill", ringed: true)
+            case .wormDaemon:
+                // Acid-green squiggle — a distinct, moving target.
+                sprite(color: NeonTheme.worm, symbol: "scribble.variable", ringed: true)
             }
         }
     }

@@ -3,6 +3,25 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #30 — Worm daemon (gameplay 2/4) (2026-06-08)
+A moving target: a "worm" that scuttles to an adjacent free cell on a timer.
+- **`NodeType.wormDaemon`** (1 tap, harvestable, penalizes on expiry like a daemon).
+  `GridNode.cellIndex` is now `var` + new `var nextHopAt`; `GridEngine.gridSize`
+  already mutable. (The 4×4 escalation remap was simplified to mutate `cellIndex`
+  in place now that it's settable.)
+- **Engine:** spawn roll adds worm (chance 0.08) with a slightly longer life
+  (`wormLifespanFactor` 1.25) + a hop schedule; a new tick step relocates each worm
+  to a random orthogonal free neighbor every `wormHopInterval` (0.55 s) via
+  `adjacentCells(_:)`; one-tap decode pays `scoreWorm` (2). Disabled in
+  campaign + Flow.
+- **Juice:** fixed acid-green `NeonTheme.worm` + `scribble.variable` sprite (distinct
+  from the other daemons); green "+2" pop, nimble standard decode sound. The grid
+  transition is now keyed on id+cell so a hop animates (the worm dissolves to its
+  new cell).
+- **Verified:** clean build; headless sim — 43 hops, **every** one to an orthogonal
+  neighbor; worm decodes in one tap for score 2. On-device: green worm sprites read
+  distinctly and visibly relocated between frames. Temp spawn boost reverted.
+
 ## Run #29 — Bonus "data cache" node (gameplay 1/4) (2026-06-08)
 First of four requested gameplay additions. A rare, short-lived golden bonus node.
 - **`NodeType.dataCache`** (1 tap, harvestable). New `penalizesOnExpiry` property:

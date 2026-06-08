@@ -129,6 +129,7 @@ enum NeonTheme {
     static var magenta: Color { current.secondary }
     static var gold: Color { current.accent }
     static let danger = Color(red: 1.00, green: 0.18, blue: 0.30)   // firewall red — fixed
+    static let worm = Color(red: 0.55, green: 1.00, blue: 0.30)     // worm acid-green — fixed
     static let textPrimary = Color.white
     static let textDim = Color(white: 0.65)
 

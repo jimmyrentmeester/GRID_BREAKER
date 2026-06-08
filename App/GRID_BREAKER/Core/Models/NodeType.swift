@@ -21,6 +21,10 @@ enum NodeType: String, Codable, CaseIterable, Sendable {
     /// spike — a tempting grab under time pressure. Harvestable like a daemon.
     case dataCache
 
+    /// A "worm" that scuttles to an adjacent free cell on a timer — a moving target.
+    /// One tap to decode (wherever it currently is); a real daemon otherwise.
+    case wormDaemon
+
     /// How many taps are required to fully clear this node.
     var requiredTaps: Int {
         switch self {
@@ -28,6 +32,7 @@ enum NodeType: String, Codable, CaseIterable, Sendable {
         case .armoredDaemon:  return 2
         case .firewallBomb:   return 0 // never a valid target
         case .dataCache:      return 1
+        case .wormDaemon:     return 1
         }
     }
 
@@ -37,5 +42,7 @@ enum NodeType: String, Codable, CaseIterable, Sendable {
     /// Whether letting this node expire costs you (RAM + combo). Only real daemons
     /// punish a timeout — a bomb expires safely (brief 10.3) and a missed bonus
     /// cache is just a missed opportunity, not a failure.
-    var penalizesOnExpiry: Bool { self == .standardDaemon || self == .armoredDaemon }
+    var penalizesOnExpiry: Bool {
+        self == .standardDaemon || self == .armoredDaemon || self == .wormDaemon
+    }
 }
