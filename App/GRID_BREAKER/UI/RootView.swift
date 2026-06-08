@@ -24,7 +24,7 @@ struct RootView: View {
     var body: some View {
         ZStack {
             NeonTheme.background.ignoresSafeArea()
-            GridBackdrop().ignoresSafeArea()
+            GridBackdrop().ignoresSafeArea().accessibilityHidden(true)
 
             switch screen {
             case .menu:
@@ -187,6 +187,9 @@ struct RootView: View {
         .padding(.vertical, 6).padding(.horizontal, 10)
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.white.opacity(0.04))
             .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(color.opacity(0.4), lineWidth: 1)))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue(value)
     }
 
     private func utilityButton(_ label: String, _ symbol: String, _ action: @escaping () -> Void) -> some View {
@@ -200,6 +203,9 @@ struct RootView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(TerminalButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -224,6 +230,9 @@ private struct MenuTile: View {
             .neonGlow(color, radius: 3)
         }
         .buttonStyle(TerminalButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(.isButton)
     }
 }
 

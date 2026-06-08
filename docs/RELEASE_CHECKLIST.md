@@ -40,4 +40,7 @@ Status of App Store readiness. The **code/config** side is done in-repo; the
   purchase chime sound right on hardware (the only open QUESTIONS item).
 - **Campaign feel-tune** — targets/budgets are sim-validated; a human playtest may
   want small tweaks (all in `Campaign.swift`).
-- Accessibility once-over (VoiceOver labels on the menu/shop controls).
+- ~~Accessibility once-over (VoiceOver labels on the menu/shop controls).~~ **Done
+  (Run #47)** — VoiceOver labels/values/traits across menus, shops, settings + the
+  in-game HUD; decorative layers hidden; Reduce Motion already honoured. A final
+  on-device pass with VoiceOver actually enabled is still worth doing before submit.

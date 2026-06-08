@@ -2,6 +2,12 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.5 — VoiceOver support (2026-06-08)
+- The game now works with VoiceOver: every menu, shop, setting and the in-game HUD has
+  proper spoken labels (e.g. "Glacier palette, equipped", "Music volume, 80 percent",
+  "Score, 1240"), purely decorative neon/particle layers are skipped, and grid cells are
+  described so the board is perceivable. Reduce Motion was already respected throughout.
+
 ## 1.0.4 — The worm bites back + clearer power-ups (2026-06-08)
 - The green worm is now unmistakable: it visibly squirms in its cell, and decoding one
   plays its own wet "slither" chirp instead of the normal hit sound.

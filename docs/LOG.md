@@ -3,6 +3,33 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #47 — Accessibility pass (VoiceOver) (2026-06-08)
+Added VoiceOver support across the navigable UI (the last code-quality gap before 1.0;
+no Apple account needed). Reduce Motion was already honoured app-wide; this run covers
+labels/values/traits and hides decorative layers.
+- **Menus/shops/settings (fully VoiceOver-usable now):**
+  - RootView: stat chips read "label: value"; MODES/TERMINAL tiles and utility buttons
+    get explicit labels; decorative `GridBackdrop` hidden.
+  - Cyberdeck `UpgradeRow`: description combined into one element; buy button reads
+    "Upgrade X, costs N credits" / "X fully upgraded", with a "Not enough credits" hint;
+    level pips hidden.
+  - Cosmetics `PaletteRow`/`TrailRow` and campaign `CoreRow`: collapsed to one element
+    each with name + a state value (Equipped/Owned/cost · Cleared/locked/target) and
+    `.isSelected` when equipped/cleared.
+  - `HighScoresView` rows read "Rank N, S points" + date; stat boxes read label+value.
+  - Settings: toggles expose On/Off as a value + toggle hint + `.isSelected`; volume
+    sliders are adjustable with a "N percent" value; action-row chevrons hidden.
+- **In-game HUD:** SCORE and RAM are queryable status elements ("Score: N",
+  "RAM remaining: N percent"); campaign target bar reads "core name: S of T". Decorative
+  layers hidden from VoiceOver (Chill/Fever atmosphere, Data-Core visualizer, tap-trail,
+  GridPowerFX, notch IslandFrameRow, EffectsLayer). Pause button labelled.
+- **Grid cells:** each carries a concise label (Daemon / Armored daemon / Firewall — do
+  not tap / Data cache / Worm daemon / Power-up / Bonus node / Empty) so the board is
+  perceivable on exploration — though live play stays a visual reflex challenge by nature.
+- **Verified:** clean build; fresh launch renders intact (no layout shift from the
+  modifiers; tutorial now shows 5 step-dots). Modifiers are layout-neutral; full
+  VoiceOver rotor confirmation is best done on-device with VoiceOver enabled.
+
 ## Run #46 — Worm distinction + power-ups taught separately (2026-06-08)
 Maintainer flagged the green worm as "generic" — unsure it even works, and no
 visual/auditory difference from standard daemons — and asked that every power-up be

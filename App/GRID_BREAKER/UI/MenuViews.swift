@@ -169,8 +169,11 @@ private struct UpgradeRow: View {
                             .frame(width: 14, height: 5)
                     }
                 }
+                .accessibilityHidden(true)   // decorative; level is in the label below
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(upgrade.title), level \(level) of \(upgrade.maxLevel). \(upgrade.detail)")
             Button(action: onBuy) {
                 Text(maxed ? "MAX" : "\(cost) CR")
                     .font(.system(size: 13, weight: .bold, design: .monospaced))
@@ -185,6 +188,9 @@ private struct UpgradeRow: View {
             }
             .buttonStyle(TerminalButtonStyle())
             .disabled(!affordable)
+            .accessibilityLabel(maxed ? "\(upgrade.title) fully upgraded"
+                                      : "Upgrade \(upgrade.title), costs \(cost) credits")
+            .accessibilityHint(affordable ? "" : maxed ? "" : "Not enough credits")
         }
         .padding(14)
         .background(
@@ -345,6 +351,11 @@ private struct TrailRow: View {
         }
         .buttonStyle(TerminalButtonStyle())
         .disabled(equipped || (!owned && !affordable))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(skin.name) trail")
+        .accessibilityValue(equipped ? "Equipped" : owned ? "Owned, tap to equip"
+                                                          : "Costs \(skin.cost) credits")
+        .accessibilityAddTraits(equipped ? [.isButton, .isSelected] : .isButton)
     }
 
     // A clean mini "data stream": a fading beam through three nodes, in the skin's
@@ -438,6 +449,11 @@ private struct PaletteRow: View {
         }
         .buttonStyle(TerminalButtonStyle())
         .disabled(equipped || (!owned && !affordable))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(palette.name) palette")
+        .accessibilityValue(equipped ? "Equipped" : owned ? "Owned, tap to equip"
+                                                          : "Costs \(palette.cost) credits")
+        .accessibilityAddTraits(equipped ? [.isButton, .isSelected] : .isButton)
     }
 
     @ViewBuilder private var trailing: some View {
@@ -784,6 +800,12 @@ private struct CoreRow: View {
         }
         .buttonStyle(TerminalButtonStyle())
         .disabled(!unlocked)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Core \(core.id), \(core.name)")
+        .accessibilityValue(cleared ? "Cleared. Target \(core.targetScore), \(Int(core.timeBudget)) seconds. Tap to replay."
+                            : unlocked ? "Target \(core.targetScore), \(Int(core.timeBudget)) seconds. Tap to play."
+                                       : "Locked. Clear the previous core to unlock.")
+        .accessibilityAddTraits(cleared ? [.isButton, .isSelected] : .isButton)
     }
 }
 
@@ -835,6 +857,9 @@ struct HighScoresView: View {
                                 .font(.system(size: 11, weight: .regular, design: .monospaced))
                         }
                         .font(.system(size: 17, weight: .bold, design: .monospaced))
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Rank \(idx + 1), \(entry.score) points")
+                        .accessibilityValue(Text(entry.date, format: .dateTime.day().month().hour().minute()))
                     }
                 }
                 Spacer()
@@ -854,6 +879,9 @@ struct HighScoresView: View {
         .padding(.vertical, 10)
         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.white.opacity(0.04))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(color.opacity(0.4), lineWidth: 1)))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue(value)
     }
 }
 
@@ -1016,6 +1044,11 @@ private struct SettingToggleRow: View {
             .background(SettingRowBackground())
         }
         .buttonStyle(TerminalButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue(isOn ? "On" : "Off")
+        .accessibilityHint("Double tap to turn \(isOn ? "off" : "on")")
+        .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
     }
 }
 
@@ -1052,6 +1085,8 @@ private struct SettingSliderRow: View {
             Slider(value: $live, in: 0...1) { editing in if !editing { onCommit?() } }
                 .tint(NeonTheme.cyan)
                 .onChange(of: live) { _, v in onChange(v) }
+                .accessibilityLabel("\(label) volume")
+                .accessibilityValue("\(Int((live * 100).rounded())) percent")
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
         .background(SettingRowBackground())
@@ -1099,10 +1134,12 @@ private struct SettingActionRow: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(NeonTheme.textDim)
+                    .accessibilityHidden(true)
             }
             .padding(.horizontal, 16).padding(.vertical, 13)
             .background(SettingRowBackground())
         }
         .buttonStyle(TerminalButtonStyle())
+        .accessibilityLabel(label)
     }
 }

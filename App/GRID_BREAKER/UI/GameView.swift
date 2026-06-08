@@ -278,9 +278,10 @@ struct GameView: View {
         ZStack {
             NeonTheme.background.ignoresSafeArea()
             if chill {
-                ChillAtmosphere().ignoresSafeArea()
+                ChillAtmosphere().ignoresSafeArea().accessibilityHidden(true)
             }
-            FeverAtmosphere(active: model.snapshot.feverActive && !model.snapshot.isGameOver).ignoresSafeArea()
+            FeverAtmosphere(active: model.snapshot.feverActive && !model.snapshot.isGameOver)
+                .ignoresSafeArea().accessibilityHidden(true)
 
             VStack(spacing: 0) {
                 HUDView(snapshot: model.snapshot, coreName: core?.name, chill: chill)
@@ -302,6 +303,7 @@ struct GameView: View {
                                  decodeToken: model.snapshot.score,
                                  reduceMotion: reduceMotion)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .accessibilityHidden(true)   // decorative visualizer; state is in labels
                 }
                 .padding(.vertical, 8)
 
@@ -315,6 +317,7 @@ struct GameView: View {
                                 overclock: model.snapshot.overclockActive && !model.snapshot.isGameOver,
                                 purgeTrigger: purgeTrigger,
                                 reduceMotion: reduceMotion)
+                        .accessibilityHidden(true)
                 )
                 .padding(.horizontal, 16)
 
@@ -330,10 +333,12 @@ struct GameView: View {
                     .padding(.top, 16)
                     .ignoresSafeArea(.container, edges: .top)
                     .allowsHitTesting(false)
+                    .accessibilityHidden(true)   // visual notch framing; RAM is on the RAM bar
             }
 
             // Tap trail (over the grid, under the banners/overlays).
             TrailLayer(points: trailPoints, skin: TrailSkins.equipped, lifetime: 0.6)
+                .accessibilityHidden(true)
 
             // Fever / power-ups are shown diegetically: Fever surges the Data Core;
             // Freeze frosts the (already-stopped) grid; Overclock energizes it; Purge
@@ -364,6 +369,7 @@ struct GameView: View {
                         .background(Circle().stroke(NeonTheme.gridLineDim.opacity(0.5), lineWidth: 1))
                 }
                 .buttonStyle(TerminalButtonStyle())
+                .accessibilityLabel("Pause")
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .padding(.leading, 24)
                 .padding(.bottom, 28)
@@ -666,6 +672,11 @@ private struct BigScoreView: View {
             }
         }
         .animation(.easeOut(duration: 0.25), value: snapshot.score)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Score")
+        .accessibilityValue(snapshot.scoreMultiplier > 1
+            ? "\(snapshot.score), multiplier times \(snapshot.scoreMultiplier)"
+            : "\(snapshot.score)")
     }
 }
 
@@ -702,6 +713,9 @@ private struct HUDView: View {
                     .frame(height: 7)
                 }
                 .padding(.bottom, 2)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(coreName ?? "Data core")
+                .accessibilityValue("\(snapshot.score) of \(target)")
             }
             // SCORE/RAM live in the IslandFrameRow up top; Fever charge now lives in
             // the Data Core. Here we keep just the RAM bar (hidden in Flow).
@@ -744,6 +758,9 @@ private struct RAMBar: View {
             }
             .frame(height: 12)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("RAM remaining")
+        .accessibilityValue("\(Int((fraction * 100).rounded())) percent")
     }
 }
 
@@ -790,6 +807,7 @@ private struct GridBoard: View {
 
                 EffectsLayer(cols: cols, cell: cell, spacing: spacing,
                              reduceMotion: reduceMotion, seq: effectSeq, drain: drainEffects)
+                    .accessibilityHidden(true)
             }
             .frame(width: side, height: side, alignment: .topLeading)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -820,6 +838,24 @@ private struct CellView: View {
             }
         }
         .frame(width: size, height: size)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Self.label(for: node, feverActive: feverActive))
+        .accessibilityAddTraits(node == nil ? [] : .isButton)
+    }
+
+    /// A concise spoken description of a cell's contents (for VoiceOver exploration;
+    /// the live game is a visual reflex challenge, but the board stays perceivable).
+    private static func label(for node: GridNode?, feverActive: Bool) -> String {
+        guard let node else { return "Empty cell" }
+        if feverActive && node.type != .firewallBomb { return "Bonus node" }
+        switch node.type {
+        case .standardDaemon: return "Daemon"
+        case .armoredDaemon:  return node.isBreached ? "Armored daemon, breached" : "Armored daemon"
+        case .firewallBomb:   return "Firewall — do not tap"
+        case .dataCache:      return "Data cache, bonus"
+        case .wormDaemon:     return "Worm daemon"
+        case .powerUp:        return "Power-up pickup"
+        }
     }
 }
 
