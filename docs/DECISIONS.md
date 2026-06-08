@@ -208,6 +208,15 @@ budgets sized so a realistic strong player clears within the clock — verified 
 headless gating+winnability sim (each core spawns only its unlocked types; all 10
 clearable). Power-up kinds are gated via new `GameConfig.powerUpKinds`.
 
+## D22 — Main menu information architecture
+**2026-06-08.** Replaced the wall of 7 equal-weight, rainbow-colored buttons with a
+hierarchy + grouping (menu best practices): a single prominent **JACK IN** primary CTA;
+a **MODES** group (Campaign/Flow/Daily) and a **TERMINAL** shop group
+(Cyberdeck/Cosmetics) as icon tiles; **TOP RUNS/SETTINGS** demoted to small dim utility
+icons; and at-a-glance **stat chips** (Best/Daily/Credits). Color is restrained and
+*meaningful* — cyan = play, gold = spend Credits, dim = utility — instead of a different
+hue per button. One primary action, clear groups, less visual noise.
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

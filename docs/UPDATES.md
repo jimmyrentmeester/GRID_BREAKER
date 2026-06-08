@@ -8,6 +8,11 @@ Short, human-readable changelog (newest first).
   briefing the first time you meet it. Levels run longer with higher score targets,
   ramping to the finale.
 
+## 0.29 — Redesigned main menu (2026-06-08)
+- The main menu is cleaner and easier to read: a big JACK IN button up top, your
+  modes and shop grouped into labelled tiles with icons, your best/credits at a glance,
+  and tidy color coding instead of a stack of identical buttons.
+
 ## 0.28 — Power-up effects on the grid (2026-06-08)
 - Power-ups now show their effect *on the grid* instead of a banner over it: Freeze
   frosts the (stopped) board, Overclock energises it with a gold glow, and Purge sweeps

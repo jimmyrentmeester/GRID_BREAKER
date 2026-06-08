@@ -24,6 +24,20 @@ mostly via targets).
   the new targets/times, core 1 briefing ("DECODE THE GRID", target 25) held the clock
   at 40 s, JACK IN started the run.
 
+## Run #37 — Main menu redesign (hierarchy + grouping) (2026-06-08)
+Reworked the menu from 7 equal rainbow buttons into a clear hierarchy (D22).
+- **Primary CTA:** a large filled JACK IN (play icon + "ENDLESS").
+- **Groups:** MODES (Campaign/Flow/Daily — cyan icon tiles) and TERMINAL
+  (Cyberdeck/Cosmetics — gold icon tiles), each with a section label; TOP RUNS +
+  SETTINGS demoted to small dim utility icons.
+- **Stat chips:** BEST / DAILY (when set) / CREDITS at a glance.
+- **Restrained, meaningful color:** cyan = play, gold = spend, dim = utility (was a
+  different hue per button). New `MenuTile` + `sectionLabel`/`statChip`/`utilityButton`
+  helpers.
+- **Verified:** clean build; on-device — the new layout renders cleanly (JACK IN
+  primary, MODES + TERMINAL tile groups, stat chips, utility icons), fits without
+  scrolling.
+
 ## Run #36 — Power-up feedback reworked to be diegetic (2026-06-08)
 The Run #34 centered banner overlapped the grid and got in the way. Replaced it with
 feedback expressed **on the grid itself** (adds to play, never blocks it).

@@ -98,56 +98,127 @@ struct RootView: View {
     }
 
     private var titleScreen: some View {
-        VStack(spacing: 14) {
-            Text("GRID_BREAKER")
-                .font(.system(size: 38, weight: .heavy, design: .monospaced))
-                .foregroundStyle(NeonTheme.cyan)
-                .neonGlow(NeonTheme.cyan, radius: pulse ? 16 : 9)
+        VStack(spacing: 18) {
+            VStack(spacing: 6) {
+                Text("GRID_BREAKER")
+                    .font(.system(size: 38, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.cyan)
+                    .neonGlow(NeonTheme.cyan, radius: pulse ? 16 : 9)
+                Text("// netrunner reflex hack")
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .foregroundStyle(NeonTheme.magenta)
+                    .neonGlow(NeonTheme.magenta, radius: 5)
+            }
 
-            Text("// netrunner reflex hack")
-                .font(.system(size: 14, weight: .medium, design: .monospaced))
-                .foregroundStyle(NeonTheme.magenta)
-                .neonGlow(NeonTheme.magenta, radius: 6)
-
-            HStack(spacing: 16) {
-                if let best = store.highScores.first {
-                    Text("BEST  \(best.score)")
-                        .foregroundStyle(NeonTheme.gold)
-                }
+            // Stat chips (at-a-glance progress).
+            HStack(spacing: 10) {
+                if let best = store.highScores.first { statChip("BEST", "\(best.score)", NeonTheme.cyan) }
                 let db = store.dailyBest(forDay: Self.today().key)
-                if db > 0 {
-                    Text("DAILY  \(db)")
-                        .foregroundStyle(NeonTheme.cyan)
+                if db > 0 { statChip("DAILY", "\(db)", NeonTheme.magenta) }
+                statChip("CREDITS", "\(store.cyberdeck.credits)", NeonTheme.gold)
+            }
+
+            // Primary call-to-action.
+            Button { tap(); screen = .endless } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "play.fill").font(.system(size: 17, weight: .bold))
+                    Text("JACK IN").font(.system(size: 20, weight: .heavy, design: .monospaced))
+                    Spacer()
+                    Text("ENDLESS").font(.system(size: 11, weight: .semibold, design: .monospaced)).opacity(0.65)
+                }
+                .foregroundStyle(NeonTheme.cyan)
+                .padding(.horizontal, 20).padding(.vertical, 18)
+                .frame(maxWidth: .infinity)
+                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(NeonTheme.cyan.opacity(0.16))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(NeonTheme.cyan, lineWidth: 2)))
+                .neonGlow(NeonTheme.cyan, radius: 8)
+            }
+            .buttonStyle(TerminalButtonStyle())
+
+            // Play modes.
+            VStack(spacing: 8) {
+                sectionLabel("MODES")
+                HStack(spacing: 10) {
+                    MenuTile(label: "CAMPAIGN", systemImage: "flag.fill", color: NeonTheme.cyan) { tap(); screen = .campaign }
+                    MenuTile(label: "FLOW", systemImage: "infinity", color: NeonTheme.cyan) { tap(); screen = .flow }
+                    MenuTile(label: "DAILY", systemImage: "calendar", color: NeonTheme.cyan) { tap(); screen = .daily }
                 }
             }
-            .font(.system(size: 13, weight: .bold, design: .monospaced))
-            .padding(.top, 4)
 
-            VStack(spacing: 12) {
-                TerminalButton(title: "JACK IN", color: NeonTheme.cyan, wide: true) { tap(); screen = .endless }
-                TerminalButton(title: "DAILY HACK", color: NeonTheme.gold, wide: true) { tap(); screen = .daily }
-                TerminalButton(title: "FLOW STATE", color: NeonTheme.gridLine, wide: true) { tap(); screen = .flow }
-                TerminalButton(title: "CAMPAIGN", color: NeonTheme.magenta, wide: true) { tap(); screen = .campaign }
-                TerminalButton(title: "CYBERDECK", color: NeonTheme.gold, wide: true) { tap(); screen = .cyberdeck }
-                TerminalButton(title: "COSMETICS", color: NeonTheme.gridLine, wide: true) { tap(); screen = .cosmetics }
-                TerminalButton(title: "TOP RUNS", color: NeonTheme.cyan, wide: true) { tap(); screen = .scores }
-
-                Button { tap(); screen = .settings } label: {
-                    Label("SETTINGS", systemImage: "gearshape")
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(NeonTheme.textDim)
+            // Spend Credits.
+            VStack(spacing: 8) {
+                sectionLabel("TERMINAL")
+                HStack(spacing: 10) {
+                    MenuTile(label: "CYBERDECK", systemImage: "cpu.fill", color: NeonTheme.gold) { tap(); screen = .cyberdeck }
+                    MenuTile(label: "COSMETICS", systemImage: "paintpalette.fill", color: NeonTheme.gold) { tap(); screen = .cosmetics }
                 }
-                .buttonStyle(TerminalButtonStyle())
-                .padding(.top, 6)
             }
-            .frame(maxWidth: 260)        // uniform button width
-            .padding(.top, 22)
+
+            // Utility.
+            HStack(spacing: 32) {
+                utilityButton("TOP RUNS", "trophy.fill") { tap(); screen = .scores }
+                utilityButton("SETTINGS", "gearshape.fill") { tap(); screen = .settings }
+            }
+            .padding(.top, 2)
         }
+        .frame(maxWidth: 360)
+        .padding(.horizontal, 24)
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
-                pulse = true
-            }
+            withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) { pulse = true }
         }
+    }
+
+    private func sectionLabel(_ s: String) -> some View {
+        Text(s)
+            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+            .foregroundStyle(NeonTheme.textDim).tracking(2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func statChip(_ label: String, _ value: String, _ color: Color) -> some View {
+        VStack(spacing: 1) {
+            Text(value).font(.system(size: 15, weight: .heavy, design: .monospaced)).foregroundStyle(color)
+            Text(label).font(.system(size: 8, weight: .semibold, design: .monospaced)).foregroundStyle(NeonTheme.textDim)
+        }
+        .frame(minWidth: 54)
+        .padding(.vertical, 6).padding(.horizontal, 10)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.white.opacity(0.04))
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(color.opacity(0.4), lineWidth: 1)))
+    }
+
+    private func utilityButton(_ label: String, _ symbol: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: symbol).font(.system(size: 18, weight: .bold))
+                Text(label).font(.system(size: 10, weight: .semibold, design: .monospaced))
+            }
+            .foregroundStyle(NeonTheme.textDim)
+        }
+        .buttonStyle(TerminalButtonStyle())
+    }
+}
+
+/// A play-mode / shop tile: icon over a short label, color-coded by group.
+private struct MenuTile: View {
+    let label: String
+    let systemImage: String
+    let color: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 7) {
+                Image(systemName: systemImage).font(.system(size: 20, weight: .bold))
+                Text(label).font(.system(size: 11, weight: .bold, design: .monospaced))
+            }
+            .foregroundStyle(color)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(color.opacity(0.10))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(color.opacity(0.7), lineWidth: 1.5)))
+            .neonGlow(color, radius: 3)
+        }
+        .buttonStyle(TerminalButtonStyle())
     }
 }
 
