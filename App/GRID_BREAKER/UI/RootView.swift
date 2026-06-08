@@ -235,7 +235,10 @@ private struct MenuTile: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 7) {
+                // Fixed icon box so glyphs of different heights (e.g. ∞ vs the flag)
+                // don't shift the label — keeps all tile labels on the same line.
                 Image(systemName: systemImage).font(.system(size: 20, weight: .bold))
+                    .frame(height: 24)
                 Text(label).font(.system(size: 11, weight: .bold, design: .monospaced))
             }
             .foregroundStyle(color)

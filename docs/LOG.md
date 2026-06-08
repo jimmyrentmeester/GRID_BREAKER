@@ -3,6 +3,13 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #60 — Fix menu tile label alignment (2026-06-08)
+Maintainer spotted the FLOW label sitting slightly higher than CAMPAIGN/DAILY. Cause:
+the ∞ glyph is shorter than the flag/calendar icons, so the icon+label VStack was
+shorter and the label drifted up. Fix: gave the `MenuTile` icon a fixed `height: 24`
+box so all glyphs occupy the same vertical space and every tile's label lines up.
+Verified on-device (labels now share a baseline).
+
 ## Run #59 — Endless mode fine-tune (calmer, longer, capped) (2026-06-08)
 Maintainer: fine-tune endless (JACK IN) — calmer start, longer loop, grid grows later,
 and (open question) maybe cap the acceleration so it stays hittable.
