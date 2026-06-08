@@ -18,13 +18,6 @@
                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="center" spacing="18" translatesAutoresizingMaskIntoConstraints="NO" id="GBL-st-001">
                                 <rect key="frame" x="96.5" y="358" width="200" height="196"/>
                                 <subviews>
-                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchLogo" translatesAutoresizingMaskIntoConstraints="NO" id="GBL-im-001">
-                                        <rect key="frame" x="36" y="0.0" width="128" height="128"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="128" id="GBL-cw-001"/>
-                                            <constraint firstAttribute="height" constant="128" id="GBL-ch-001"/>
-                                        </constraints>
-                                    </imageView>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="GRID_BREAKER" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="GBL-lb-001">
                                         <rect key="frame" x="0.0" y="146" width="200" height="29"/>
                                         <fontDescription key="fontDescription" name="Menlo-Bold" family="Menlo" pointSize="24"/>
@@ -53,7 +46,5 @@
             <point key="canvasLocation" x="0.0" y="0.0"/>
         </scene>
     </scenes>
-    <resources>
-        <image name="LaunchLogo" width="1024" height="1024"/>
-    </resources>
+    <resources/>
 </document>
