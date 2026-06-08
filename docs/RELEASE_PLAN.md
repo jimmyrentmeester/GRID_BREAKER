@@ -36,10 +36,10 @@ A1 + B3/B4 + C in the meantime.
 - [x] **B2 👤 Music rights** — maintainer decision: keep the Gemini-generated tracks
       as-is. (Risk noted: verify the tool's terms allow commercial distribution before
       submit; swap is drop-in if ever needed.)
-- [~] **B3 🤖→👤 Privacy policy** — written: `docs/site/privacy.html` ("Data Not
-      Collected"). 👤 to: set the contact email + host (see `docs/site/README.md`) → URL.
-- [~] **B4 🤖→👤 Support page** — written: `docs/site/support.html` (+ `index.html`
-      landing). 👤 to: set email + host → Support URL.
+- [~] **B3 🤖→👤 Privacy policy** — written + email set (`docs/site/privacy.html`, "Data
+      Not Collected"). 👤 to: host (see `docs/site/README.md`) → Privacy URL.
+- [~] **B4 🤖→👤 Support page** — written + email set (`docs/site/support.html` + landing).
+      👤 to: host → Support URL.
 
 ## Phase C — Store listing content (🤖 produces, 👤 reviews)
 - [ ] **C1 🤖 Screenshots** — required iPhone sizes **6.9"** (iPhone 16 Pro Max) and
@@ -47,8 +47,8 @@ A1 + B3/B4 + C in the meantime.
       a streak/milestone moment, campaign briefing, cosmetics. (Use temp state hooks +
       `simctl io` per the verification workflow.)
 - [ ] **C2 🤖 (optional) App Preview video** — a 15–30s gameplay capture.
-- [ ] **C3 🤖 Store copy** — app name, subtitle (≤30 chars), promotional text, full
-      description, keywords (100 chars), what's-new. 👤 tweaks voice.
+- [x] **C3 🤖 Store copy** — `docs/store-copy.md`: name, subtitle ("Neon reflex
+      grid-hacking"), promo text, description, keywords, what's-new, metadata. 👤 review.
 - [x] **C4 App icon** — new neon "breached grid" icon shipped (Run #65).
 
 ## Phase D — App Store Connect setup (👤, using C content)
