@@ -2,6 +2,12 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.21 — More cosmetics & cyberdeck upgrades (2026-06-08)
+- Three new neon palettes — Ultraviolet, Inferno and Wireframe — and three new tap-trails:
+  Laser, Hexbits and Voidstream.
+- Two new Cyberdeck upgrades: Fever Capacitor (longer Fever Mode) and Salvage Protocol
+  (earn more Credits per run).
+
 ## 1.0.20 — New icon + animated boot splash (2026-06-08)
 - Fresh app icon: a glowing neon grid with a breached, white-hot center — properly on
   theme.

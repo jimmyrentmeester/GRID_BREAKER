@@ -3,6 +3,23 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #66 — Fuller Cosmetics + Cyberdeck (2026-06-08)
+Pre-release polish (#2): more interesting shop content.
+- **Cosmetics — palettes 5→8:** added **Ultraviolet** (violet/pink/ice, 800), **Inferno**
+  (orange/red/gold, 1000), **Wireframe** (stark white/steel mono, 1500).
+- **Cosmetics — trails 5→8:** **Laser** (thin gold beam, 500), **Hexbits** (cyan dashed
+  squares, 650), **Voidstream** (dashed cyan diamonds, 1000).
+- **Cyberdeck — upgrades 3→5** (engine-wired, deck-aware like ram/decode/shield):
+  - **Fever Capacitor** (max 4, 350 CR base): Fever lasts +0.5 s/level. Engine stores a
+    `feverDurationEff = config.feverDuration(for: deck)` used by checkFever + feverFraction.
+  - **Salvage Protocol** (max 5, 250 CR base): +10% Credits/run/level, applied in
+    `GameStore.salvaged(forScore:)` (used by every record path + the HUD preview).
+- **State:** `Cyberdeck` gains `feverLevel`/`salvageLevel` (+ tolerant decode); GameStore
+  `purchase` + SaveData updated. Starter deck = unchanged behaviour, so prior balance/sims
+  hold.
+- **Verified:** clean build; on-device — Cyberdeck shows all 5 upgrades with correct
+  descriptions/costs, Cosmetics shows all 8 palettes with their swatches.
+
 ## Run #65 — Cooler app icon + animated boot splash (2026-06-08)
 Pre-release polish (#1 of the maintainer's two): a much cooler logo + splash.
 - **New app icon** (`AppIcon/icon1024.png`, regenerated, opaque): a glowing neon 3×3 grid

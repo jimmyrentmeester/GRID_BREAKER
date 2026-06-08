@@ -48,6 +48,24 @@ enum Palettes {
                 secondary:  Color(red: 1.00, green: 0.50, blue: 0.12),
                 accent:     Color(red: 1.00, green: 0.90, blue: 0.55),
                 gridDim:    Color(red: 0.46, green: 0.30, blue: 0.08)),
+        Palette(id: "ultraviolet", name: "Ultraviolet", cost: 800,
+                background: Color(red: 0.04, green: 0.01, blue: 0.09),
+                primary:    Color(red: 0.66, green: 0.40, blue: 1.00),
+                secondary:  Color(red: 1.00, green: 0.30, blue: 0.86),
+                accent:     Color(red: 0.55, green: 0.86, blue: 1.00),
+                gridDim:    Color(red: 0.36, green: 0.18, blue: 0.58)),
+        Palette(id: "inferno", name: "Inferno", cost: 1000,
+                background: Color(red: 0.07, green: 0.02, blue: 0.01),
+                primary:    Color(red: 1.00, green: 0.46, blue: 0.16),
+                secondary:  Color(red: 1.00, green: 0.22, blue: 0.26),
+                accent:     Color(red: 1.00, green: 0.84, blue: 0.34),
+                gridDim:    Color(red: 0.46, green: 0.16, blue: 0.08)),
+        Palette(id: "wireframe", name: "Wireframe", cost: 1500,
+                background: Color(red: 0.03, green: 0.03, blue: 0.045),
+                primary:    Color(red: 0.86, green: 0.93, blue: 1.00),
+                secondary:  Color(red: 0.52, green: 0.60, blue: 0.72),
+                accent:     Color(red: 0.78, green: 1.00, blue: 1.00),
+                gridDim:    Color(red: 0.30, green: 0.34, blue: 0.42)),
     ]
 
     static func byID(_ id: String) -> Palette { all.first { $0.id == id } ?? classic }
@@ -109,6 +127,9 @@ enum TrailSkins {
         TrailSkin(id: "pixel",  name: "Pixel Dust", cost: 400, dot: .square,  tint: .secondary, size: 9,  lineWidth: 5,   dashed: true),
         TrailSkin(id: "spark",  name: "Spark",      cost: 600, dot: .circle,  tint: .accent,    size: 6,  lineWidth: 2.5, dashed: false),
         TrailSkin(id: "plasma", name: "Plasma",     cost: 900, dot: .diamond, tint: .secondary, size: 13, lineWidth: 7,   dashed: false),
+        TrailSkin(id: "laser",  name: "Laser",      cost: 500, dot: .circle,  tint: .accent,    size: 4,  lineWidth: 2,   dashed: false),
+        TrailSkin(id: "hexbits", name: "Hexbits",   cost: 650, dot: .square,  tint: .primary,   size: 10, lineWidth: 5,   dashed: true),
+        TrailSkin(id: "void",   name: "Voidstream", cost: 1000, dot: .diamond, tint: .primary,  size: 12, lineWidth: 6.5, dashed: true),
     ]
     static func byID(_ id: String) -> TrailSkin { all.first { $0.id == id } ?? none }
     /// Equipped skin — set at launch + on equip (mirrors `NeonTheme.current`).

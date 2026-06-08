@@ -11,11 +11,17 @@ struct Cyberdeck: Codable, Sendable, Equatable {
     var decodeSpeedLevel: Int = 0
     /// Each level absorbs one erroneous tap per session (passive shield).
     var shieldLevel: Int = 0
+    /// Each level extends Fever Mode.
+    var feverLevel: Int = 0
+    /// Each level boosts Credits earned per run.
+    var salvageLevel: Int = 0
 
     /// Spendable cryptocurrency earned by cracking data cores.
     var credits: Int = 0
 
-    enum CodingKeys: String, CodingKey { case ramLevel, decodeSpeedLevel, shieldLevel, credits }
+    enum CodingKeys: String, CodingKey {
+        case ramLevel, decodeSpeedLevel, shieldLevel, feverLevel, salvageLevel, credits
+    }
 
     static let starter = Cyberdeck()
 }
@@ -29,14 +35,18 @@ enum CyberdeckUpgrade: String, CaseIterable, Identifiable, Sendable {
     case ram
     case decodeSpeed
     case shield
+    case feverCapacitor
+    case salvage
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .ram:         return "RAM Buffer"
-        case .decodeSpeed: return "Decode Speed"
-        case .shield:      return "Failsafe Shield"
+        case .ram:            return "RAM Buffer"
+        case .decodeSpeed:    return "Decode Speed"
+        case .shield:         return "Failsafe Shield"
+        case .feverCapacitor: return "Fever Capacitor"
+        case .salvage:        return "Salvage Protocol"
         }
     }
 
@@ -51,15 +61,21 @@ enum CyberdeckUpgrade: String, CaseIterable, Identifiable, Sendable {
             return "Each decode restores +\(String(format: "%g", c.decodeBonusPerLevel))s of RAM per level (your only refill in Campaign)."
         case .shield:
             return "Absorbs one mistake per level — a mis-tap OR a firewall bomb — no penalty."
+        case .feverCapacitor:
+            return "Fever Mode lasts +\(String(format: "%g", c.feverBonusPerLevel))s longer per level — more ×2 golden time."
+        case .salvage:
+            return "Earn +\(Int(c.salvageBonusPerLevel * 100))% Credits from every run, per level."
         }
     }
 
     /// Highest level purchasable for this upgrade.
     var maxLevel: Int {
         switch self {
-        case .ram:         return 8
-        case .decodeSpeed: return 6
-        case .shield:      return 3
+        case .ram:            return 8
+        case .decodeSpeed:    return 6
+        case .shield:         return 3
+        case .feverCapacitor: return 4
+        case .salvage:        return 5
         }
     }
 
@@ -67,9 +83,11 @@ enum CyberdeckUpgrade: String, CaseIterable, Identifiable, Sendable {
     func cost(atLevel currentLevel: Int) -> Int {
         let base: Int
         switch self {
-        case .ram:         base = 100
-        case .decodeSpeed: base = 150
-        case .shield:      base = 400
+        case .ram:            base = 100
+        case .decodeSpeed:    base = 150
+        case .shield:         base = 400
+        case .feverCapacitor: base = 350
+        case .salvage:        base = 250
         }
         // Geometric scaling: each level ~1.6x the previous.
         return Int(Double(base) * pow(1.6, Double(currentLevel)))
@@ -77,9 +95,11 @@ enum CyberdeckUpgrade: String, CaseIterable, Identifiable, Sendable {
 
     func currentLevel(in deck: Cyberdeck) -> Int {
         switch self {
-        case .ram:         return deck.ramLevel
-        case .decodeSpeed: return deck.decodeSpeedLevel
-        case .shield:      return deck.shieldLevel
+        case .ram:            return deck.ramLevel
+        case .decodeSpeed:    return deck.decodeSpeedLevel
+        case .shield:         return deck.shieldLevel
+        case .feverCapacitor: return deck.feverLevel
+        case .salvage:        return deck.salvageLevel
         }
     }
 }

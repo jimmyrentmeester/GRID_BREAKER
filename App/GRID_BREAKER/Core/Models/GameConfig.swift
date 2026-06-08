@@ -58,6 +58,10 @@ struct GameConfig: Sendable {
     var creditsPerScore: Double = 1.0
     /// Extra RAM time per decode, per Decode-Speed upgrade level.
     var decodeBonusPerLevel: TimeInterval = 0.15
+    /// Extra Fever-Mode seconds per Fever-Capacitor upgrade level.
+    var feverBonusPerLevel: TimeInterval = 0.5
+    /// Extra fraction of Credits earned per Salvage-Protocol upgrade level.
+    var salvageBonusPerLevel: Double = 0.10
 
     // MARK: Fever mode (brief 10.2)
     /// Consecutive clean hits required to trigger Fever Mode.
@@ -226,6 +230,11 @@ struct GameConfig: Sendable {
     /// Extra RAM time added to each decode by the Decode-Speed upgrade.
     func decodeTimeBonus(for deck: Cyberdeck) -> TimeInterval {
         decodeBonusPerLevel * TimeInterval(deck.decodeSpeedLevel)
+    }
+
+    /// Fever-Mode duration after the Fever-Capacitor upgrade.
+    func feverDuration(for deck: Cyberdeck) -> TimeInterval {
+        feverDuration + feverBonusPerLevel * TimeInterval(deck.feverLevel)
     }
 
     /// Credits awarded for a final score (deterministic, paid once on game over).

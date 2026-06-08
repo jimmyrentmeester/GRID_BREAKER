@@ -116,6 +116,7 @@ struct GridEngine {
     private let ramCapacity: TimeInterval
     private(set) var shieldCharges: Int
     private let decodeTimeBonus: TimeInterval
+    private let feverDurationEff: TimeInterval   // base + Fever-Capacitor upgrade
     private(set) var nodes: [GridNode] = []
     private(set) var combo: Int = 0
     /// Clean-decode chain (resets on a miss/expiry) driving the base streak multiplier.
@@ -144,6 +145,7 @@ struct GridEngine {
         self.ramRemaining = config.ramCapacity(for: deck)
         self.shieldCharges = deck.shieldLevel
         self.decodeTimeBonus = config.decodeTimeBonus(for: deck)
+        self.feverDurationEff = config.feverDuration(for: deck)
     }
 
     var snapshot: SessionSnapshot {
@@ -159,8 +161,8 @@ struct GridEngine {
             cleanStreak: cleanStreak,
             streakMultiplier: streakMultiplier,
             feverActive: feverActive,
-            feverFraction: feverActive && config.feverDuration > 0
-                ? max(0, feverRemaining / config.feverDuration) : 0,
+            feverFraction: feverActive && feverDurationEff > 0
+                ? max(0, feverRemaining / feverDurationEff) : 0,
             scoreMultiplier: effectiveMultiplier,
             freezeActive: powerFreezeRemaining > 0,
             overclockActive: powerOverclockRemaining > 0,
@@ -357,7 +359,7 @@ struct GridEngine {
     private mutating func checkFever() -> [GameEvent] {
         guard config.feverEnabled, !feverActive, combo >= config.feverComboThreshold else { return [] }
         feverActive = true
-        feverRemaining = config.feverDuration
+        feverRemaining = feverDurationEff
         combo = 0
         nodes.removeAll { $0.type == .firewallBomb }
         return [.feverStarted]

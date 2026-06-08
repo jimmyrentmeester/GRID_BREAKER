@@ -144,7 +144,7 @@ final class GameStore {
     /// win cleared the next locked core. Returns Credits earned.
     @discardableResult
     func recordCore(_ core: DataCore, won: Bool, score: Int, on date: Date) -> Int {
-        let earned = config.credits(forScore: score)
+        let earned = salvaged(forScore: score)
         save.cyberdeck.credits += earned
         if won && core.id == save.campaignProgress + 1 {
             save.campaignProgress = core.id
@@ -153,8 +153,15 @@ final class GameStore {
         return earned
     }
 
+    /// Credits a final score awards, after the Salvage-Protocol bonus.
+    private func salvaged(forScore score: Int) -> Int {
+        let base = config.credits(forScore: score)
+        let bonus = config.salvageBonusPerLevel * Double(save.cyberdeck.salvageLevel)
+        return Int((Double(base) * (1 + bonus)).rounded())
+    }
+
     /// Credits a given final score will award (for previewing on the HUD).
-    func creditsForScore(_ score: Int) -> Int { config.credits(forScore: score) }
+    func creditsForScore(_ score: Int) -> Int { salvaged(forScore: score) }
 
     func isHighScore(_ score: Int) -> Bool { save.isHighScore(score) }
 
@@ -162,7 +169,7 @@ final class GameStore {
     /// Returns the credits awarded (for the game-over screen).
     @discardableResult
     func recordSession(score: Int, on date: Date) -> Int {
-        let earned = config.credits(forScore: score)
+        let earned = salvaged(forScore: score)
         save.cyberdeck.credits += earned
         save.insertScore(score, on: date)
         persist()
@@ -180,7 +187,7 @@ final class GameStore {
     /// day's best. `isHighScore` in the outcome means "new daily best".
     @discardableResult
     func recordDaily(score: Int, day: String) -> SessionOutcome {
-        let earned = config.credits(forScore: score)
+        let earned = salvaged(forScore: score)
         save.cyberdeck.credits += earned
         let prev = dailyBest(forDay: day)
         let isBest = score > prev
@@ -199,9 +206,11 @@ final class GameStore {
 
         save.cyberdeck.credits -= cost
         switch upgrade {
-        case .ram:         save.cyberdeck.ramLevel += 1
-        case .decodeSpeed: save.cyberdeck.decodeSpeedLevel += 1
-        case .shield:      save.cyberdeck.shieldLevel += 1
+        case .ram:            save.cyberdeck.ramLevel += 1
+        case .decodeSpeed:    save.cyberdeck.decodeSpeedLevel += 1
+        case .shield:         save.cyberdeck.shieldLevel += 1
+        case .feverCapacitor: save.cyberdeck.feverLevel += 1
+        case .salvage:        save.cyberdeck.salvageLevel += 1
         }
         persist()
         return true

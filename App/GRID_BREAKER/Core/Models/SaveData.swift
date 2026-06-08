@@ -80,6 +80,8 @@ extension Cyberdeck {
         ramLevel = try c.decodeIfPresent(Int.self, forKey: .ramLevel) ?? ramLevel
         decodeSpeedLevel = try c.decodeIfPresent(Int.self, forKey: .decodeSpeedLevel) ?? decodeSpeedLevel
         shieldLevel = try c.decodeIfPresent(Int.self, forKey: .shieldLevel) ?? shieldLevel
+        feverLevel = try c.decodeIfPresent(Int.self, forKey: .feverLevel) ?? feverLevel
+        salvageLevel = try c.decodeIfPresent(Int.self, forKey: .salvageLevel) ?? salvageLevel
         credits = try c.decodeIfPresent(Int.self, forKey: .credits) ?? credits
     }
 }
