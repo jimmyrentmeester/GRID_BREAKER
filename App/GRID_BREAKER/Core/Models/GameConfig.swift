@@ -70,6 +70,17 @@ struct GameConfig: Sendable {
     var feverSpawnInterval: TimeInterval = 0.34
     var feverActiveNodes: Int = 4
 
+    // MARK: Endless progression (score milestones + clean-streak multiplier)
+    /// Score thresholds that fire a milestone (flash + chime + a small RAM top-up).
+    /// Empty = disabled (campaign/flow); Endless sets an escalating list.
+    var milestoneScores: [Int] = []
+    /// RAM seconds granted on reaching a milestone (capped at capacity).
+    var milestoneRAMBonus: TimeInterval = 0
+    /// Clean-decode counts at which the *base* score multiplier steps up (×2, ×3, …),
+    /// rewarding sustained clean play on top of Fever. A miss/expiry resets the streak.
+    /// Empty = no streak multiplier.
+    var streakTierThresholds: [Int] = []
+
     /// If set, the active-node ceiling is fixed (no score-based escalation) — used
     /// by Flow mode to keep a flat, calm pace.
     var fixedActiveNodes: Int? = nil
@@ -172,6 +183,11 @@ struct GameConfig: Sendable {
         c.lifespanCompression = 0.0021 // gentler shrink (was 0.0030)
         c.minNodeLifespan     = 0.62   // higher floor (was 0.50)
         c.gridEscalationScore = 80     // grid grows later (was 40)
+        // Progression: landmark milestones (with a small RAM top-up) + a clean-streak
+        // base multiplier so long, clean survival is rewarded exponentially.
+        c.milestoneScores = [50, 100, 250, 500, 1000, 2000, 4000, 8000]
+        c.milestoneRAMBonus = 2.5
+        c.streakTierThresholds = [12, 30, 60, 120]   // ×2, ×3, ×4, ×5
         return c
     }
 

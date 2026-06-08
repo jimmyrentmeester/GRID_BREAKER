@@ -2,6 +2,13 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.16 — Endless: streaks & milestones (2026-06-08)
+- New clean-streak multiplier in Endless: keep decoding without a miss and your base score
+  multiplier climbs (×2 → ×5), stacking on top of Fever — so long, clean runs are rewarded
+  big. A "🔥 STREAK" badge shows it; one slip resets it.
+- Score milestones (50, 100, 250, 500, 1000…) now land with a gold flash, a chime and a
+  small RAM top-up — landmarks to chase on a long run.
+
 ## 1.0.15 — Endless mode re-paced (2026-06-08)
 - JACK IN (Endless) now opens calmer and ramps up more gradually, the grid grows later
   in a run, and the top speed is capped so it stays possible to hit — a long run now ends

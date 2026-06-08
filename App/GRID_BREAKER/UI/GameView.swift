@@ -23,6 +23,9 @@ final class GameViewModel {
     private(set) var gridExpandedSeq = 0
     /// Bumped at a mid-streak milestone (drives a brief border pulse before Fever).
     private(set) var streakPulseSeq = 0
+    /// The just-reached score milestone + a bump counter (drives a landmark toast).
+    private(set) var milestoneValue = 0
+    private(set) var milestoneSeq = 0
     /// Set by the view from the environment; gates motion-heavy juice.
     var reduceMotion = false
     /// Paused → the sim (and its RAM clock) is frozen until unpaused.
@@ -192,6 +195,10 @@ final class GameViewModel {
                 powerUpFlashKind = kind
                 powerUpFlashSeq += 1                     // drives the effect-announcement flash
                 haptics.success(); audio.play(.fever)   // bright sting on pickup
+            case let .milestoneReached(value):
+                milestoneValue = value
+                milestoneSeq += 1                        // drives the landmark toast
+                haptics.success(); audio.play(.fever)
             case .gameOver:
                 audio.play(.gameOver)
             }
@@ -216,6 +223,8 @@ struct GameView: View {
     @State private var trailPoints: [TrailPoint] = []
     @State private var purgeTrigger = 0
     @State private var showGridExpanded = false
+    @State private var showMilestone = false
+    @State private var streakPulse = false
     @State private var showBriefing: Bool
     let core: DataCore?                 // nil = endless mode
     let onExit: () -> Void
@@ -323,6 +332,12 @@ struct GameView: View {
                 // in the thumb-reach zone (a flexible slot it sizes itself into).
                 VStack(spacing: 6) {
                     BigScoreView(snapshot: model.snapshot)
+                    // Endless clean-streak base multiplier — rewards long, clean survival.
+                    if core == nil && !chill && model.snapshot.streakMultiplier > 1
+                        && !model.snapshot.isGameOver {
+                        StreakBadge(multiplier: model.snapshot.streakMultiplier, pulse: streakPulse)
+                            .transition(.scale(scale: 0.6).combined(with: .opacity))
+                    }
                     DataCoreView(progress: coreProgress,
                                  feverActive: model.snapshot.feverActive,
                                  label: model.snapshot.freezeActive ? "FREEZE"
@@ -336,6 +351,7 @@ struct GameView: View {
                         .accessibilityHidden(true)   // decorative visualizer; state is in labels
                 }
                 .padding(.vertical, 8)
+                .animation(.easeOut(duration: 0.25), value: model.snapshot.streakMultiplier > 1)
 
                 GridBoard(snapshot: model.snapshot,
                           reduceMotion: reduceMotion,
@@ -393,6 +409,22 @@ struct GameView: View {
                     .offset(y: -130)
                     .allowsHitTesting(false)
                     .transition(.scale(scale: 0.8).combined(with: .opacity))
+            }
+
+            // Score-milestone landmark toast (endless): a brief gold flash on 50/100/250…
+            if showMilestone && !model.snapshot.isGameOver {
+                Text("◆ \(model.milestoneValue) ◆")
+                    .font(.system(size: 20, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.gold)
+                    .neonGlow(NeonTheme.gold, radius: 10)
+                    .padding(.horizontal, 18).padding(.vertical, 8)
+                    .background(Capsule().fill(NeonTheme.background.opacity(0.85))
+                        .overlay(Capsule().stroke(NeonTheme.gold.opacity(0.6), lineWidth: 1)))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .offset(y: -130)
+                    .allowsHitTesting(false)
+                    .transition(.scale(scale: 0.7).combined(with: .opacity))
+                    .accessibilityHidden(true)
             }
 
             // Pause button (bottom-leading, out of the way of the grid).
@@ -475,6 +507,21 @@ struct GameView: View {
                     withAnimation(.easeOut(duration: 0.3)) { showGridExpanded = false }
                 }
             }
+        }
+        .onChange(of: model.milestoneSeq) { _, _ in
+            withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.6)) { showMilestone = true }
+            let seq = model.milestoneSeq
+            Task {
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                if model.milestoneSeq == seq {
+                    withAnimation(.easeOut(duration: 0.3)) { showMilestone = false }
+                }
+            }
+        }
+        .onChange(of: model.snapshot.streakMultiplier) { old, new in
+            guard !reduceMotion, new > old else { return }   // pulse only on a tier-up
+            streakPulse = true
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) { streakPulse = false }
         }
         .animation(.easeInOut(duration: 0.3), value: model.snapshot.feverActive)
         .animation(.easeInOut(duration: 0.3), value: model.snapshot.freezeActive)
@@ -693,7 +740,9 @@ private struct BigScoreView: View {
                     .neonGlow(NeonTheme.cyan, radius: 10)
                     .monospacedDigit()
                     .contentTransition(.numericText())
-                if snapshot.scoreMultiplier > 1 {
+                // The total ×N here shows only a *boost beyond* the streak base (Fever /
+                // Overclock); the steady streak multiplier is shown by the STREAK badge.
+                if snapshot.scoreMultiplier > max(1, snapshot.streakMultiplier) {
                     Text("×\(snapshot.scoreMultiplier)")
                         .font(.system(size: 22, weight: .heavy, design: .monospaced))
                         .foregroundStyle(NeonTheme.gold)
@@ -713,6 +762,30 @@ private struct BigScoreView: View {
         .accessibilityValue(snapshot.scoreMultiplier > 1
             ? "\(snapshot.score), multiplier times \(snapshot.scoreMultiplier)"
             : "\(snapshot.score)")
+    }
+}
+
+/// The endless clean-streak base multiplier badge. Appears at ×2 and climbs as the
+/// clean-decode chain crosses tiers (pulses on a tier-up); vanishing = streak broken.
+private struct StreakBadge: View {
+    let multiplier: Int
+    let pulse: Bool
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "flame.fill").font(.system(size: 11, weight: .bold))
+            Text("STREAK ×\(multiplier)")
+                .font(.system(size: 12, weight: .heavy, design: .monospaced))
+                .monospacedDigit()
+        }
+        .foregroundStyle(NeonTheme.gold)
+        .neonGlow(NeonTheme.gold, radius: 4)
+        .padding(.horizontal, 10).padding(.vertical, 4)
+        .background(Capsule().fill(NeonTheme.gold.opacity(0.12))
+            .overlay(Capsule().stroke(NeonTheme.gold.opacity(0.5), lineWidth: 1)))
+        .scaleEffect(pulse ? 1.18 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.5), value: pulse)
+        .accessibilityLabel("Streak multiplier times \(multiplier)")
     }
 }
 

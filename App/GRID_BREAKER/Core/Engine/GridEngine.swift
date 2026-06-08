@@ -41,6 +41,7 @@ enum GameEvent: Sendable, Equatable {
     case feverEnded                         // Fever Mode window elapsed
     case gridExpanded                       // grid grew 3×3 → 4×4 (endless escalation)
     case powerUpCollected(PowerUpKind)      // a power-up pickup was tapped
+    case milestoneReached(Int)              // score crossed a landmark (endless)
     case gameOver(GameOverReason)
 }
 
@@ -57,6 +58,8 @@ struct SessionSnapshot: Sendable {
     var shieldCharges: Int
     var combo: Int
     var comboThreshold: Int
+    var cleanStreak: Int               // current clean-decode chain (streak multiplier)
+    var streakMultiplier: Int          // base ×N from the clean streak (1 = none)
     var feverActive: Bool
     var feverFraction: Double          // remaining fever window, 0…1
     var scoreMultiplier: Int           // combined fever × overclock multiplier
@@ -115,6 +118,10 @@ struct GridEngine {
     private let decodeTimeBonus: TimeInterval
     private(set) var nodes: [GridNode] = []
     private(set) var combo: Int = 0
+    /// Clean-decode chain (resets on a miss/expiry) driving the base streak multiplier.
+    private(set) var cleanStreak: Int = 0
+    /// Index of the next score milestone to award.
+    private var nextMilestoneIndex = 0
     private(set) var feverActive = false
     private var feverRemaining: TimeInterval = 0
     private var powerFreezeRemaining: TimeInterval = 0     // time-freeze window
@@ -149,6 +156,8 @@ struct GridEngine {
             shieldCharges: shieldCharges,
             combo: combo,
             comboThreshold: config.feverComboThreshold,
+            cleanStreak: cleanStreak,
+            streakMultiplier: streakMultiplier,
             feverActive: feverActive,
             feverFraction: feverActive && config.feverDuration > 0
                 ? max(0, feverRemaining / config.feverDuration) : 0,
@@ -161,9 +170,16 @@ struct GridEngine {
         )
     }
 
-    /// Combined score multiplier: fever × overclock (each ×N while active).
+    /// Base multiplier from the clean-decode streak (×1, then +1 per tier crossed).
+    var streakMultiplier: Int {
+        guard !config.streakTierThresholds.isEmpty else { return 1 }
+        return 1 + config.streakTierThresholds.reduce(0) { $0 + (cleanStreak >= $1 ? 1 : 0) }
+    }
+
+    /// Combined score multiplier: streak × fever × overclock (each ×N while active).
     private var effectiveMultiplier: Int {
-        (feverActive ? config.feverScoreMultiplier : 1)
+        streakMultiplier
+        * (feverActive ? config.feverScoreMultiplier : 1)
         * (powerOverclockRemaining > 0 ? config.overclockMultiplier : 1)
     }
 
@@ -205,6 +221,7 @@ struct GridEngine {
         for node in expired where node.type.penalizesOnExpiry {
             ramRemaining -= config.penaltyExpiredDaemon
             combo = 0
+            cleanStreak = 0       // falling behind breaks the streak multiplier
             events.append(.nodeExpired(node.type, cell: node.cellIndex))
         }
         if !expired.isEmpty {
@@ -254,6 +271,7 @@ struct GridEngine {
                 return [.missAbsorbed(cell: cellIndex)]
             }
             combo = 0
+            cleanStreak = 0       // a mistap breaks the streak multiplier
             ramRemaining -= config.penaltyMiss
             var events: [GameEvent] = [.emptyMiss(cell: cellIndex)]
             if ramRemaining <= 0 { ramRemaining = 0; events.append(endGame(.ramDepleted)) }
@@ -272,7 +290,7 @@ struct GridEngine {
             return [.firewallExploded(cell: cell), endGame(.firewallHit)]
 
         case .standardDaemon, .dataCache, .wormDaemon:
-            return [decode(at: idx)] + checkFever() + checkTarget() + checkGridEscalation()
+            return [decode(at: idx)] + checkFever() + checkTarget() + checkGridEscalation() + checkMilestone()
 
         case .powerUp:
             let kind = nodes[idx].powerKind ?? .timeFreeze
@@ -284,9 +302,24 @@ struct GridEngine {
                 nodes[idx].hitsRemaining -= 1   // breach the shell
                 return [.nodeBreached(cell: nodes[idx].cellIndex)]
             } else {
-                return [decode(at: idx)] + checkFever() + checkTarget() + checkGridEscalation()
+                return [decode(at: idx)] + checkFever() + checkTarget() + checkGridEscalation() + checkMilestone()
             }
         }
+    }
+
+    /// Endless: award score milestones (a small RAM top-up + a celebration event) as the
+    /// score crosses each landmark. Disabled when `milestoneScores` is empty.
+    private mutating func checkMilestone() -> [GameEvent] {
+        guard !isGameOver else { return [] }
+        var events: [GameEvent] = []
+        while nextMilestoneIndex < config.milestoneScores.count,
+              score >= config.milestoneScores[nextMilestoneIndex] {
+            let value = config.milestoneScores[nextMilestoneIndex]
+            ramRemaining = min(ramCapacity, ramRemaining + config.milestoneRAMBonus)
+            events.append(.milestoneReached(value))
+            nextMilestoneIndex += 1
+        }
+        return events
     }
 
     /// Apply a tapped power-up's effect. Pickups carry no score — the effect is the
@@ -336,6 +369,7 @@ struct GridEngine {
     private mutating func decode(at idx: Int) -> GameEvent {
         let node = nodes[idx]
         combo += 1
+        cleanStreak += 1
         let multiplier = effectiveMultiplier
         switch node.type {
         case .standardDaemon:

@@ -3,6 +3,24 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #61 — Endless depth: streak multiplier + score milestones (2026-06-08)
+Built the two maintainer-approved endless improvements (engine-first, view dresses it).
+- **Clean-streak base multiplier:** engine tracks `cleanStreak` (decodes since the last
+  miss/expiry); `streakMultiplier` steps ×2/×3/×4/×5 at `streakTierThresholds`
+  [12,30,60,120] and folds into `effectiveMultiplier` (so it stacks with Fever/Overclock).
+  A miss or an expiry resets it. Long clean survival is now exponentially rewarded — sim:
+  strong's endless score ~3.4k → **~14k**. New `StreakBadge` ("🔥 STREAK ×N", pulses on
+  tier-up, vanishes on break); the score's bare ×N now shows only a boost *beyond* the
+  streak (Fever/Overclock) to avoid a redundant double number.
+- **Score milestones:** at 50/100/250/500/1000/2000/4000/8000 the engine fires
+  `.milestoneReached`, granting a small RAM top-up (+2.5 s, capped) and a gold "◆ N ◆"
+  landmark toast + chime. Gives the flat loop progression beats.
+- **Scope:** both gated via `GameConfig` (set only in `endless()`); campaign/flow get
+  empty lists → unchanged. Snapshot gains `cleanStreak`/`streakMultiplier`.
+- **Verified:** clean build; endless sim (streak boosts scores, milestones don't
+  over-extend); on-device (temp autoplay, reverted) — STREAK ×3 badge + score ×6 during
+  Fever, grid grows at 80, RAM held by milestone top-ups.
+
 ## Run #60 — Fix menu tile label alignment (2026-06-08)
 Maintainer spotted the FLOW label sitting slightly higher than CAMPAIGN/DAILY. Cause:
 the ∞ glyph is shorter than the flag/calendar icons, so the icon+label VStack was
