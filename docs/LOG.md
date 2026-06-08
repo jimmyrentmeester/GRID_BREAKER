@@ -3,6 +3,26 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #59 — Endless mode fine-tune (calmer, longer, capped) (2026-06-08)
+Maintainer: fine-tune endless (JACK IN) — calmer start, longer loop, grid grows later,
+and (open question) maybe cap the acceleration so it stays hittable.
+- **New `GameConfig.endless()`** (used by both Endless and Daily via the GameView else
+  branch; isolated from campaign/flow): baseSpawnInterval 0.50→**0.72**, spawnCompression
+  0.0045→**0.0032**, minSpawnInterval 0.20→**0.26**, baseNodeLifespan 1.35→**1.70**,
+  lifespanCompression 0.0030→**0.0021**, minNodeLifespan 0.50→**0.62**, gridEscalation
+  0.40→**80**.
+- **Acceleration cap (answering the open question):** the higher floors (0.26 s spawn /
+  0.62 s lifespan) plateau the difficulty at a still-hittable level. In the sim a focused
+  player no longer hits an impossible wall — so a long run ends on *mistakes* (a stray
+  bomb / mistap), not an unwinnable speed. That's the intended endless loop.
+- **Validated via headless endless sim** (survival/score/grid@ per skill): default →
+  endless() shifts casual 67s→**124s** (now reaches the grid at 80), good 141s→endurance-
+  limited, strong already endurance-limited; calmer 0.72 s opening, grid at ~80 not ~40.
+- **Verified:** clean build; computer-use input works (drove menu/JACK IN) but a reflex
+  game still can't be *played* at tool latency (the 20 s RAM drains during round-trips),
+  so the sim is the pacing tool. Other loop-improvement ideas proposed to the maintainer
+  (not yet built).
+
 ## Run #58 — Campaign pacing rebuilt: gentle start, gradual ramp (2026-06-08)
 Maintainer: campaign still felt as fast as before — wanted the pauses between clicks
 much slower (~-50%) for beginners, ramping up gradually. Also asked me to re-test via

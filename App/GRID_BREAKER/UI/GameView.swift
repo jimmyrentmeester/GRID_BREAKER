@@ -257,7 +257,8 @@ struct GameView: View {
                                   deck: deck, seed: seed ?? GameView.freshSeed(),
                                   targetScore: core.targetScore, difficultyBias: core.difficultyBias)
         } else {
-            model = GameViewModel(deck: deck, seed: seed ?? GameView.freshSeed())
+            // Endless (JACK IN) and the Daily challenge share the tuned endless config.
+            model = GameViewModel(config: .endless(), deck: deck, seed: seed ?? GameView.freshSeed())
         }
         _model = State(initialValue: model)
         _showBriefing = State(initialValue: briefing != nil)

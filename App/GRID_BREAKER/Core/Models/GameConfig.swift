@@ -158,6 +158,23 @@ struct GameConfig: Sendable {
         return c
     }
 
+    /// Config for **Endless (JACK IN)** and the Daily challenge. A calmer opening, a
+    /// longer and more gradual difficulty ramp, the grid grows later, and the
+    /// acceleration plateaus at a still-hittable floor — so a long run is about endurance
+    /// and avoiding mistakes (a stray bomb / mistap) rather than hitting an impossible
+    /// wall. Isolated from the default so campaign/flow tuning is unaffected.
+    static func endless() -> GameConfig {
+        var c = GameConfig.default
+        c.baseSpawnInterval   = 0.72   // calmer start (was 0.50)
+        c.spawnCompression    = 0.0032 // gentler ramp (was 0.0045)
+        c.minSpawnInterval    = 0.26   // higher floor → stays hittable (was 0.20)
+        c.baseNodeLifespan    = 1.70   // more reaction time early (was 1.35)
+        c.lifespanCompression = 0.0021 // gentler shrink (was 0.0030)
+        c.minNodeLifespan     = 0.62   // higher floor (was 0.50)
+        c.gridEscalationScore = 80     // grid grows later (was 40)
+        return c
+    }
+
     /// Config for **Flow (chill) mode**: no failure, no clock, no hazards, a flat
     /// gentle pace. RAM never drains (no death), no firewall bombs, no miss
     /// penalties, no difficulty escalation, no Fever. Just a calm, endless tap

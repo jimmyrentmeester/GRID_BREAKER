@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.15 — Endless mode re-paced (2026-06-08)
+- JACK IN (Endless) now opens calmer and ramps up more gradually, the grid grows later
+  in a run, and the top speed is capped so it stays possible to hit — a long run now ends
+  because you slipped up, not because it became unplayably fast. Daily uses the same feel.
+
 ## 1.0.14 — Much gentler early campaign (2026-06-08)
 - The campaign now starts a lot calmer — early cores leave roughly twice as long between
   daemons (and they linger longer), so beginners have real room to breathe. Each core
