@@ -3,6 +3,20 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #52 — Fix onboarding Level 3 input lock (2026-06-08)
+Maintainer hit a hard stop: "training breaks from the Fever onwards — can't click the
+fevers, and can't click the white power-up." Two bugs in `OnboardingView.handle`:
+- **Input stayed locked after Fever.** The final charge tap set `feverOn = true` (for the
+  1.4 s celebration) but never reset it, and `handle`'s first guard is `!feverOn` — so
+  every tap afterwards (the whole power-up beat) was swallowed. Fix: reset `feverOn =
+  false` just before `advance()` to beat 7.
+- **The fever daemon hopped on every tap.** Each charge tap moved it to a neighbour, so
+  rapid taps landed on an empty cell and did nothing ("can't click the fever"). Fix: keep
+  it stationary during charging — you just tap to fill the combo meter.
+- **Verified:** clean build; on-device with a temp autoplay (reverted) that drove the L3
+  taps end to end — it charged Fever, tapped the power-up, and reached the Payday screen,
+  which is only reachable if beat 7 accepts input again.
+
 ## Run #51 — Onboarding Phase C: guided first buy + equip (2026-06-08)
 Final slice of the onboarding proposal — turns the meta-loop intro's "open shop" paths
 into an actual guided first purchase + first equip. Onboarding (Acts 1/1.5/2) now complete.

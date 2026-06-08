@@ -864,12 +864,13 @@ struct OnboardingView: View {
                 decode(idx, .decode) {
                     AudioEngine.shared.play(.fever)
                     withAnimation(.easeInOut(duration: 0.3)) { feverOn = true }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { advance() }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+                        feverOn = false          // release the input lock before moving on
+                        advance()
+                    }
                 }
             } else {
-                decode(idx, .decode) {
-                    if let dest = neighbours(of: feverCell).randomElement() { feverCell = dest }
-                }
+                decode(idx, .decode) { }         // stay put — just fill the combo meter
             }
         case 7 where idx == centerCell:
             AudioEngine.shared.play(.fever)
