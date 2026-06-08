@@ -2,6 +2,13 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.13 — Smoother end of training (2026-06-08)
+- In training you now press CONTINUE after each power-up, so you can read what it does at
+  your own pace instead of it skipping ahead.
+- The end of training is now one clean screen: it shows your CR and lets you head straight
+  into the Cyberdeck or Cosmetics (or Later) — no more pressing "Jack In" only to get a
+  separate credits pop-up.
+
 ## 1.0.12 — Tutorial teaches every power-up (2026-06-08)
 - The training now walks you through all three power-ups — ❄ Freeze, ⚡ Overclock and
   🌀 Purge — instead of only Freeze.

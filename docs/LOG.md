@@ -3,6 +3,21 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #57 — Power-up "press to continue" + streamlined finale (2026-06-08)
+Two maintainer fixes to the tutorial close.
+- **Read-before-advance power-ups:** beat 7 no longer auto-advances. Tapping a pickup
+  reveals its effect and shows a **NEXT POWER-UP** button (GOT IT on the last); the player
+  presses to move to the next one — so each of ❄/⚡/🌀 is actually read.
+- **One coherent finale (no more "JACK IN → surprise popup"):** merged the payday and the
+  separate `MetaIntroCard` into a single `finale` screen — TRAINING COMPLETE + the CR
+  (count-up on first launch, current balance on a Settings replay) + the three routes
+  **OPEN CYBERDECK / COSMETICS / LATER** straight into the guided tour. Removed the
+  `.metaIntro` screen case and the `MetaIntroCard` view; `OnboardingView` gained
+  `onOpenCyberdeck`/`onOpenCosmetics`/`credits`.
+- **Verified:** clean build; on-device — the finale shows CR + the three spend buttons on
+  one screen, and the power-up reveal shows the effect + a NEXT POWER-UP button (temp
+  forces reverted).
+
 ## Run #56 — Tutorial covers all three power-ups (2026-06-08)
 Maintainer: the white lightning-bolt (Overclock) power-up was missing from the tutorial.
 The new OnboardingView's beat 7 only demoed Freeze (snowflake).

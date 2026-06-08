@@ -576,8 +576,14 @@ struct OnboardingView: View {
     /// First-launch shows the starter-CR "payday"; a Settings revisit does not.
     var showPayday: Bool = true
     var starterCredits: Int = GameStore.starterCredits
-    /// Called once when the payday screen appears (persists the one-time grant).
+    /// Current CR balance (shown on the finale for a Settings revisit).
+    var credits: Int = 0
+    /// Called once when the finale appears on first launch (persists the one-time grant).
     var onPayday: () -> Void = {}
+    /// Finale spend routes — go straight into the guided shop tour.
+    var onOpenCyberdeck: () -> Void = {}
+    var onOpenCosmetics: () -> Void = {}
+    /// "Later" / finish → drop to the menu.
     let onDone: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -597,6 +603,7 @@ struct OnboardingView: View {
     @State private var feverGold: Set<Int> = []  // beat 6: gold nodes to clear in Fever
     @State private var powerLabel: String? = nil // beat 7
     @State private var powerStep = 0             // beat 7: which power-up (0…2)
+    @State private var powerRevealed = false     // beat 7: collected → wait for CONTINUE
 
     /// The three power-ups, taught one after another in beat 7 (glyph matches the
     /// real white pickups; label names the effect).
@@ -660,14 +667,14 @@ struct OnboardingView: View {
             }
 
             if isOutro {
-                if showPayday { payday } else { outro }
+                finale
             } else if showCard {
                 levelCard
             } else {
                 Text(prompt)
                     .font(.system(size: 14, weight: .medium, design: .monospaced))
                     .foregroundStyle(wrongFirewall && beat == 2 ? NeonTheme.danger
-                                     : feverOn ? NeonTheme.gold : NeonTheme.textPrimary)
+                                     : (feverOn || powerRevealed) ? NeonTheme.gold : NeonTheme.textPrimary)
                     .multilineTextAlignment(.center)
                     .frame(height: 40)
 
@@ -677,6 +684,12 @@ struct OnboardingView: View {
                 grid
 
                 Spacer(minLength: 0)
+
+                // Power-up: the player must press to advance, so each effect is read.
+                if beat == 7 && powerRevealed {
+                    TerminalButton(title: powerStep + 1 < powerUps.count ? "NEXT POWER-UP" : "GOT IT",
+                                   color: NeonTheme.cyan, wide: true, action: advancePower)
+                }
             }
 
             if !isOutro {
@@ -891,16 +904,17 @@ struct OnboardingView: View {
                     advance()
                 }
             }
-        case 7 where idx == centerCell:
-            // Teach all three power-ups in turn: tap → name its effect → next pickup.
+        case 7 where !powerRevealed && idx == centerCell:
+            // Collect a power-up: reveal its effect and WAIT for the player to press
+            // CONTINUE, so each one is actually read before the next appears.
             AudioEngine.shared.play(.fever)
-            withAnimation(.easeInOut(duration: 0.2)) { powerLabel = powerUps[powerStep].label }
             flashCell = idx
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
                 flashCell = nil
-                withAnimation(.easeInOut(duration: 0.2)) { powerLabel = nil }
-                if powerStep + 1 < powerUps.count { powerStep += 1 }
-                else { advance() }
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    powerLabel = powerUps[powerStep].label
+                    powerRevealed = true
+                }
             }
         default:
             break
@@ -913,6 +927,20 @@ struct OnboardingView: View {
         if beat == 3 || beat == 6 { showCard = true }
     }
 
+    /// CONTINUE pressed on a revealed power-up → next pickup, or finish the level.
+    private func advancePower() {
+        AudioEngine.shared.play(.uiTap)
+        withAnimation(.easeInOut(duration: 0.2)) {
+            powerRevealed = false
+            powerLabel = nil
+        }
+        if powerStep + 1 < powerUps.count {
+            withAnimation(.easeInOut(duration: 0.2)) { powerStep += 1 }
+        } else {
+            withAnimation(.easeInOut(duration: 0.2)) { advance() }
+        }
+    }
+
     private func decode(_ idx: Int, _ sfx: AudioEngine.SFX, then: @escaping () -> Void) {
         AudioEngine.shared.play(sfx)
         flashCell = idx
@@ -922,33 +950,13 @@ struct OnboardingView: View {
         }
     }
 
-    // MARK: Outro
+    // MARK: Finale — training complete + your CR + where to spend it (one screen)
 
-    private var outro: some View {
-        VStack(spacing: 16) {
-            Spacer(minLength: 0)
-            Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 52, weight: .bold))
-                .foregroundStyle(NeonTheme.gold)
-                .neonGlow(NeonTheme.gold, radius: 12)
-            Text("TRAINING COMPLETE")
-                .font(.system(size: 20, weight: .heavy, design: .monospaced))
-                .foregroundStyle(NeonTheme.cyan)
-                .neonGlow(NeonTheme.cyan, radius: 8)
-            Text("You're ready to jack in. Every run banks CR to spend in the Cyberdeck and on Cosmetics — keep playing to grow your netrunner.")
-                .font(.system(size: 13, weight: .medium, design: .monospaced))
-                .foregroundStyle(NeonTheme.textDim)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 8)
-            Spacer(minLength: 0)
-            TerminalButton(title: "JACK IN", color: NeonTheme.cyan, wide: true, action: onDone)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    /// Act 1.5 — Payday: reveal the one-time starter CR with a count-up + chime, so the
-    /// shops are concrete from the first menu visit.
-    private var payday: some View {
+    /// One coherent closer: training is done, here's your CR, and the choice to spend it
+    /// now (guided) or later. On first launch it counts up the granted starter CR; on a
+    /// Settings replay it just shows the current balance. Replaces the old "JACK IN →
+    /// separate CR popup" two-step.
+    private var finale: some View {
         VStack(spacing: 14) {
             Spacer(minLength: 0)
             Image(systemName: "checkmark.seal.fill")
@@ -960,13 +968,13 @@ struct OnboardingView: View {
                 .foregroundStyle(NeonTheme.cyan)
                 .neonGlow(NeonTheme.cyan, radius: 8)
             VStack(spacing: 4) {
-                Text("STARTER FUNDS LOADED")
+                Text(showPayday ? "STARTER FUNDS LOADED" : "YOUR CREDITS")
                     .font(.system(size: 10, weight: .semibold, design: .monospaced))
                     .foregroundStyle(NeonTheme.textDim).tracking(2)
                 HStack(spacing: 8) {
                     Image(systemName: "bitcoinsign.circle.fill")
                         .font(.system(size: 24, weight: .bold)).foregroundStyle(NeonTheme.gold)
-                    Text("\(creditsShown) CR")
+                    Text("\(showPayday ? creditsShown : credits) CR")
                         .font(.system(size: 30, weight: .heavy, design: .monospaced))
                         .foregroundStyle(NeonTheme.gold)
                         .neonGlow(NeonTheme.gold, radius: 8)
@@ -978,16 +986,20 @@ struct OnboardingView: View {
             .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(NeonTheme.gold.opacity(0.08))
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(NeonTheme.gold.opacity(0.5), lineWidth: 1)))
-            Text("Every run banks more. Spend CR in the Cyberdeck on upgrades, and on Cosmetics to recolor the grid.")
+            Text("Spend it now in the Cyberdeck on upgrades, or on Cosmetics to recolor the grid — every run banks more.")
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .foregroundStyle(NeonTheme.textDim)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 8)
             Spacer(minLength: 0)
-            TerminalButton(title: "JACK IN", color: NeonTheme.cyan, wide: true, action: onDone)
+            VStack(spacing: 12) {
+                TerminalButton(title: "OPEN CYBERDECK", color: NeonTheme.gold, wide: true, action: onOpenCyberdeck)
+                TerminalButton(title: "COSMETICS", color: NeonTheme.cyan, wide: true, action: onOpenCosmetics)
+                TerminalButton(title: "LATER", color: NeonTheme.magenta, wide: true, action: onDone)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear(perform: startPayday)
+        .onAppear { if showPayday { startPayday() } }
     }
 
     private func startPayday() {

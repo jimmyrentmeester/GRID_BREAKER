@@ -11,7 +11,7 @@ struct RootView: View {
     @State private var onboardingPayday = true   // first-launch onboarding pays out CR
     @State private var guidedTour: GuidedStep = .none   // meta-loop guided shop tour
 
-    private enum Screen { case menu, endless, daily, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial, metaIntro, settings }
+    private enum Screen { case menu, endless, daily, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial, settings }
     /// The guided onboarding tour through the shops (Phase C): buy → equip → done.
     private enum GuidedStep { case none, cyberdeck, cosmetics }
 
@@ -91,18 +91,12 @@ struct RootView: View {
                                onBack: { screen = .menu }).transition(.opacity)
             case .tutorial:
                 OnboardingView(showPayday: onboardingPayday,
+                               credits: store.cyberdeck.credits,
                                onPayday: { store.grantStarterCredits() },
-                               onDone: { store.markTutorialSeen(); screen = .metaIntro })
+                               onOpenCyberdeck: { store.markTutorialSeen(); tap(); guidedTour = .cyberdeck; screen = .cyberdeck },
+                               onOpenCosmetics: { store.markTutorialSeen(); tap(); guidedTour = .cosmetics; screen = .cosmetics },
+                               onDone: { store.markTutorialSeen(); screen = .menu })
                     .transition(.opacity)
-            case .metaIntro:
-                // Final onboarding step: introduce the meta-loop, then guide the first
-                // Cyberdeck buy + Cosmetics equip. Reached right after training (CR in hand).
-                MetaIntroCard(
-                    credits: store.cyberdeck.credits,
-                    onOpenCyberdeck: { tap(); guidedTour = .cyberdeck; screen = .cyberdeck },
-                    onOpenCosmetics: { tap(); guidedTour = .cosmetics; screen = .cosmetics },
-                    onLater: { tap(); screen = .menu }
-                ).transition(.opacity)
             case .settings:
                 SettingsView(store: store,
                              onTutorial: { tap(); onboardingPayday = false; screen = .tutorial },
@@ -255,46 +249,6 @@ private struct MenuTile: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
         .accessibilityAddTraits(.isButton)
-    }
-}
-
-/// The final onboarding step: introduce the earn → spend → customize loop now that the
-/// player has CR, then route into the guided Cyberdeck buy + Cosmetics equip. A full
-/// (opaque) screen — the app background + grid backdrop sit behind it, nothing bleeds
-/// through. "Later" drops to the menu.
-private struct MetaIntroCard: View {
-    let credits: Int
-    let onOpenCyberdeck: () -> Void
-    let onOpenCosmetics: () -> Void
-    let onLater: () -> Void
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Spacer(minLength: 0)
-            Image(systemName: "bitcoinsign.circle.fill")
-                .font(.system(size: 50, weight: .bold))
-                .foregroundStyle(NeonTheme.gold)
-                .neonGlow(NeonTheme.gold, radius: 12)
-            Text("YOU'RE BANKING CR")
-                .font(.system(size: 20, weight: .heavy, design: .monospaced))
-                .foregroundStyle(NeonTheme.cyan)
-                .neonGlow(NeonTheme.cyan, radius: 8)
-            Text("You've got \(credits) CR. Spend it in the Cyberdeck on permanent upgrades, or on Cosmetics to recolor the grid. Want a look?")
-                .font(.system(size: 13, weight: .medium, design: .monospaced))
-                .foregroundStyle(NeonTheme.textDim)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 8)
-            VStack(spacing: 12) {
-                TerminalButton(title: "OPEN CYBERDECK", color: NeonTheme.gold, wide: true, action: onOpenCyberdeck)
-                TerminalButton(title: "COSMETICS", color: NeonTheme.cyan, wide: true, action: onOpenCosmetics)
-                TerminalButton(title: "LATER", color: NeonTheme.magenta, wide: true, action: onLater)
-            }
-            .padding(.top, 8)
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: 360)
-        .padding(.horizontal, 24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
