@@ -2,6 +2,12 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.8 — Onboarding payday + CR intro (2026-06-08)
+- Finishing training now pays out 150 starter CR with a satisfying count-up, so you can
+  buy something straight away.
+- After your first real run, the menu gives you a one-time heads-up that you're banking
+  CR — with quick links into the Cyberdeck and Cosmetics.
+
 ## 1.0.7 — New onboarding: 3 practice levels (2026-06-08)
 - First launch now walks you through three short, no-pressure training levels — Level 1
   teaches decoding, your RAM clock and the firewall; Level 2 covers armored daemons,

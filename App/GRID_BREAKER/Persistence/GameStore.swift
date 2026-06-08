@@ -59,6 +59,39 @@ final class GameStore {
         persist()
     }
 
+    // MARK: Onboarding meta-loop (Phase B)
+
+    /// The one-time "payday" granted at the end of onboarding so the shops aren't
+    /// abstract — enough for a first Cyberdeck upgrade + a cheap cosmetic.
+    static let starterCredits = 150
+
+    /// Grant the starter CR once (idempotent). Returns the amount granted (0 if already
+    /// granted), so the caller can drive a count-up to the right number.
+    @discardableResult
+    func grantStarterCredits() -> Int {
+        guard !save.starterCreditsGranted else { return 0 }
+        save.starterCreditsGranted = true
+        save.cyberdeck.credits += Self.starterCredits
+        persist()
+        return Self.starterCredits
+    }
+
+    /// Mark that the player has completed at least one real run (gates the meta intro).
+    func markFirstRealRunDone() {
+        guard !save.firstRealRunDone else { return }
+        save.firstRealRunDone = true
+        persist()
+    }
+
+    func markMetaIntroSeen() {
+        guard !save.metaIntroSeen else { return }
+        save.metaIntroSeen = true
+        persist()
+    }
+
+    /// Show the Cyberdeck/Cosmetics intro once, after the first real run is done.
+    var shouldShowMetaIntro: Bool { save.firstRealRunDone && !save.metaIntroSeen }
+
     /// Wipe gameplay progress (Credits, upgrades, scores, cosmetics, campaign) to a
     /// fresh start. Keeps the player's *preferences* (sound/haptics) and that they've
     /// already seen the tutorial — those aren't "progress".
@@ -69,6 +102,10 @@ final class GameStore {
         fresh.musicVolume = save.musicVolume
         fresh.sfxVolume = save.sfxVolume
         fresh.tutorialSeen = save.tutorialSeen
+        // Onboarding state isn't "gameplay progress" — keep it so we don't re-onboard.
+        fresh.starterCreditsGranted = save.starterCreditsGranted
+        fresh.firstRealRunDone = save.firstRealRunDone
+        fresh.metaIntroSeen = save.metaIntroSeen
         save = fresh
         persist()
     }

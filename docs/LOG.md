@@ -3,6 +3,28 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #50 — Onboarding Phase B: payday + meta-loop hook (2026-06-08)
+Second slice of the onboarding proposal: the starter-CR "payday" after training and the
+one-time meta-loop intro surfaced after the first real run.
+- **Save state (`SaveData` + tolerant decoder):** added `starterCreditsGranted`,
+  `firstRealRunDone`, `metaIntroSeen` (all default false, back-compat). `resetProgress`
+  preserves them (onboarding state isn't gameplay progress).
+- **GameStore API:** `grantStarterCredits()` (idempotent, +150 CR, returns amount),
+  `markFirstRealRunDone()`, `markMetaIntroSeen()`, `shouldShowMetaIntro`
+  (= firstRealRunDone && !metaIntroSeen). `static starterCredits = 150`.
+- **Payday (Act 1.5):** the onboarding outro now reveals the starter CR with a count-up
+  + purchase chime (Reduce-Motion snaps to the total), then "JACK IN" → menu. Only on
+  first-launch onboarding (`showPayday`); a Settings ▸ How to Play revisit shows the
+  plain "training complete" outro and grants nothing.
+- **Meta-loop intro (Act 2 surfacing):** after the player finishes their first CR-earning
+  run (endless/daily/campaign now call `markFirstRealRunDone()`), returning to the menu
+  pops a one-time `MetaIntroCard` — "You're banking CR" with OPEN CYBERDECK / COSMETICS /
+  LATER (each marks it seen). Flow doesn't count (earns no CR).
+- **Scope note:** this is the *surfacing* + economy; the guided in-shop first-purchase /
+  equip is Phase C.
+- **Verified:** clean build; on-device — the Payday screen counts up to 150 CR and the
+  MetaIntroCard renders over the menu with its routing buttons (temp hooks reverted).
+
 ## Run #49 — Onboarding Phase A: 3 practice levels (2026-06-08)
 First slice of the onboarding proposal (docs/ONBOARDING_PROPOSAL.md). Replaced the old
 single-grid `TutorialView` with a new **`OnboardingView`** — a paced, teach-by-doing

@@ -494,10 +494,18 @@ private struct PaletteRow: View {
 /// Beat map: 0 decode · 1 ram · 2 firewall | 3 armored · 4 cache · 5 worm | 6 fever ·
 /// 7 power-up | 8 outro. Beats 0/3/6 open with a level card.
 struct OnboardingView: View {
+    /// First-launch shows the starter-CR "payday"; a Settings revisit does not.
+    var showPayday: Bool = true
+    var starterCredits: Int = GameStore.starterCredits
+    /// Called once when the payday screen appears (persists the one-time grant).
+    var onPayday: () -> Void = {}
     let onDone: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var beat = 0
     @State private var showCard = true          // level-intro card gating
+    @State private var paydayStarted = false
+    @State private var creditsShown = 0
     @State private var armoredBreached = false
     @State private var wrongFirewall = false
     @State private var shakeAnim: CGFloat = 0
@@ -563,7 +571,7 @@ struct OnboardingView: View {
             }
 
             if isOutro {
-                outro
+                if showPayday { payday } else { outro }
             } else if showCard {
                 levelCard
             } else {
@@ -833,6 +841,68 @@ struct OnboardingView: View {
             TerminalButton(title: "JACK IN", color: NeonTheme.cyan, wide: true, action: onDone)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Act 1.5 — Payday: reveal the one-time starter CR with a count-up + chime, so the
+    /// shops are concrete from the first menu visit.
+    private var payday: some View {
+        VStack(spacing: 14) {
+            Spacer(minLength: 0)
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 46, weight: .bold))
+                .foregroundStyle(NeonTheme.gold)
+                .neonGlow(NeonTheme.gold, radius: 12)
+            Text("TRAINING COMPLETE")
+                .font(.system(size: 19, weight: .heavy, design: .monospaced))
+                .foregroundStyle(NeonTheme.cyan)
+                .neonGlow(NeonTheme.cyan, radius: 8)
+            VStack(spacing: 4) {
+                Text("STARTER FUNDS LOADED")
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textDim).tracking(2)
+                HStack(spacing: 8) {
+                    Image(systemName: "bitcoinsign.circle.fill")
+                        .font(.system(size: 24, weight: .bold)).foregroundStyle(NeonTheme.gold)
+                    Text("\(creditsShown) CR")
+                        .font(.system(size: 30, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                        .neonGlow(NeonTheme.gold, radius: 8)
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                }
+            }
+            .padding(.vertical, 12).padding(.horizontal, 22)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(NeonTheme.gold.opacity(0.08))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(NeonTheme.gold.opacity(0.5), lineWidth: 1)))
+            Text("Every run banks more. Spend CR in the Cyberdeck on upgrades, and on Cosmetics to recolor the grid.")
+                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
+            Spacer(minLength: 0)
+            TerminalButton(title: "JACK IN", color: NeonTheme.cyan, wide: true, action: onDone)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear(perform: startPayday)
+    }
+
+    private func startPayday() {
+        guard !paydayStarted else { return }
+        paydayStarted = true
+        onPayday()                                   // persist the one-time grant
+        AudioEngine.shared.play(.purchase)
+        guard !reduceMotion else { creditsShown = starterCredits; return }
+        Task { @MainActor in
+            let steps = 16
+            for i in 1...steps {
+                withAnimation(.easeOut(duration: 0.05)) {
+                    creditsShown = Int((Double(starterCredits) * Double(i) / Double(steps)).rounded())
+                }
+                try? await Task.sleep(nanoseconds: 45_000_000)
+            }
+            creditsShown = starterCredits
+        }
     }
 }
 

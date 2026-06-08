@@ -81,9 +81,12 @@ Surfaced from the game-over screen (one-time), so CR is earned and motivated:
   level cards + 3-dot progress + skip/revisit. Reused `tutorialSeen` for the seen-flag;
   new save flags deferred to Phase B. Practice scenes are scripted (incl. a scripted
   Fever + power-up demo in L3).
-- **Phase B:** Payday starter-CR grant + count-up + post-first-run meta-loop surfacing
-  (add `firstRealRunDone` / `metaIntroSeen` to SaveData; `grantStarterCredits`).
-- **Phase C:** Guided Cyberdeck purchase + Cosmetics equip (GuidedHint banners).
+- **Phase B — DONE (Run #50):** Payday starter-CR grant (+150) + count-up + post-first-run
+  meta-loop surfacing (`MetaIntroCard`). Added `starterCreditsGranted` / `firstRealRunDone`
+  / `metaIntroSeen` to SaveData; `grantStarterCredits` / `markFirstRealRunDone` /
+  `shouldShowMetaIntro` on GameStore.
+- **Phase C:** Guided Cyberdeck purchase + Cosmetics equip (GuidedHint banners) — turn the
+  MetaIntroCard's "open" path into an actual guided first buy + equip.
 
 ## Deferred / minor open questions
 - Exact starter CR (150 is a placeholder — tune so the first RAM upgrade is affordable
