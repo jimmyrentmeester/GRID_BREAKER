@@ -76,22 +76,6 @@ final class GameStore {
         return Self.starterCredits
     }
 
-    /// Mark that the player has completed at least one real run (gates the meta intro).
-    func markFirstRealRunDone() {
-        guard !save.firstRealRunDone else { return }
-        save.firstRealRunDone = true
-        persist()
-    }
-
-    func markMetaIntroSeen() {
-        guard !save.metaIntroSeen else { return }
-        save.metaIntroSeen = true
-        persist()
-    }
-
-    /// Show the Cyberdeck/Cosmetics intro once, after the first real run is done.
-    var shouldShowMetaIntro: Bool { save.firstRealRunDone && !save.metaIntroSeen }
-
     /// Wipe gameplay progress (Credits, upgrades, scores, cosmetics, campaign) to a
     /// fresh start. Keeps the player's *preferences* (sound/haptics) and that they've
     /// already seen the tutorial — those aren't "progress".
@@ -102,10 +86,8 @@ final class GameStore {
         fresh.musicVolume = save.musicVolume
         fresh.sfxVolume = save.sfxVolume
         fresh.tutorialSeen = save.tutorialSeen
-        // Onboarding state isn't "gameplay progress" — keep it so we don't re-onboard.
+        // Onboarding state isn't "gameplay progress" — keep it so we don't re-grant CR.
         fresh.starterCreditsGranted = save.starterCreditsGranted
-        fresh.firstRealRunDone = save.firstRealRunDone
-        fresh.metaIntroSeen = save.metaIntroSeen
         save = fresh
         persist()
     }

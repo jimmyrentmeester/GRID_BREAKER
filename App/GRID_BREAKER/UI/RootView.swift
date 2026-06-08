@@ -9,10 +9,9 @@ struct RootView: View {
     @State private var activeCore: DataCore?
     @State private var pulse = false
     @State private var onboardingPayday = true   // first-launch onboarding pays out CR
-    @State private var showMetaIntro = false      // one-time Cyberdeck/Cosmetics intro
     @State private var guidedTour: GuidedStep = .none   // meta-loop guided shop tour
 
-    private enum Screen { case menu, endless, daily, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial, settings }
+    private enum Screen { case menu, endless, daily, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial, metaIntro, settings }
     /// The guided onboarding tour through the shops (Phase C): buy → equip → done.
     private enum GuidedStep { case none, cyberdeck, cosmetics }
 
@@ -40,7 +39,6 @@ struct RootView: View {
                          recordSession: { score, _ in
                              let isHigh = store.isHighScore(score)
                              let earned = store.recordSession(score: score, on: Date())
-                             store.markFirstRealRunDone()
                              return SessionOutcome(creditsEarned: earned, isHighScore: isHigh)
                          })
                     .transition(.opacity)
@@ -49,11 +47,7 @@ struct RootView: View {
                 let today = Self.today()
                 GameView(deck: store.cyberdeck, seed: today.seed, daily: true,
                          onExit: { screen = .menu },
-                         recordSession: { score, _ in
-                             let outcome = store.recordDaily(score: score, day: today.key)
-                             store.markFirstRealRunDone()
-                             return outcome
-                         })
+                         recordSession: { score, _ in store.recordDaily(score: score, day: today.key) })
                     .transition(.opacity)
             case .flow:
                 // Chill mode — no clock, no fail, no economy; just play and leave.
@@ -74,7 +68,6 @@ struct RootView: View {
                              onNext: Campaign.core(id: core.id + 1).map { next in { activeCore = next } },
                              recordSession: { score, won in
                                  let earned = store.recordCore(core, won: won, score: score, on: Date())
-                                 store.markFirstRealRunDone()
                                  return SessionOutcome(creditsEarned: earned, isHighScore: false)
                              })
                         .id(core.id)          // fresh session when advancing cores
@@ -99,27 +92,24 @@ struct RootView: View {
             case .tutorial:
                 OnboardingView(showPayday: onboardingPayday,
                                onPayday: { store.grantStarterCredits() },
-                               onDone: { store.markTutorialSeen(); screen = .menu })
+                               onDone: { store.markTutorialSeen(); screen = .metaIntro })
                     .transition(.opacity)
+            case .metaIntro:
+                // Final onboarding step: introduce the meta-loop, then guide the first
+                // Cyberdeck buy + Cosmetics equip. Reached right after training (CR in hand).
+                MetaIntroCard(
+                    credits: store.cyberdeck.credits,
+                    onOpenCyberdeck: { tap(); guidedTour = .cyberdeck; screen = .cyberdeck },
+                    onOpenCosmetics: { tap(); guidedTour = .cosmetics; screen = .cosmetics },
+                    onLater: { tap(); screen = .menu }
+                ).transition(.opacity)
             case .settings:
                 SettingsView(store: store,
                              onTutorial: { tap(); onboardingPayday = false; screen = .tutorial },
                              onBack: { screen = .menu }).transition(.opacity)
             }
-
-            // One-time meta-loop intro, surfaced on the menu after the first real run.
-            if showMetaIntro && screen == .menu {
-                MetaIntroCard(
-                    credits: store.cyberdeck.credits,
-                    onOpenCyberdeck: { store.markMetaIntroSeen(); showMetaIntro = false; tap(); guidedTour = .cyberdeck; screen = .cyberdeck },
-                    onOpenCosmetics: { store.markMetaIntroSeen(); showMetaIntro = false; tap(); guidedTour = .cosmetics; screen = .cosmetics },
-                    onLater: { store.markMetaIntroSeen(); withAnimation { showMetaIntro = false } }
-                )
-                .transition(.opacity)
-            }
         }
         .animation(.easeInOut(duration: 0.3), value: screen)
-        .animation(.easeInOut(duration: 0.3), value: showMetaIntro)
         .onAppear {
             NeonTheme.current = Palettes.byID(store.equippedPaletteID)   // apply cosmetics
             TrailSkins.equipped = TrailSkins.byID(store.equippedTrailID)
@@ -200,7 +190,6 @@ struct RootView: View {
         .padding(.horizontal, 24)
         .onAppear {
             withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) { pulse = true }
-            if store.shouldShowMetaIntro { showMetaIntro = true }   // after the first real run
         }
     }
 
@@ -269,9 +258,10 @@ private struct MenuTile: View {
     }
 }
 
-/// One-time intro to the meta-loop, shown on the menu after the first real run: the
-/// player now has CR, so point them at where it's spent (Phase C makes this a guided
-/// in-shop tour). Dismissible; only appears while `shouldShowMetaIntro`.
+/// The final onboarding step: introduce the earn → spend → customize loop now that the
+/// player has CR, then route into the guided Cyberdeck buy + Cosmetics equip. A full
+/// (opaque) screen — the app background + grid backdrop sit behind it, nothing bleeds
+/// through. "Later" drops to the menu.
 private struct MetaIntroCard: View {
     let credits: Int
     let onOpenCyberdeck: () -> Void
@@ -279,33 +269,32 @@ private struct MetaIntroCard: View {
     let onLater: () -> Void
 
     var body: some View {
-        ZStack {
-            Color.black.opacity(0.82).ignoresSafeArea()
-                .onTapGesture(perform: onLater)
-            VStack(spacing: 16) {
-                Image(systemName: "bitcoinsign.circle.fill")
-                    .font(.system(size: 44, weight: .bold))
-                    .foregroundStyle(NeonTheme.gold)
-                    .neonGlow(NeonTheme.gold, radius: 10)
-                Text("YOU'RE BANKING CR")
-                    .font(.system(size: 19, weight: .heavy, design: .monospaced))
-                    .foregroundStyle(NeonTheme.cyan)
-                    .neonGlow(NeonTheme.cyan, radius: 8)
-                Text("You've got \(credits) CR. Spend it in the Cyberdeck on permanent upgrades, or on Cosmetics to recolor the grid. Want a look?")
-                    .font(.system(size: 13, weight: .medium, design: .monospaced))
-                    .foregroundStyle(NeonTheme.textDim)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 8)
-                VStack(spacing: 10) {
-                    TerminalButton(title: "OPEN CYBERDECK", color: NeonTheme.gold, wide: true, action: onOpenCyberdeck)
-                    TerminalButton(title: "COSMETICS", color: NeonTheme.cyan, wide: true, action: onOpenCosmetics)
-                    TerminalButton(title: "LATER", color: NeonTheme.magenta, wide: true, action: onLater)
-                }
-                .padding(.top, 4)
+        VStack(spacing: 16) {
+            Spacer(minLength: 0)
+            Image(systemName: "bitcoinsign.circle.fill")
+                .font(.system(size: 50, weight: .bold))
+                .foregroundStyle(NeonTheme.gold)
+                .neonGlow(NeonTheme.gold, radius: 12)
+            Text("YOU'RE BANKING CR")
+                .font(.system(size: 20, weight: .heavy, design: .monospaced))
+                .foregroundStyle(NeonTheme.cyan)
+                .neonGlow(NeonTheme.cyan, radius: 8)
+            Text("You've got \(credits) CR. Spend it in the Cyberdeck on permanent upgrades, or on Cosmetics to recolor the grid. Want a look?")
+                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
+            VStack(spacing: 12) {
+                TerminalButton(title: "OPEN CYBERDECK", color: NeonTheme.gold, wide: true, action: onOpenCyberdeck)
+                TerminalButton(title: "COSMETICS", color: NeonTheme.cyan, wide: true, action: onOpenCosmetics)
+                TerminalButton(title: "LATER", color: NeonTheme.magenta, wide: true, action: onLater)
             }
-            .padding(28)
-            .frame(maxWidth: 340)
+            .padding(.top, 8)
+            Spacer(minLength: 0)
         }
+        .frame(maxWidth: 360)
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

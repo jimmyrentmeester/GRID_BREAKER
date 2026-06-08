@@ -17,9 +17,11 @@ trapping the player before real play.
 - Don't trap the player: long forced onboarding before real play is the #1 drop-off cause.
 
 ## Locked decisions (maintainer)
-1. **Loop timing = Hybrid.** Teach the 3 practice levels + CR reveal on first launch,
-   then a short skippable pointer; surface the full Cyberdeck/Cosmetics tour again right
-   after the player's first real run, when CR feels earned.
+1. **Loop timing = all up front** (revised Run #53; was "Hybrid"). The whole tutorial is
+   the first thing new players do — practice → payday → meta intro → guided Cyberdeck buy
+   → guided Cosmetics equip → menu, in one sitting. Settings ▸ How to Play replays the
+   entire chain (no re-granted CR). The earlier "surface after first real run" idea was
+   dropped.
 2. **Tangible = grant CR + guided first buy/equip.** Award ~150 starter CR on finishing
    practice; guide one real Cyberdeck purchase and one cosmetic equip.
 3. **Vs. Campaign = practice teaches fundamentals; Campaign reinforces.** The 3 levels

@@ -3,6 +3,25 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #53 — Onboarding: one continuous flow + opaque intro (2026-06-08)
+Maintainer steered the timing (overriding the earlier "Hybrid" pick): the WHOLE tutorial
+should be the first thing new players do, and Settings must replay all of it (without
+re-granting CR). Also: the meta intro looked unclear as a translucent overlay.
+- **One continuous first-launch flow:** practice L1–3 → payday → **meta intro → guided
+  Cyberdeck buy → guided Cosmetics equip → menu**, all up front. The meta intro is now a
+  real screen (`.metaIntro`) reached from the onboarding `onDone`, not a deferred
+  post-first-run surface.
+- **Opaque intro:** `MetaIntroCard` is a full opaque screen (app background + grid
+  backdrop behind it) instead of a translucent overlay over the menu — no more bleed-through.
+- **Settings replays everything, no extra CR:** Settings ▸ How to Play runs the same
+  chain with `showPayday=false` (no payday screen, no grant); `grantStarterCredits` is
+  idempotent as a second guard.
+- **Removed the deferred path:** dropped `firstRealRunDone` / `metaIntroSeen` (SaveData +
+  decoder + reset), and `markFirstRealRunDone` / `markMetaIntroSeen` / `shouldShowMetaIntro`
+  / the post-run trigger and menu overlay. `starterCreditsGranted` stays (one-time CR guard).
+- **Verified:** clean build; on-device — the meta intro renders as a clean opaque screen
+  (150 CR, three routes), no menu bleed-through (temp force reverted).
+
 ## Run #52 — Fix onboarding Level 3 input lock (2026-06-08)
 Maintainer hit a hard stop: "training breaks from the Fever onwards — can't click the
 fevers, and can't click the white power-up." Two bugs in `OnboardingView.handle`:

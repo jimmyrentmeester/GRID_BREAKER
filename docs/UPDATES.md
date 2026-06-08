@@ -2,6 +2,14 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.10 — Onboarding is one full flow (2026-06-08)
+- New players now go through the whole tutorial up front in one sitting: the three
+  practice levels, the starter-CR payday, then a guided first Cyberdeck upgrade and a
+  cosmetic equip — before hitting the menu.
+- Re-running the tutorial from Settings replays the entire thing (no extra CR the second
+  time). The "you're banking CR" screen is now a clean full screen instead of a faint
+  pop-up over the menu.
+
 ## 1.0.9 — Guided first upgrade & look (2026-06-08)
 - The "you're banking CR" intro now actually walks you through it: opening the Cyberdeck
   guides your first upgrade, then hands you to Cosmetics to equip a look — a quick, skippable

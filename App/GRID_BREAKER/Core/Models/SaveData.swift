@@ -30,12 +30,8 @@ struct SaveData: Codable, Sendable {
     var campaignProgress: Int = 0
     /// Whether the how-to-play explainer has been shown once.
     var tutorialSeen: Bool = false
-    /// Whether the one-time starter-CR "payday" has been granted (after onboarding).
+    /// Whether the one-time starter-CR "payday" has been granted (during onboarding).
     var starterCreditsGranted: Bool = false
-    /// Whether the player has finished at least one real run (gates the meta-loop intro).
-    var firstRealRunDone: Bool = false
-    /// Whether the post-first-run meta-loop intro (Cyberdeck/Cosmetics) has been shown.
-    var metaIntroSeen: Bool = false
     /// Cosmetic palette IDs the player owns (Classic is always owned).
     var ownedPaletteIDs: [String] = ["classic"]
     /// Currently equipped palette ID.
@@ -49,7 +45,7 @@ struct SaveData: Codable, Sendable {
         case version, cyberdeck, highScores, soundEnabled, hapticsEnabled, campaignProgress, tutorialSeen
         case musicVolume, sfxVolume, dailyBestScore, dailyBestDay
         case ownedPaletteIDs, equippedPaletteID, ownedTrailIDs, equippedTrailID
-        case starterCreditsGranted, firstRealRunDone, metaIntroSeen
+        case starterCreditsGranted
     }
 
     static let empty = SaveData()
@@ -114,8 +110,6 @@ extension SaveData {
         campaignProgress = try c.decodeIfPresent(Int.self, forKey: .campaignProgress) ?? campaignProgress
         tutorialSeen = try c.decodeIfPresent(Bool.self, forKey: .tutorialSeen) ?? tutorialSeen
         starterCreditsGranted = try c.decodeIfPresent(Bool.self, forKey: .starterCreditsGranted) ?? starterCreditsGranted
-        firstRealRunDone = try c.decodeIfPresent(Bool.self, forKey: .firstRealRunDone) ?? firstRealRunDone
-        metaIntroSeen = try c.decodeIfPresent(Bool.self, forKey: .metaIntroSeen) ?? metaIntroSeen
         ownedPaletteIDs = try c.decodeIfPresent([String].self, forKey: .ownedPaletteIDs) ?? ownedPaletteIDs
         if !ownedPaletteIDs.contains("classic") { ownedPaletteIDs.append("classic") }
         equippedPaletteID = try c.decodeIfPresent(String.self, forKey: .equippedPaletteID) ?? equippedPaletteID
