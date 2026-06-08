@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.19 — Pre-run countdown (2026-06-08)
+- Every run now opens with a quick, in-theme "// SYNC" countdown — 3·2·1 with a neon
+  number and a scanline sweeping across the screen, then BREACH and you're in. The clock
+  is held until GO, so you start fair. Works in every mode and on retry.
+
 ## 1.0.18 — Armored kill resolves upward (2026-06-08)
 - Cracking and decoding an armored daemon now sounds right: the first tap is a lower,
   tense "crack" and the second tap resolves on a brighter, higher "unlock!" — a rising,

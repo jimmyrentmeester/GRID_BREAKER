@@ -3,6 +3,20 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #64 — Pre-run "sync" countdown (every mode) (2026-06-08)
+Maintainer: every mode should open with a cool, small, in-theme countdown.
+- **`CountdownOverlay`** + `startCountdown()` in GameView: holds the engine paused through
+  a 3·2·1 beat and releases it on GO. Visual: a "// SYNC" tag, a big neon mono number that
+  snaps in (spring), a neon scanline sweeping down across the screen each beat, then
+  "// EXECUTE / BREACH" in gold on GO. Each beat ticks `.uiTap` + a light haptic; GO plays
+  `.fever` + a success haptic. Reduce-Motion shows the number statically (no sweep).
+- **Every mode + retry:** fires on entry for endless/flow/daily; for campaign it follows
+  the core briefing's JACK IN; and on RETRY/RECONNECT after a restart. The model is paused
+  for the whole count (RAM/clock held), pause-overlay suppressed meanwhile.
+- **Verified:** clean build; on-device (temp-held) — the "// SYNC" overlay + neon number +
+  scanline render over the frozen board (RAM held at 20 s = paused). GO uses the existing
+  unpause path. Couldn't catch the live ~2 s sequence at tool latency.
+
 ## Run #63 — Armored two-tap now rises (rewarding resolution) (2026-06-08)
 Maintainer: on the armored ("shield") daemon the 2nd tap sounded lower than the 1st —
 the rewarding kill should resolve *higher*. It used `.breach` (high tick 1568 Hz) then

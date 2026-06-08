@@ -225,6 +225,7 @@ struct GameView: View {
     @State private var showGridExpanded = false
     @State private var showMilestone = false
     @State private var streakPulse = false
+    @State private var countdownValue: Int? = nil   // 3·2·1·0(GO); nil = not counting
     @State private var showBriefing: Bool
     let core: DataCore?                 // nil = endless mode
     let onExit: () -> Void
@@ -304,6 +305,28 @@ struct GameView: View {
         let t = max(1, s.comboThreshold)
         let cyc = s.combo % t
         return (s.combo > 0 && cyc == 0) ? 1 : Double(cyc) / Double(t)
+    }
+
+    /// Run the pre-game "sync" countdown (every mode): hold the engine paused through
+    /// 3·2·1, release it on GO. Each beat ticks an SFX + haptic.
+    private func startCountdown() {
+        guard countdownValue == nil else { return }
+        model.pause()
+        let h = Haptics()
+        Task { @MainActor in
+            for n in [3, 2, 1] {
+                countdownValue = n
+                AudioEngine.shared.play(.uiTap)
+                h.impact(.light)
+                try? await Task.sleep(nanoseconds: 560_000_000)
+            }
+            countdownValue = 0                 // GO
+            AudioEngine.shared.play(.fever)
+            h.success()
+            model.unpause()                    // the run begins on GO
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            countdownValue = nil
+        }
     }
 
     var body: some View {
@@ -443,15 +466,20 @@ struct GameView: View {
                 .padding(.bottom, 28)
             }
 
-            if model.isPaused && !showBriefing {
+            if model.isPaused && !showBriefing && countdownValue == nil {
                 PauseOverlay(onResume: { model.unpause() }, onQuit: onExit)
+            }
+
+            // In-theme "sync" countdown before the run starts (every mode).
+            if let v = countdownValue, !model.snapshot.isGameOver {
+                CountdownOverlay(value: v, reduceMotion: reduceMotion)
             }
 
             if showBriefing, let b = briefing {
                 CoreBriefingOverlay(feature: b, coreName: core?.name ?? "DATA CORE",
                                     target: core?.targetScore ?? 0) {
                     showBriefing = false
-                    model.unpause()
+                    startCountdown()
                 }
             }
 
@@ -461,7 +489,7 @@ struct GameView: View {
                                 daily: daily,
                                 outcome: outcome,
                                 isFinalCore: core.map { $0.id >= Campaign.count } ?? false,
-                                onReplay: { outcome = nil; model.restart(seed: fixedSeed ?? GameView.freshSeed()) },
+                                onReplay: { outcome = nil; model.restart(seed: fixedSeed ?? GameView.freshSeed()); startCountdown() },
                                 onNext: (model.snapshot.didWin && onNext != nil) ? onNext : nil,
                                 onExit: onExit)
             }
@@ -480,7 +508,8 @@ struct GameView: View {
         }
         .onAppear {
             model.reduceMotion = reduceMotion
-            if showBriefing { model.pause() }   // hold the clock until the briefing is dismissed
+            model.pause()                       // hold the clock for the briefing / countdown
+            if !showBriefing { startCountdown() }
         }
         .onChange(of: reduceMotion) { _, new in model.reduceMotion = new }
         .onChange(of: model.snapshot.isGameOver) { _, over in
@@ -1183,6 +1212,60 @@ private struct PauseOverlay: View {
             }
             .padding(32)
         }
+    }
+}
+
+/// A compact, in-theme pre-run countdown: a "// SYNC" tag, a big mono 3·2·1 that snaps
+/// in, a neon scanline sweeping across the screen each beat, then "BREACH" on GO.
+private struct CountdownOverlay: View {
+    let value: Int            // 3,2,1 or 0 = GO
+    let reduceMotion: Bool
+    @State private var pop = false
+    @State private var sweep = false
+
+    private var isGo: Bool { value <= 0 }
+    private var color: Color { isGo ? NeonTheme.gold : NeonTheme.cyan }
+    private var label: String { isGo ? "BREACH" : "\(value)" }
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                Color.black.opacity(0.22).ignoresSafeArea()
+                // Scanline sweeping down across the screen on each beat.
+                Rectangle()
+                    .fill(LinearGradient(colors: [.clear, color.opacity(0.6), .clear],
+                                         startPoint: .leading, endPoint: .trailing))
+                    .frame(height: 2)
+                    .neonGlow(color, radius: 6)
+                    .position(x: geo.size.width / 2,
+                              y: geo.size.height * (sweep ? 0.78 : 0.22))
+                    .opacity(reduceMotion ? 0 : 0.85)
+
+                VStack(spacing: 6) {
+                    Text(isGo ? "// EXECUTE" : "// SYNC")
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textDim).tracking(3)
+                    Text(label)
+                        .font(.system(size: isGo ? 50 : 74, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(color)
+                        .neonGlow(color, radius: 16)
+                        .monospacedDigit()
+                        .scaleEffect(pop ? 1.0 : 1.45)
+                        .opacity(pop ? 1 : 0)
+                }
+            }
+            .onAppear(perform: beat)
+            .onChange(of: value) { _, _ in beat() }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func beat() {
+        guard !reduceMotion else { pop = true; return }
+        pop = false; sweep = false
+        withAnimation(.spring(response: 0.30, dampingFraction: 0.6)) { pop = true }
+        withAnimation(.easeOut(duration: 0.52)) { sweep = true }
     }
 }
 
