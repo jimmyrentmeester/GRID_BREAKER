@@ -3,6 +3,23 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #65 — Cooler app icon + animated boot splash (2026-06-08)
+Pre-release polish (#1 of the maintainer's two): a much cooler logo + splash.
+- **New app icon** (`AppIcon/icon1024.png`, regenerated, opaque): a glowing neon 3×3 grid
+  with a "breached" magenta center cell — a white-hot core with cracks shattering out
+  through the grid. Drawn via a CoreGraphics generator (script in /tmp/makeicon.swift);
+  on-brand "GRID_BREAKER", reads at small sizes. On-device home-screen check passed.
+- **Animated boot splash** (`BootSplash` in RootView, shown on cold launch over the menu):
+  the wordmark resolves out of an RGB-split glitch with a swelling neon glow, a scanline
+  sweeps down, a "SYNCING GRID… → SYSTEM ONLINE" sync bar fills, then a flash hands off to
+  the menu (~1.85 s, tap-to-skip, static under Reduce Motion). A uiTap on start + a fever
+  sting on ONLINE.
+- **Verified:** clean build; on-device — the boot splash renders (glowing wordmark +
+  subtitle + scanline + sync bar) and the new icon shows on the home screen (temp hold for
+  the splash screenshot, reverted).
+- Note: the storyboard `LaunchScreen` (instant system placeholder) is unchanged; the
+  animated splash plays right after it.
+
 ## Run #64 — Pre-run "sync" countdown (every mode) (2026-06-08)
 Maintainer: every mode should open with a cool, small, in-theme countdown.
 - **`CountdownOverlay`** + `startCountdown()` in GameView: holds the engine paused through

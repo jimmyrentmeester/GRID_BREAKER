@@ -10,6 +10,7 @@ struct RootView: View {
     @State private var pulse = false
     @State private var onboardingPayday = true   // first-launch onboarding pays out CR
     @State private var guidedTour: GuidedStep = .none   // meta-loop guided shop tour
+    @State private var showBoot = true            // animated boot splash on cold launch
 
     private enum Screen { case menu, endless, daily, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial, settings }
     /// The guided onboarding tour through the shops (Phase C): buy → equip → done.
@@ -101,6 +102,12 @@ struct RootView: View {
                 SettingsView(store: store,
                              onTutorial: { tap(); onboardingPayday = false; screen = .tutorial },
                              onBack: { screen = .menu }).transition(.opacity)
+            }
+
+            // Animated neon boot splash on cold launch (covers the menu until done).
+            if showBoot {
+                BootSplash { withAnimation(.easeInOut(duration: 0.4)) { showBoot = false } }
+                    .transition(.opacity)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: screen)
@@ -252,6 +259,110 @@ private struct MenuTile: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// Animated neon "boot sequence" splash on cold launch: the wordmark resolves out of an
+/// RGB-split glitch, a scanline sweeps, a sync bar fills to ONLINE, then a flash hands off
+/// to the menu. Tap to skip. Static under Reduce Motion.
+private struct BootSplash: View {
+    let onDone: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var split: CGFloat = 10     // RGB-split that converges (decrypt resolve)
+    @State private var glow: CGFloat = 6
+    @State private var subIn = false
+    @State private var boot: CGFloat = 0
+    @State private var online = false
+    @State private var flash = false
+    @State private var scan = false
+    @State private var started = false
+    @State private var done = false
+
+    private var title: some View {
+        Text("GRID_BREAKER").font(.system(size: 38, weight: .heavy, design: .monospaced))
+    }
+
+    var body: some View {
+        ZStack {
+            NeonTheme.background.ignoresSafeArea()
+            GridBackdrop().ignoresSafeArea().opacity(0.55)
+            GeometryReader { geo in
+                Rectangle()
+                    .fill(LinearGradient(colors: [.clear, NeonTheme.cyan.opacity(0.30), .clear],
+                                         startPoint: .top, endPoint: .bottom))
+                    .frame(height: 150)
+                    .offset(y: scan ? geo.size.height : -170)
+                    .blendMode(.screen)
+            }
+            .allowsHitTesting(false)
+
+            VStack(spacing: 14) {
+                Spacer()
+                ZStack {
+                    title.foregroundStyle(NeonTheme.cyan).offset(x: -split).opacity(0.85)
+                    title.foregroundStyle(NeonTheme.magenta).offset(x: split).opacity(0.85)
+                    title.foregroundStyle(.white)
+                }
+                .neonGlow(NeonTheme.cyan, radius: glow)
+                Text("// netrunner reflex hack")
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .foregroundStyle(NeonTheme.magenta)
+                    .opacity(subIn ? 1 : 0)
+                Spacer()
+                VStack(spacing: 6) {
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color.white.opacity(0.08))
+                            Capsule().fill(NeonTheme.cyan).frame(width: geo.size.width * boot)
+                                .neonGlow(NeonTheme.cyan, radius: 5)
+                        }
+                    }
+                    .frame(height: 4)
+                    Text(online ? "▸ SYSTEM ONLINE" : "▸ SYNCING GRID…")
+                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(online ? NeonTheme.cyan : NeonTheme.textDim)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxWidth: 280)
+                .padding(.bottom, 44)
+            }
+            .padding(.horizontal, 32)
+
+            if flash { Color.white.opacity(0.4).ignoresSafeArea().allowsHitTesting(false) }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { finish() }
+        .onAppear { run() }
+    }
+
+    private func run() {
+        guard !started else { return }
+        started = true
+        guard !reduceMotion else {
+            split = 0; subIn = true; boot = 1; online = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { finish() }
+            return
+        }
+        withAnimation(.easeOut(duration: 0.55)) { split = 0; glow = 18 }   // resolve glitch
+        withAnimation(.easeInOut(duration: 1.7)) { scan = true }
+        withAnimation(.easeOut(duration: 0.4).delay(0.5)) { subIn = true }
+        withAnimation(.easeInOut(duration: 1.1).delay(0.35)) { boot = 1 }
+        AudioEngine.shared.play(.uiTap)
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_550_000_000)
+            online = true
+            AudioEngine.shared.play(.fever)
+            withAnimation(.easeOut(duration: 0.12)) { flash = true }
+            withAnimation(.easeOut(duration: 0.35)) { flash = false }
+            try? await Task.sleep(nanoseconds: 380_000_000)
+            finish()
+        }
+    }
+
+    private func finish() {
+        guard !done else { return }
+        done = true
+        onDone()
     }
 }
 

@@ -2,6 +2,13 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.20 — New icon + animated boot splash (2026-06-08)
+- Fresh app icon: a glowing neon grid with a breached, white-hot center — properly on
+  theme.
+- Cold launches now open with a slick animated boot sequence: the GRID_BREAKER wordmark
+  glitches in, a scanline sweeps, the grid "syncs online", then you're at the menu. Tap
+  to skip.
+
 ## 1.0.19 — Pre-run countdown (2026-06-08)
 - Every run now opens with a quick, in-theme "// SYNC" countdown — 3·2·1 with a neon
   number and a scanline sweeping across the screen, then BREACH and you're in. The clock
