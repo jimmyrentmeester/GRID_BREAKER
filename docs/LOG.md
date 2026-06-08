@@ -24,6 +24,21 @@ mostly via targets).
   the new targets/times, core 1 briefing ("DECODE THE GRID", target 25) held the clock
   at 40 s, JACK IN started the run.
 
+## Run #45 — Diagnose the Simulator-input issue (2026-06-08)
+Investigated why computer-use taps stopped registering (blocking on-device verification
+for several runs). Root causes found (none in the app):
+1. **`left_click` mis-maps Y → 0** — a click at `(685, 383)` left the cursor at
+   `(685, 0)` (verified via `cursor_position`); `mouse_move` maps correctly.
+2. **Synthetic clicks aren't delivered as iOS touches** — even `mouse_move`
+   (cursor verified on-target) + `left_mouse_down`/`up` doesn't register, on small or
+   large targets. A degraded computer-use→Simulator input bridge.
+3. **Multiple booted sims** — the window showed iPhone 16 Plus while builds targeted
+   iPhone 16 Pro (`45DA7B07`); clicks hit the wrong device.
+Tried and did not fix: Simulator.app restart, single-device, move+down/up. The app
+itself is healthy (renders fine via `simctl io screenshot`; engine fuzz clean).
+Wrote `docs/VERIFICATION_NOTES.md` with the reliable workflow (single device + simctl
+screenshots + temporary in-code autoplay hooks).
+
 ## Run #44 — QA backlog: toast, tutorial, stats (2026-06-08)
 Built the quick wins surfaced by the Run #43 audit.
 - **GRID EXPANDED toast:** `GameViewModel.gridExpandedSeq` (bumped on `.gridExpanded`)
