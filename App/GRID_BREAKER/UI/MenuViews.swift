@@ -591,9 +591,10 @@ struct OnboardingView: View {
     @State private var flashCell: Int? = nil
     @State private var wormCell = 4
     @State private var ram: Double = 0.5         // beat 1: the RAM-clock demo bar
-    @State private var feverHits = 0             // beat 6: chain progress
+    @State private var feverHits = 0             // beat 6: charge progress
     @State private var feverCell = 4
-    @State private var feverOn = false           // beat 6: celebration latch
+    @State private var feverOn = false           // beat 6: fever-active phase
+    @State private var feverGold: Set<Int> = []  // beat 6: gold nodes to clear in Fever
     @State private var powerLabel: String? = nil // beat 7
 
     private let centerCell = 4
@@ -616,7 +617,7 @@ struct OnboardingView: View {
                                        : "Armored daemons take two taps. Tap it."
         case 4: return "Gold data cache — a big bonus. Grab it!"
         case 5: return "The green worm hops — tap it wherever it lands."
-        case 6: return feverOn ? "FEVER! Hazards clear and your score doubles."
+        case 6: return feverOn ? "FEVER! Tap the gold nodes for double points!"
                                : "Chain decodes to charge Fever — keep tapping!"
         case 7: return powerLabel ?? "Grab the white power-up pickup for a burst."
         default: return ""
@@ -794,9 +795,9 @@ struct OnboardingView: View {
     }
 
     @ViewBuilder private func node(_ idx: Int) -> some View {
-        // Fever celebration: the board lights up golden (brief §10.2 look).
+        // Fever active: the board fills with golden bonus nodes you tap to clear.
         if feverOn && beat == 6 {
-            if idx == feverCell || idx == 0 || idx == 8 {
+            if feverGold.contains(idx) {
                 sprite(NeonTheme.gold, "bolt.fill", ringed: true)
             }
         } else {
@@ -837,7 +838,7 @@ struct OnboardingView: View {
     // MARK: Input
 
     private func handle(_ idx: Int) {
-        guard flashCell == nil, !showCard, !feverOn else { return }
+        guard flashCell == nil, !showCard else { return }
         switch beat {
         case 0 where idx == centerCell:
             decode(idx, .decode) { advance() }
@@ -858,19 +859,28 @@ struct OnboardingView: View {
             decode(idx, .decodeBig) { advance() }
         case 5 where idx == wormCell:
             decode(idx, .decodeWorm) { advance() }
-        case 6 where idx == feverCell:
+        case 6 where !feverOn && idx == feverCell:
+            // Charge phase: tap the cyan daemon to fill the combo meter.
             feverHits += 1
             if feverHits >= feverTarget {
                 decode(idx, .decode) {
                     AudioEngine.shared.play(.fever)
-                    withAnimation(.easeInOut(duration: 0.3)) { feverOn = true }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-                        feverOn = false          // release the input lock before moving on
-                        advance()
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        feverOn = true
+                        feverGold = [0, 2, 4, 6, 8]   // FEVER! gold nodes to clear
                     }
                 }
             } else {
-                decode(idx, .decode) { }         // stay put — just fill the combo meter
+                decode(idx, .decode) { }              // stay put — just fill the meter
+            }
+        case 6 where feverOn && feverGold.contains(idx):
+            // Fever burst: tap the gold bonus nodes to clear them, then move on.
+            decode(idx, .decodeBig) {
+                feverGold.remove(idx)
+                if feverGold.isEmpty {
+                    feverOn = false
+                    advance()
+                }
             }
         case 7 where idx == centerCell:
             AudioEngine.shared.play(.fever)

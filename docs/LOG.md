@@ -3,6 +3,19 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #54 — Make the tutorial Fever interactive (2026-06-08)
+Maintainer: the Fever part should be interactive (tap the actual fever squares) before
+moving on to the power-up — it was a static auto-advancing celebration.
+- **Interactive Fever burst:** beat 6 is now two phases. Charge as before (tap the cyan
+  daemon ×4 to fill the meter) → **FEVER**: the board fills with 5 golden bonus nodes
+  (`feverGold = [0,2,4,6,8]`) that the player taps to clear; only when all are cleared
+  does it advance to the power-up. Replaces the 1.4 s static flash + auto-advance.
+- Dropped `!feverOn` from the input guard (Fever is now a play phase, not a lock); the
+  handler splits beat 6 into `!feverOn` charge and `feverOn` burst cases.
+- **Verified:** clean build; on-device temp autoplay (reverted) drove charge → cleared
+  all gold nodes → power-up → Payday, which is only reachable by tapping the gold nodes —
+  proving the burst is interactive and gates the advance.
+
 ## Run #53 — Onboarding: one continuous flow + opaque intro (2026-06-08)
 Maintainer steered the timing (overriding the earlier "Hybrid" pick): the WHOLE tutorial
 should be the first thing new players do, and Settings must replay all of it (without
