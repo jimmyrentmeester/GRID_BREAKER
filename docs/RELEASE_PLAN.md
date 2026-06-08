@@ -16,9 +16,10 @@ A1 + B3/B4 + C in the meantime.
 ---
 
 ## Phase A — Lock the build
-- [ ] **A1 🤖 Final code/QA sweep** — build clean on a fresh checkout; confirm no temp/
-      debug hooks remain; re-run the campaign + endless sims (balance still green) and the
-      engine fuzz (invariants hold); confirm all modes launch.
+- [x] **A1 🤖 Final code/QA sweep** (Run #67) — clean build; no temp/debug residue;
+      version 1.0 / build 1; invariant fuzz **1,440 runs** (60 seeds × starter+maxed deck ×
+      endless + 10 cores + flow) → **0 violations**. Balance was sim-validated when last
+      tuned and is unchanged since.
 - [ ] **A2 👤 On-device playthrough** (real iPhone) — the one thing the sim can't judge:
       audio/SFX mix + haptics feel; full onboarding (3 levels → payday → guided shops);
       the 3·2·1 countdown; streak multiplier + milestones; new cosmetics/cyberdeck;
@@ -30,15 +31,15 @@ A1 + B3/B4 + C in the meantime.
       `CURRENT_PROJECT_VERSION` (build) for each new archive upload.
 
 ## Phase B — Legal & accounts (👤 blockers; 🤖 assists)
-- [ ] **B1 👤 Apple Developer Program** — enroll (€99/yr). The go/no-go vs. the €0 ethos.
-- [ ] **B2 👤 Music rights** — the 5 bundled tracks are AI-generated; confirm the
-      generator's license permits **commercial App Store distribution** (save the
-      terms/receipt). If unsure → 🤖 swaps to royalty-free/CC0 or original (drop-in via
-      `Music/`, no code change).
-- [ ] **B3 🤖→👤 Privacy policy** — 🤖 writes a short "Data Not Collected" policy as a
-      static HTML page; 👤 hosts it (GitHub Pages is free) and gives the public URL.
-- [ ] **B4 🤖→👤 Support page** — Apple requires a **Support URL**. 🤖 drafts a minimal
-      support/contact page (email); 👤 hosts it (same GitHub Pages site) → URL.
+- [~] **B1 👤 Apple Developer Program** — maintainer **approved** the €99/yr enrollment;
+      action: enroll at developer.apple.com.
+- [x] **B2 👤 Music rights** — maintainer decision: keep the Gemini-generated tracks
+      as-is. (Risk noted: verify the tool's terms allow commercial distribution before
+      submit; swap is drop-in if ever needed.)
+- [~] **B3 🤖→👤 Privacy policy** — written: `docs/site/privacy.html` ("Data Not
+      Collected"). 👤 to: set the contact email + host (see `docs/site/README.md`) → URL.
+- [~] **B4 🤖→👤 Support page** — written: `docs/site/support.html` (+ `index.html`
+      landing). 👤 to: set email + host → Support URL.
 
 ## Phase C — Store listing content (🤖 produces, 👤 reviews)
 - [ ] **C1 🤖 Screenshots** — required iPhone sizes **6.9"** (iPhone 16 Pro Max) and
