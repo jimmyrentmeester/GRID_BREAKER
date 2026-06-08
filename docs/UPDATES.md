@@ -8,6 +8,11 @@ Short, human-readable changelog (newest first).
   briefing the first time you meet it. Levels run longer with higher score targets,
   ramping to the finale.
 
+## 0.28 — Power-up effects on the grid (2026-06-08)
+- Power-ups now show their effect *on the grid* instead of a banner over it: Freeze
+  frosts the (stopped) board, Overclock energises it with a gold glow, and Purge sweeps
+  it with a shockwave. Clearer and out of the way of play.
+
 ## 0.26 — Clearer power-ups (2026-06-08)
 - Grabbing a power-up now flashes a bold, colour-coded callout of exactly what it does
   (TIME FREEZE / OVERCLOCK ×2 / PURGE), so the effect is unmistakable.

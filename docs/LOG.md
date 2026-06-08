@@ -24,6 +24,20 @@ mostly via targets).
   the new targets/times, core 1 briefing ("DECODE THE GRID", target 25) held the clock
   at 40 s, JACK IN started the run.
 
+## Run #36 — Power-up feedback reworked to be diegetic (2026-06-08)
+The Run #34 centered banner overlapped the grid and got in the way. Replaced it with
+feedback expressed **on the grid itself** (adds to play, never blocks it).
+- **Removed** `PowerUpFlash` (the big banner) + the full-screen freeze tint.
+- New `GridPowerFX` overlay scoped to the board: **Freeze** frosts it (icy fill +
+  border + glow) while the nodes are already stopped; **Overclock** energizes it with a
+  pulsing gold edge; **Purge** fires a one-shot cyan shockwave ring. Non-interactive,
+  never covers the nodes. Duration effects read from `freezeActive`/`overclockActive`;
+  purge is triggered one-shot from the collect event (`purgeTrigger`). Reduce-motion
+  aware. The Data Core label (FREEZE/OVERCLOCK) stays as the unobtrusive name.
+- **Verified:** clean build; on-device — collecting Overclock glowed a gold energized
+  border around the grid (with ×2 score); Freeze froze the board (nodes held, RAM held,
+  icy frost). Temp spawn/RAM/duration boosts + autoplay reverted.
+
 ## Run #34 — Power-up collect flash (2026-06-08)
 Power-ups now announce their effect clearly the instant they're tapped.
 - New `PowerUpFlash` overlay: a bold, color-coded burst (icon + name + effect) —

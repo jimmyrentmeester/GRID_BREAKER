@@ -187,7 +187,7 @@ struct GameView: View {
     @State private var shakeAnim: CGFloat = 0
     @State private var outcome: SessionOutcome?
     @State private var trailPoints: [TrailPoint] = []
-    @State private var flashKind: PowerUpKind?
+    @State private var purgeTrigger = 0
     @State private var showBriefing: Bool
     let core: DataCore?                 // nil = endless mode
     let onExit: () -> Void
@@ -275,11 +275,6 @@ struct GameView: View {
                 ChillAtmosphere().ignoresSafeArea()
             }
             FeverAtmosphere(active: model.snapshot.feverActive && !model.snapshot.isGameOver).ignoresSafeArea()
-            if model.snapshot.freezeActive && !model.snapshot.isGameOver {
-                // Icy frost while time is frozen.
-                Color(red: 0.5, green: 0.85, blue: 1.0).opacity(0.12)
-                    .ignoresSafeArea().allowsHitTesting(false).transition(.opacity)
-            }
 
             VStack(spacing: 0) {
                 HUDView(snapshot: model.snapshot, coreName: core?.name, chill: chill)
@@ -309,6 +304,12 @@ struct GameView: View {
                           effectSeq: model.effectSeq,
                           drainEffects: model.drainEffects,
                           onTap: { model.tap(cell: $0) })
+                .overlay(
+                    GridPowerFX(freeze: model.snapshot.freezeActive && !model.snapshot.isGameOver,
+                                overclock: model.snapshot.overclockActive && !model.snapshot.isGameOver,
+                                purgeTrigger: purgeTrigger,
+                                reduceMotion: reduceMotion)
+                )
                 .padding(.horizontal, 16)
 
                 Spacer(minLength: 12).frame(maxHeight: 96)
@@ -328,16 +329,9 @@ struct GameView: View {
             // Tap trail (over the grid, under the banners/overlays).
             TrailLayer(points: trailPoints, skin: TrailSkins.equipped, lifetime: 0.6)
 
-            // Fever is announced by the Data Core itself (gold surge + draining arc)
-            // and the gold ×N on the score — no separate banner (it'd overlap them).
-
-            // Power-up effect announcement (transient, on collect).
-            if let flashKind, !model.snapshot.isGameOver {
-                PowerUpFlash(kind: flashKind)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .allowsHitTesting(false)
-                    .transition(.scale(scale: 0.7).combined(with: .opacity))
-            }
+            // Fever / power-ups are shown diegetically: Fever surges the Data Core;
+            // Freeze frosts the (already-stopped) grid; Overclock energizes it; Purge
+            // sweeps it (see GridPowerFX). The Data Core label names the active state.
 
             // Pause button (bottom-leading, out of the way of the grid).
             if !model.snapshot.isGameOver && !model.isPaused {
@@ -406,18 +400,13 @@ struct GameView: View {
             withAnimation(.easeOut(duration: 0.4)) { shakeAnim = 1 }
         }
         .onChange(of: model.powerUpFlashSeq) { _, _ in
-            guard let k = model.powerUpFlashKind else { return }
-            withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.6)) { flashKind = k }
-            let seq = model.powerUpFlashSeq
-            Task {
-                try? await Task.sleep(nanoseconds: 1_100_000_000)
-                if model.powerUpFlashSeq == seq {   // not superseded by a newer pickup
-                    withAnimation(.easeOut(duration: 0.3)) { flashKind = nil }
-                }
-            }
+            // Purge is instant → fire a one-shot grid shockwave. Freeze/Overclock are
+            // duration effects shown via the grid overlay from the snapshot flags.
+            if model.powerUpFlashKind == .purge { purgeTrigger += 1 }
         }
         .animation(.easeInOut(duration: 0.3), value: model.snapshot.feverActive)
         .animation(.easeInOut(duration: 0.3), value: model.snapshot.freezeActive)
+        .animation(.easeInOut(duration: 0.3), value: model.snapshot.overclockActive)
         // Trail follows the finger WITHOUT consuming taps (simultaneous, 0 distance).
         .simultaneousGesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .local)
@@ -861,51 +850,60 @@ private struct NodeSprite: View {
     }
 }
 
-// MARK: - Power-up flash (effect announcement on collect)
+// MARK: - Grid power-up FX (diegetic, scoped to the board)
 
-/// A bold, color-coded burst naming the power-up's effect the instant it's tapped,
-/// so it's clear what just happened. Transient + non-interactive.
-private struct PowerUpFlash: View {
-    let kind: PowerUpKind
+/// Power-up feedback expressed *on the grid* instead of over it: Freeze frosts the
+/// (already-stopped) board, Overclock energizes it with a pulsing gold edge, and Purge
+/// fires a one-shot cyan shockwave. Non-interactive; never obscures the nodes.
+private struct GridPowerFX: View {
+    let freeze: Bool
+    let overclock: Bool
+    let purgeTrigger: Int
+    let reduceMotion: Bool
 
-    private var color: Color {
-        switch kind {
-        case .timeFreeze: return Color(red: 0.5, green: 0.85, blue: 1.0)
-        case .overclock:  return NeonTheme.gold
-        case .purge:      return NeonTheme.magenta
-        }
-    }
-    private var title: String {
-        switch kind {
-        case .timeFreeze: return "TIME FREEZE"
-        case .overclock:  return "OVERCLOCK"
-        case .purge:      return "PURGE"
-        }
-    }
-    private var subtitle: String {
-        switch kind {
-        case .timeFreeze: return "RAM + GRID FROZEN"
-        case .overclock:  return "SCORE ×2"
-        case .purge:      return "FIREWALLS CLEARED"
-        }
-    }
+    @State private var pulse = false
+    @State private var purgeScale: CGFloat = 0
+    @State private var purgeOpacity: Double = 0
+    private let ice = Color(red: 0.6, green: 0.92, blue: 1.0)
 
     var body: some View {
-        VStack(spacing: 10) {
-            Image(systemName: NodeSprite.powerSymbol(kind))
-                .font(.system(size: 46, weight: .bold))
-                .foregroundStyle(color)
-                .neonGlow(color, radius: 14)
-            Text(title)
-                .font(.system(size: 30, weight: .heavy, design: .monospaced))
-                .foregroundStyle(color)
-                .neonGlow(color, radius: 10)
-            Text(subtitle)
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                .foregroundStyle(NeonTheme.textPrimary)
-                .neonGlow(color, radius: 4)
+        ZStack {
+            if freeze {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(LinearGradient(colors: [ice.opacity(0.22), ice.opacity(0.10)],
+                                         startPoint: .top, endPoint: .bottom))
+                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(ice.opacity(0.65), lineWidth: 2))
+                    .neonGlow(ice, radius: 6)
+                    .transition(.opacity)
+            }
+            if overclock {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(NeonTheme.gold, lineWidth: pulse ? 4 : 2)
+                    .neonGlow(NeonTheme.gold, radius: pulse ? 14 : 5)
+                    .opacity(0.85)
+                    .transition(.opacity)
+            }
+            Circle()
+                .stroke(NeonTheme.cyan, lineWidth: 4)
+                .neonGlow(NeonTheme.cyan, radius: 10)
+                .scaleEffect(purgeScale)
+                .opacity(purgeOpacity)
         }
-        .multilineTextAlignment(.center)
+        .allowsHitTesting(false)
+        .onChange(of: overclock) { _, on in startPulse(on) }
+        .onAppear { startPulse(overclock) }
+        .onChange(of: purgeTrigger) { _, _ in
+            guard !reduceMotion else { return }
+            purgeScale = 0.15; purgeOpacity = 0.9
+            withAnimation(.easeOut(duration: 0.55)) { purgeScale = 1.5; purgeOpacity = 0 }
+        }
+    }
+
+    private func startPulse(_ on: Bool) {
+        pulse = false
+        guard on, !reduceMotion else { return }
+        withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) { pulse = true }
     }
 }
 
