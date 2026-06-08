@@ -15,7 +15,7 @@ final class AudioEngine {
     static let shared = AudioEngine()
 
     /// One-shot SFX, each traced to a real game event (mirrors the juice layer).
-    enum SFX { case decode, decodeWorm, decodeBig, breach, miss, bomb, fever, gameOver, uiTap, purchase }
+    enum SFX { case decode, decodeWorm, decodeBig, decodeArmored, breach, miss, bomb, fever, gameOver, uiTap, purchase }
 
     private let engine = AVAudioEngine()
     private let musicPlayer = MusicPlayer()
@@ -218,11 +218,23 @@ final class AudioEngine {
             let sparkle = self.sine(f * 6, t) * self.decayEnv(t, 0.03)       // bright top
             return Float(click * 0.18 + sub * 0.30 + body * 0.34 + bell * 0.13 + sparkle * 0.09)
         }
-        // Armored shell breach: a clean metallic FM tick + a tiny ring (the shell cracking).
+        // Armored shell breach (1st tap): a tense mid-pitched "crack" (G5) that SETS UP
+        // the kill — deliberately lower than `.decodeArmored` so the two taps rise.
         buffers[.breach] = buffer(seconds: 0.09) { _, t in
-            let tick = self.fmBlip(1568, t, glide: 0.0, index: 1.4, ratio: 2.5, decay: 0.016)
-            let ring = self.sine(2349.32, t) * self.decayEnv(t, 0.035)
-            return Float(tick * 0.22 + ring * 0.12)
+            let tick = self.fmBlip(784, t, glide: 0.0, index: 1.5, ratio: 2.5, decay: 0.018)
+            let ring = self.sine(1568, t) * self.decayEnv(t, 0.03)
+            return Float(tick * 0.22 + ring * 0.10)
+        }
+        // Armored kill (2nd tap): the rewarding RESOLUTION — a brighter, higher "unlock!"
+        // (C6) ringing above the breach, with a little warmth for body. Rising = payoff.
+        buffers[.decodeArmored] = buffer(seconds: 0.20) { _, t in
+            let f = 1046.5                                  // C6 — clearly above the G5 breach
+            let click   = self.noise() * self.decayEnv(t, 0.003)
+            let body    = self.fmBlip(f, t, glide: 0.06, index: 1.8, ratio: 2.0, decay: 0.085)
+            let bell    = self.sine(f * 1.5, t) * self.decayEnv(t, 0.12)   // ringing 5th
+            let warmth  = self.sine(f * 0.5, t) * self.decayEnv(t, 0.10)   // body (C5)
+            let sparkle = self.sine(f * 3, t) * self.decayEnv(t, 0.03)
+            return Float(click * 0.13 + body * 0.38 + bell * 0.15 + warmth * 0.16 + sparkle * 0.08)
         }
         // Miss: a low, downward-bending FM "denied" blip with a little grit — same
         // FM family as the hits but dark and dropping (G3, subharmonic ratio).

@@ -137,7 +137,7 @@ final class GameViewModel {
                 switch type {
                 case .armoredDaemon:
                     haptics.impact(fever ? .rigid : .medium, intensity: fever ? 1.0 : 0.9)
-                    audio.play(.decodeBig)
+                    audio.play(.decodeArmored)                    // rising "unlock!" above the breach
                     if !reduceMotion { freezeRemaining = 0.08 }   // hit-stop on the heavy kill
                 case .dataCache:
                     haptics.impact(fever ? .rigid : .medium, intensity: fever ? 1.0 : 0.9)

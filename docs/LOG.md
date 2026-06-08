@@ -3,6 +3,18 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #63 — Armored two-tap now rises (rewarding resolution) (2026-06-08)
+Maintainer: on the armored ("shield") daemon the 2nd tap sounded lower than the 1st —
+the rewarding kill should resolve *higher*. It used `.breach` (high tick 1568 Hz) then
+`.decodeBig` (low 330 Hz) → a descending, anticlimactic pair.
+- **Breach (1st tap)** lowered to a tense G5 (784 Hz) "crack" that sets up the kill.
+- **New `.decodeArmored` (2nd tap):** a brighter, higher C6 (1046 Hz) "unlock!" — FM
+  pluck + a ringing 5th bell + sparkle, with a little C5 warmth for body. The armored
+  kill now uses this (the heavy low `.decodeBig` stays for the single-tap cache grab).
+- Net: the two taps **rise** G5 → C6 (and 0.30 → 0.68 in level) — tension then payoff.
+- **Verified:** clean build; standalone peak check (armored 0.68, breach 0.30 — no
+  clipping, kill clearly above the breach). Audition by ear on device.
+
 ## Run #62 — More rewarding hit-register sounds (2026-06-08)
 Maintainer: make all hit-register SFX more rewarding, on-theme. Applied mobile-game
 hit-feedback principles (layered transient + tonal body + consonant bell sweetener +

@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.18 — Armored kill resolves upward (2026-06-08)
+- Cracking and decoding an armored daemon now sounds right: the first tap is a lower,
+  tense "crack" and the second tap resolves on a brighter, higher "unlock!" — a rising,
+  satisfying one-two instead of the previous high-then-low.
+
 ## 1.0.17 — Juicier hit sounds (2026-06-08)
 - Every decode now sounds more rewarding: the hit SFX got richer and brighter (a punchy
   attack, a bell-like ring, a sparkle and a little shimmer tail), armored/cache kills hit
