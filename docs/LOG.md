@@ -24,6 +24,22 @@ mostly via targets).
   the new targets/times, core 1 briefing ("DECODE THE GRID", target 25) held the clock
   at 40 s, JACK IN started the run.
 
+## Run #44 — QA backlog: toast, tutorial, stats (2026-06-08)
+Built the quick wins surfaced by the Run #43 audit.
+- **GRID EXPANDED toast:** `GameViewModel.gridExpandedSeq` (bumped on `.gridExpanded`)
+  drives a brief cyan pill toast in `GameView`, positioned up by the core (clear of the
+  grid), ~1.6 s, reduce-motion aware — the 4×4 milestone now reads on-screen (was
+  audio+haptic+animation only).
+- **Tutorial:** added a "Special daemons" recap row (gold cache = bonus, green worm =
+  hops) so the how-to covers the new node types too (power-ups were added in Run #41).
+- **TOP RUNS stats:** `HighScoresView` gains a cross-mode header — DAILY BEST +
+  CAMPAIGN x/N stat boxes above the endless leaderboard (was endless-only).
+- **Skipped:** Flow session summary — a forced summary conflicts with Flow's
+  leave-whenever, no-pressure design (D15).
+- **Verified:** clean build. On-device visual confirmation still blocked by the
+  computer-use→Simulator input quirk (taps not delivered, persists across boots — not
+  the app); changes are standard SwiftUI overlays/rows.
+
 ## Run #43 — Full-mode QA pass (fuzz + review) (2026-06-08)
 A "playthrough of all modes" done as a rigorous audit (live tap-through was blocked by
 the same computer-use→Simulator input quirk).

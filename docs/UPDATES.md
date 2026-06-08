@@ -8,6 +8,12 @@ Short, human-readable changelog (newest first).
   briefing the first time you meet it. Levels run longer with higher score targets,
   ramping to the finale.
 
+## 1.0.3 — Polish from a full-mode QA pass (2026-06-08)
+- A "GRID EXPANDED" flash now marks the moment the board grows to 4×4.
+- The how-to-play also explains the gold data caches and green worms.
+- TOP RUNS now shows your daily best and campaign progress alongside the endless
+  leaderboard.
+
 ## 1.0.2 — Audio hang fix + tutorial (2026-06-08)
 - Fixed an intermittent freeze on a button tap that also stopped the music (and left
   it silent). Audio now only re-syncs on real interruptions, and the music reliably

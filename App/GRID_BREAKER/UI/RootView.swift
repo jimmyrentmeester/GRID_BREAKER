@@ -74,7 +74,11 @@ struct RootView: View {
             case .cosmetics:
                 CosmeticsView(store: store, onBack: { screen = .menu }).transition(.opacity)
             case .scores:
-                HighScoresView(scores: store.highScores, onBack: { screen = .menu }).transition(.opacity)
+                HighScoresView(scores: store.highScores,
+                               dailyBest: store.dailyBest(forDay: Self.today().key),
+                               campaignProgress: store.campaignProgress,
+                               campaignTotal: Campaign.count,
+                               onBack: { screen = .menu }).transition(.opacity)
             case .tutorial:
                 TutorialView(onDone: { store.markTutorialSeen(); screen = .menu }).transition(.opacity)
             case .settings:

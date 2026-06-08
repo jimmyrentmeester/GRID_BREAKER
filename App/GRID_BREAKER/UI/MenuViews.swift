@@ -626,6 +626,8 @@ struct TutorialView: View {
                      "It drains over time — decoding tops it up, misses cost time.")
             recapRow("bolt.fill", NeonTheme.gold, "Chain a Fever",
                      "String clean hits for Fever: hazards vanish, score ×2.")
+            recapRow("square.stack.3d.up.fill", NeonTheme.gold, "Special daemons",
+                     "Gold data caches are big bonus points; green worms hop — tap where they land.")
             recapRow("sparkles", NeonTheme.textPrimary, "Grab power-ups",
                      "Tap a white pickup for a burst: ❄ Freeze, ⚡ Overclock (×2), 🌀 Purge bombs.")
             recapRow("bitcoinsign.circle.fill", NeonTheme.gold, "Spend Credits",
@@ -744,14 +746,28 @@ private struct CoreRow: View {
 
 struct HighScoresView: View {
     let scores: [HighScoreEntry]
+    var dailyBest: Int = 0
+    var campaignProgress: Int = 0
+    var campaignTotal: Int = 0
     let onBack: () -> Void
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             Text("TOP RUNS")
                 .font(.system(size: 24, weight: .heavy, design: .monospaced))
                 .foregroundStyle(NeonTheme.cyan)
                 .neonGlow(NeonTheme.cyan, radius: 8)
+
+            // Cross-mode stats.
+            HStack(spacing: 10) {
+                statBox("DAILY BEST", dailyBest > 0 ? "\(dailyBest)" : "—", NeonTheme.magenta)
+                statBox("CAMPAIGN", "\(campaignProgress)/\(campaignTotal)", NeonTheme.gold)
+            }
+
+            Text("ENDLESS")
+                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim).tracking(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             if scores.isEmpty {
                 Spacer()
@@ -782,6 +798,17 @@ struct HighScoresView: View {
             TerminalButton(title: "BACK", color: NeonTheme.magenta, action: onBack)
         }
         .padding(24)
+    }
+
+    private func statBox(_ label: String, _ value: String, _ color: Color) -> some View {
+        VStack(spacing: 2) {
+            Text(value).font(.system(size: 20, weight: .heavy, design: .monospaced)).foregroundStyle(color)
+            Text(label).font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(NeonTheme.textDim)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.white.opacity(0.04))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(color.opacity(0.4), lineWidth: 1)))
     }
 }
 

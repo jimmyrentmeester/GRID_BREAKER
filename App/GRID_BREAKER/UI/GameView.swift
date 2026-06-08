@@ -19,6 +19,8 @@ final class GameViewModel {
     /// The kind + a bump counter for the just-collected power-up (drives a flash).
     private(set) var powerUpFlashKind: PowerUpKind?
     private(set) var powerUpFlashSeq = 0
+    /// Bumped when the grid expands 3×3 → 4×4 (drives a brief toast).
+    private(set) var gridExpandedSeq = 0
     /// Set by the view from the environment; gates motion-heavy juice.
     var reduceMotion = false
     /// Paused → the sim (and its RAM clock) is frozen until unpaused.
@@ -160,6 +162,7 @@ final class GameViewModel {
             case .feverEnded:
                 haptics.impact(.soft)
             case .gridExpanded:
+                gridExpandedSeq += 1                     // drives the toast
                 haptics.success(); audio.play(.fever)   // a positive "grid grew" cue
             case let .powerUpCollected(kind):
                 powerUpFlashKind = kind
@@ -188,6 +191,7 @@ struct GameView: View {
     @State private var outcome: SessionOutcome?
     @State private var trailPoints: [TrailPoint] = []
     @State private var purgeTrigger = 0
+    @State private var showGridExpanded = false
     @State private var showBriefing: Bool
     let core: DataCore?                 // nil = endless mode
     let onExit: () -> Void
@@ -333,6 +337,21 @@ struct GameView: View {
             // Freeze frosts the (already-stopped) grid; Overclock energizes it; Purge
             // sweeps it (see GridPowerFX). The Data Core label names the active state.
 
+            // Brief "grid expanded" toast (positioned up by the core, clear of the grid).
+            if showGridExpanded && !model.snapshot.isGameOver {
+                Text("▦ GRID EXPANDED")
+                    .font(.system(size: 16, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.cyan)
+                    .neonGlow(NeonTheme.cyan, radius: 8)
+                    .padding(.horizontal, 16).padding(.vertical, 8)
+                    .background(Capsule().fill(NeonTheme.background.opacity(0.85))
+                        .overlay(Capsule().stroke(NeonTheme.cyan.opacity(0.6), lineWidth: 1)))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .offset(y: -130)
+                    .allowsHitTesting(false)
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+            }
+
             // Pause button (bottom-leading, out of the way of the grid).
             if !model.snapshot.isGameOver && !model.isPaused {
                 Button { model.pause() } label: {
@@ -402,6 +421,16 @@ struct GameView: View {
             // Purge is instant → fire a one-shot grid shockwave. Freeze/Overclock are
             // duration effects shown via the grid overlay from the snapshot flags.
             if model.powerUpFlashKind == .purge { purgeTrigger += 1 }
+        }
+        .onChange(of: model.gridExpandedSeq) { _, _ in
+            withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.6)) { showGridExpanded = true }
+            let seq = model.gridExpandedSeq
+            Task {
+                try? await Task.sleep(nanoseconds: 1_600_000_000)
+                if model.gridExpandedSeq == seq {
+                    withAnimation(.easeOut(duration: 0.3)) { showGridExpanded = false }
+                }
+            }
         }
         .animation(.easeInOut(duration: 0.3), value: model.snapshot.feverActive)
         .animation(.easeInOut(duration: 0.3), value: model.snapshot.freezeActive)
