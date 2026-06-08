@@ -3,6 +3,21 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #34 — Power-up collect flash (2026-06-08)
+Power-ups now announce their effect clearly the instant they're tapped.
+- New `PowerUpFlash` overlay: a bold, color-coded burst (icon + name + effect) —
+  ❄ TIME FREEZE "RAM + GRID FROZEN" (ice blue), ⚡ OVERCLOCK "SCORE ×2" (gold),
+  🌀 PURGE "FIREWALLS CLEARED" (magenta). Centered, transient (~1.1 s), non-interactive,
+  reduce-motion aware.
+- Driven from the engine event: `GameViewModel` exposes `powerUpFlashKind` +
+  `powerUpFlashSeq` (bumped on `.powerUpCollected`); the view shows the flash on the
+  seq change and clears it after the window (guarded so a newer pickup supersedes).
+  The ongoing core label (FREEZE/OVERCLOCK) + frost overlay remain as the during-effect
+  indicators.
+- **Verified:** clean build; on-device — collecting a power-up showed the OVERCLOCK /
+  SCORE ×2 flash over the core (with the ×2 score + core label). Temp spawn/RAM/flash
+  boosts + autoplay reverted.
+
 ## Run #33 — Daily challenge seed (gameplay 4/4) (2026-06-08)
 The last of the four gameplay additions. A shared, deterministic daily run.
 - **Seed:** `RootView.today()` → a "yyyy-MM-dd" key + a date-derived seed

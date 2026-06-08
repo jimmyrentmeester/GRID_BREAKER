@@ -2,6 +2,10 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.26 — Clearer power-ups (2026-06-08)
+- Grabbing a power-up now flashes a bold, colour-coded callout of exactly what it does
+  (TIME FREEZE / OVERCLOCK ×2 / PURGE), so the effect is unmistakable.
+
 ## 0.25 — Daily Hack challenge (2026-06-08)
 - New DAILY HACK: one shared board per day (everyone gets the same daemon sequence),
   with its own best score to beat. Comes back fresh every day. Replay as much as you

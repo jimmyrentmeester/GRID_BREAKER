@@ -16,6 +16,9 @@ final class GameViewModel {
     private(set) var effectSeq = 0
     /// Bumped to trigger a screen-shake (firewall hit).
     private(set) var shakeTrigger = 0
+    /// The kind + a bump counter for the just-collected power-up (drives a flash).
+    private(set) var powerUpFlashKind: PowerUpKind?
+    private(set) var powerUpFlashSeq = 0
     /// Set by the view from the environment; gates motion-heavy juice.
     var reduceMotion = false
     /// Paused → the sim (and its RAM clock) is frozen until unpaused.
@@ -158,7 +161,9 @@ final class GameViewModel {
                 haptics.impact(.soft)
             case .gridExpanded:
                 haptics.success(); audio.play(.fever)   // a positive "grid grew" cue
-            case .powerUpCollected:
+            case let .powerUpCollected(kind):
+                powerUpFlashKind = kind
+                powerUpFlashSeq += 1                     // drives the effect-announcement flash
                 haptics.success(); audio.play(.fever)   // bright sting on pickup
             case .gameOver:
                 audio.play(.gameOver)
@@ -182,6 +187,7 @@ struct GameView: View {
     @State private var shakeAnim: CGFloat = 0
     @State private var outcome: SessionOutcome?
     @State private var trailPoints: [TrailPoint] = []
+    @State private var flashKind: PowerUpKind?
     let core: DataCore?                 // nil = endless mode
     let onExit: () -> Void
     /// Advance to the next campaign core (nil in endless / on the last core).
@@ -319,6 +325,14 @@ struct GameView: View {
             // Fever is announced by the Data Core itself (gold surge + draining arc)
             // and the gold ×N on the score — no separate banner (it'd overlap them).
 
+            // Power-up effect announcement (transient, on collect).
+            if let flashKind, !model.snapshot.isGameOver {
+                PowerUpFlash(kind: flashKind)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .allowsHitTesting(false)
+                    .transition(.scale(scale: 0.7).combined(with: .opacity))
+            }
+
             // Pause button (bottom-leading, out of the way of the grid).
             if !model.snapshot.isGameOver && !model.isPaused {
                 Button { model.pause() } label: {
@@ -372,6 +386,17 @@ struct GameView: View {
             guard !reduceMotion else { return }
             shakeAnim = 0
             withAnimation(.easeOut(duration: 0.4)) { shakeAnim = 1 }
+        }
+        .onChange(of: model.powerUpFlashSeq) { _, _ in
+            guard let k = model.powerUpFlashKind else { return }
+            withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.6)) { flashKind = k }
+            let seq = model.powerUpFlashSeq
+            Task {
+                try? await Task.sleep(nanoseconds: 1_100_000_000)
+                if model.powerUpFlashSeq == seq {   // not superseded by a newer pickup
+                    withAnimation(.easeOut(duration: 0.3)) { flashKind = nil }
+                }
+            }
         }
         .animation(.easeInOut(duration: 0.3), value: model.snapshot.feverActive)
         .animation(.easeInOut(duration: 0.3), value: model.snapshot.freezeActive)
@@ -815,6 +840,54 @@ private struct NodeSprite: View {
                 .foregroundStyle(color)
                 .neonGlow(color, radius: 4)
         }
+    }
+}
+
+// MARK: - Power-up flash (effect announcement on collect)
+
+/// A bold, color-coded burst naming the power-up's effect the instant it's tapped,
+/// so it's clear what just happened. Transient + non-interactive.
+private struct PowerUpFlash: View {
+    let kind: PowerUpKind
+
+    private var color: Color {
+        switch kind {
+        case .timeFreeze: return Color(red: 0.5, green: 0.85, blue: 1.0)
+        case .overclock:  return NeonTheme.gold
+        case .purge:      return NeonTheme.magenta
+        }
+    }
+    private var title: String {
+        switch kind {
+        case .timeFreeze: return "TIME FREEZE"
+        case .overclock:  return "OVERCLOCK"
+        case .purge:      return "PURGE"
+        }
+    }
+    private var subtitle: String {
+        switch kind {
+        case .timeFreeze: return "RAM + GRID FROZEN"
+        case .overclock:  return "SCORE ×2"
+        case .purge:      return "FIREWALLS CLEARED"
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: NodeSprite.powerSymbol(kind))
+                .font(.system(size: 46, weight: .bold))
+                .foregroundStyle(color)
+                .neonGlow(color, radius: 14)
+            Text(title)
+                .font(.system(size: 30, weight: .heavy, design: .monospaced))
+                .foregroundStyle(color)
+                .neonGlow(color, radius: 10)
+            Text(subtitle)
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundStyle(NeonTheme.textPrimary)
+                .neonGlow(color, radius: 4)
+        }
+        .multilineTextAlignment(.center)
     }
 }
 
