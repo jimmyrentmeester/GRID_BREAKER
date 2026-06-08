@@ -3,6 +3,20 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #55 — Campaign ~30% slower (friendlier) (2026-06-08)
+Maintainer: tune the whole campaign ~30% slower so it's friendlier to new/starting
+players. Campaign cores are time-attacks, so slowing the pace alone would *hurt*
+clearability (fewer scoring chances) — so the clocks were extended to match.
+- **Pace:** new `GameConfig.campaignPace = 1.30` scales the campaign's node lifespan +
+  floor, spawn interval + floor, worm-hop interval, and fever spawn interval (×1.30) —
+  nodes live ~30% longer and the board fills less frantically across every core.
+- **Budgets:** each core's `timeBudget` extended ~30% (40→52 … 54→70) so the higher
+  targets stay reachable at the calmer pace; targets + difficultyBias unchanged.
+- **Verified via multi-skill headless sim** (strong/good/casual reaction, 40 seeds/core,
+  starter deck): all cores clearable; casual now reaches ~core 6 (was ~5), good ~core 9,
+  strong finishes — a friendlier curve, calmer clear times, no crashes across the run
+  (≈1,200 core-plays). Clean app build.
+
 ## Run #54 — Make the tutorial Fever interactive (2026-06-08)
 Maintainer: the Fever part should be interactive (tap the actual fever squares) before
 moving on to the power-up — it was a static auto-advancing celebration.

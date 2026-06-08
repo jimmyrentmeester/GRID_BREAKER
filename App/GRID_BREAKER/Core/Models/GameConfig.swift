@@ -124,8 +124,22 @@ struct GameConfig: Sendable {
         c.wormSpawnChance = 0            // …and no worms (fixed mechanical mix)
         c.powerUpSpawnChance = 0         // …and no power-ups
         c.gridEscalationScore = nil      // cores are hand-tuned for a fixed 3×3
+        // Friendlier campaign pace: ~30% slower across the board (nodes live longer,
+        // spawn less frantically, worms hop slower). The core time budgets are extended
+        // by the same factor so the targets stay reachable at the calmer pace.
+        let pace = Self.campaignPace
+        c.baseNodeLifespan  *= pace
+        c.minNodeLifespan   *= pace
+        c.baseSpawnInterval *= pace
+        c.minSpawnInterval  *= pace
+        c.wormHopInterval   *= pace
+        c.feverSpawnInterval *= pace
         return c
     }
+
+    /// Global campaign pace factor (>1 = slower/friendlier). Time budgets in
+    /// `Campaign.cores` are sized against this so cores stay clearable.
+    static let campaignPace: Double = 1.30
 
     /// Build a core's config from its feature gates (mechanics are introduced
     /// cumulatively up the ladder). Starts from the time-attack base, then enables

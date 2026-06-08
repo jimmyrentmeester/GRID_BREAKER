@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.11 — Gentler campaign (2026-06-08)
+- The whole campaign now plays about 30% slower and more forgiving — daemons linger
+  longer, the board fills less frantically, and each core's clock is extended to match —
+  so new players have more room to learn. Tuned and re-validated across skill levels.
+
 ## 1.0.10 — Onboarding is one full flow (2026-06-08)
 - New players now go through the whole tutorial up front in one sitting: the three
   practice levels, the starter-CR payday, then a guided first Cyberdeck upgrade and a
