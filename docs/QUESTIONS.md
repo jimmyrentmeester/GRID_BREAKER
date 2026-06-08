@@ -16,11 +16,10 @@ Resolved questions move to `DECISIONS.md`.
   (not Core Haptics) — enough fidelity, far less code. [Run #2/M2]
 - **Q2 — Grid progression** → start 3×3, escalate to 4×4 mid-session at a score
   threshold (endless only; campaign/Flow stay 3×3) — D19. [Run #28]
+- **Q1 — Modes** → all four shipped: Endless, Campaign (10 cores, granular intro
+  D13/D21), Flow (D15), Daily challenge (D20). [Runs #7/#23/#33]
 
 ## Open
-- **Q1 — Modes:** Endless high-score only, or also the brief's "campaign" (target
-  score per data core)? Assumption for now: build endless first, campaign later.
-- **Q2 — Grid progression:** Start 3×3 and step up to 4×4 mid-session by score, or
-  pick per session? Assumption: start 3×3, escalate. (Engine already supports 4×4.)
 - **Q6 — Real-device audio listen:** SFX/music verified at engine+buffer level only;
-  confirm they sound right (and balanced vs. game) on a physical device.
+  confirm they sound right (and balanced vs. game) on a physical device — now covers
+  the full FM SFX set, the music/effects volume sliders, and the purchase chime.
