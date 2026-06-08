@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.9 — Guided first upgrade & look (2026-06-08)
+- The "you're banking CR" intro now actually walks you through it: opening the Cyberdeck
+  guides your first upgrade, then hands you to Cosmetics to equip a look — a quick, skippable
+  first-purchase tour. Completes the new onboarding.
+
 ## 1.0.8 — Onboarding payday + CR intro (2026-06-08)
 - Finishing training now pays out 150 starter CR with a satisfying count-up, so you can
   buy something straight away.

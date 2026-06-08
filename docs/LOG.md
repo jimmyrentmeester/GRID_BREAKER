@@ -3,6 +3,26 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #51 — Onboarding Phase C: guided first buy + equip (2026-06-08)
+Final slice of the onboarding proposal — turns the meta-loop intro's "open shop" paths
+into an actual guided first purchase + first equip. Onboarding (Acts 1/1.5/2) now complete.
+- **`GuidedHint` banner:** a reusable one-step coaching banner — a cyan prompt for the
+  required action that flips to a gold "done" state with a forward button once completed.
+- **Cyberdeck (guided):** `CyberdeckView(guided:onGuidedDone:)` shows "Buy your first
+  upgrade — RAM Buffer is a great start"; on a successful purchase the banner flips to
+  "Upgrade installed! …" with a **COSMETICS →** button.
+- **Cosmetics (guided):** `CosmeticsView(guided:onGuidedDone:)` shows "Equip a palette to
+  recolor the whole game"; equipping any palette/trail flips it to "Looking sharp!" with
+  a **DONE** button.
+- **Tour wiring (RootView):** new `GuidedStep` state (`none`/`cyberdeck`/`cosmetics`).
+  The MetaIntroCard's OPEN CYBERDECK starts the tour → guided buy → COSMETICS → guided
+  equip → DONE → menu (COSMETICS button starts it at the equip step). BACK or the menu
+  tiles keep the shops un-guided (tour only starts from the intro card).
+- **Verified:** clean build; on-device — entering the guided Cyberdeck shows the prompt
+  banner above the upgrades with the 150 starter CR (RAM Buffer affordable). The "done"
+  states + Cosmetics banner are symmetric and build-verified (a real purchase/equip needs
+  device input the sim bridge can't drive). Temp hooks reverted.
+
 ## Run #50 — Onboarding Phase B: payday + meta-loop hook (2026-06-08)
 Second slice of the onboarding proposal: the starter-CR "payday" after training and the
 one-time meta-loop intro surfaced after the first real run.

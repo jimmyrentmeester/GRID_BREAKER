@@ -83,15 +83,64 @@ struct PurchaseFlash: View {
     }
 }
 
+// MARK: - Guided onboarding hint (Phase C)
+
+/// A one-step coaching banner shown atop a shop during the onboarding meta-loop tour:
+/// a cyan prompt nudging the required action, flipping to a gold "done" state with a
+/// forward button once the player completes it (buy / equip). Plain banner, no overlay.
+struct GuidedHint: View {
+    let icon: String
+    let text: String
+    var done: Bool = false
+    var actionLabel: String? = nil
+    var action: () -> Void = {}
+
+    private var tint: Color { done ? NeonTheme.gold : NeonTheme.cyan }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: done ? "checkmark.circle.fill" : icon)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(tint)
+                .neonGlow(tint, radius: 5)
+            Text(text)
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .foregroundStyle(NeonTheme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 4)
+            if done, let actionLabel {
+                Button(action: action) {
+                    Text(actionLabel)
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.cyan)
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                        .background(RoundedRectangle(cornerRadius: 8).stroke(NeonTheme.cyan, lineWidth: 1.5))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(TerminalButtonStyle())
+            }
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(tint.opacity(0.10))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint.opacity(0.6), lineWidth: 1)))
+    }
+}
+
 // MARK: - Cyberdeck upgrade screen
 
 /// Spend Credits on permanent Cyberdeck upgrades. The store is the authority for
 /// the purchase (deterministic cost/effect); this view only presents it.
 struct CyberdeckView: View {
     @Bindable var store: GameStore
+    /// When true (entered from the onboarding meta-loop intro), shows a one-step guided
+    /// hint nudging the first purchase, then offers to continue to Cosmetics.
+    var guided: Bool = false
+    var onGuidedDone: () -> Void = {}
     let onBack: () -> Void
     @State private var pending: CyberdeckUpgrade?
     @State private var bought: String?
+    @State private var guidedDone = false
 
     var body: some View {
         ZStack {
@@ -105,6 +154,16 @@ struct CyberdeckView: View {
                     Label("\(store.cyberdeck.credits) CR", systemImage: "bitcoinsign.circle.fill")
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                         .foregroundStyle(NeonTheme.gold)
+                }
+
+                if guided {
+                    GuidedHint(
+                        icon: "cpu.fill",
+                        text: guidedDone ? "Upgrade installed! Now pick a look."
+                                         : "Buy your first upgrade — tap a price. RAM Buffer is a great start.",
+                        done: guidedDone,
+                        actionLabel: guidedDone ? "COSMETICS →" : nil,
+                        action: onGuidedDone)
                 }
 
                 VStack(spacing: 14) {
@@ -127,7 +186,10 @@ struct CyberdeckView: View {
                               onConfirm: {
                                   let ok = store.purchase(p)
                                   pending = nil
-                                  if ok { celebratePurchase($bought, "\(p.title) Lv \(lvl + 1)") }
+                                  if ok {
+                                      celebratePurchase($bought, "\(p.title) Lv \(lvl + 1)")
+                                      if guided { withAnimation(.easeOut(duration: 0.3)) { guidedDone = true } }
+                                  }
                               },
                               onCancel: { pending = nil })
             }
@@ -205,10 +267,15 @@ private struct UpgradeRow: View {
 
 struct CosmeticsView: View {
     @Bindable var store: GameStore
+    /// When true (entered from the onboarding meta-loop intro), nudges the player to
+    /// equip a look, then wraps up the guided tour.
+    var guided: Bool = false
+    var onGuidedDone: () -> Void = {}
     let onBack: () -> Void
     @State private var pending: Palette?
     @State private var pendingTrail: TrailSkin?
     @State private var bought: String?
+    @State private var guidedDone = false
 
     private func sectionLabel(_ s: String) -> some View {
         Text(s).font(.system(size: 11, weight: .semibold, design: .monospaced))
@@ -228,6 +295,16 @@ struct CosmeticsView: View {
                     Label("\(store.cyberdeck.credits) CR", systemImage: "bitcoinsign.circle.fill")
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                         .foregroundStyle(NeonTheme.gold)
+                }
+
+                if guided {
+                    GuidedHint(
+                        icon: "paintpalette.fill",
+                        text: guidedDone ? "Looking sharp — you're all set!"
+                                         : "Equip a palette to recolor the whole game — tap one.",
+                        done: guidedDone,
+                        actionLabel: guidedDone ? "DONE" : nil,
+                        action: onGuidedDone)
                 }
 
                 ScrollView {
@@ -284,6 +361,7 @@ struct CosmeticsView: View {
     private func equip(_ palette: Palette) {
         NeonTheme.current = palette          // apply before the store mutation re-renders
         store.equipPalette(palette.id)
+        if guided { withAnimation(.easeOut(duration: 0.3)) { guidedDone = true } }
     }
     private func purchaseAndEquip(_ palette: Palette) {
         guard store.buyPalette(id: palette.id, cost: palette.cost) else { return }
@@ -299,6 +377,7 @@ struct CosmeticsView: View {
     private func equipTrail(_ skin: TrailSkin) {
         TrailSkins.equipped = skin
         store.equipTrail(skin.id)
+        if guided { withAnimation(.easeOut(duration: 0.3)) { guidedDone = true } }
     }
     private func purchaseAndEquipTrail(_ skin: TrailSkin) {
         guard store.buyTrail(id: skin.id, cost: skin.cost) else { return }

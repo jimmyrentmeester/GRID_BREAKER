@@ -10,8 +10,11 @@ struct RootView: View {
     @State private var pulse = false
     @State private var onboardingPayday = true   // first-launch onboarding pays out CR
     @State private var showMetaIntro = false      // one-time Cyberdeck/Cosmetics intro
+    @State private var guidedTour: GuidedStep = .none   // meta-loop guided shop tour
 
     private enum Screen { case menu, endless, daily, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial, settings }
+    /// The guided onboarding tour through the shops (Phase C): buy → equip → done.
+    private enum GuidedStep { case none, cyberdeck, cosmetics }
 
     private func tap() { AudioEngine.shared.play(.uiTap) }
 
@@ -78,9 +81,15 @@ struct RootView: View {
                         .transition(.opacity)
                 }
             case .cyberdeck:
-                CyberdeckView(store: store, onBack: { screen = .menu }).transition(.opacity)
+                CyberdeckView(store: store,
+                              guided: guidedTour == .cyberdeck,
+                              onGuidedDone: { guidedTour = .cosmetics; screen = .cosmetics },
+                              onBack: { guidedTour = .none; screen = .menu }).transition(.opacity)
             case .cosmetics:
-                CosmeticsView(store: store, onBack: { screen = .menu }).transition(.opacity)
+                CosmeticsView(store: store,
+                              guided: guidedTour == .cosmetics,
+                              onGuidedDone: { guidedTour = .none; screen = .menu },
+                              onBack: { guidedTour = .none; screen = .menu }).transition(.opacity)
             case .scores:
                 HighScoresView(scores: store.highScores,
                                dailyBest: store.dailyBest(forDay: Self.today().key),
@@ -102,8 +111,8 @@ struct RootView: View {
             if showMetaIntro && screen == .menu {
                 MetaIntroCard(
                     credits: store.cyberdeck.credits,
-                    onOpenCyberdeck: { store.markMetaIntroSeen(); showMetaIntro = false; tap(); screen = .cyberdeck },
-                    onOpenCosmetics: { store.markMetaIntroSeen(); showMetaIntro = false; tap(); screen = .cosmetics },
+                    onOpenCyberdeck: { store.markMetaIntroSeen(); showMetaIntro = false; tap(); guidedTour = .cyberdeck; screen = .cyberdeck },
+                    onOpenCosmetics: { store.markMetaIntroSeen(); showMetaIntro = false; tap(); guidedTour = .cosmetics; screen = .cosmetics },
                     onLater: { store.markMetaIntroSeen(); withAnimation { showMetaIntro = false } }
                 )
                 .transition(.opacity)

@@ -1,6 +1,6 @@
 # ONBOARDING PROPOSAL — GRID_BREAKER first-time experience
 
-Status: **proposed** (awaiting go-ahead to implement). Authored from FTUE best
+Status: **IMPLEMENTED** (Runs #49–#51 — Phases A/B/C all done). Authored from FTUE best
 practices + the maintainer's brief. Decisions below are locked (maintainer-chosen).
 
 ## Goal
@@ -85,8 +85,9 @@ Surfaced from the game-over screen (one-time), so CR is earned and motivated:
   meta-loop surfacing (`MetaIntroCard`). Added `starterCreditsGranted` / `firstRealRunDone`
   / `metaIntroSeen` to SaveData; `grantStarterCredits` / `markFirstRealRunDone` /
   `shouldShowMetaIntro` on GameStore.
-- **Phase C:** Guided Cyberdeck purchase + Cosmetics equip (GuidedHint banners) — turn the
-  MetaIntroCard's "open" path into an actual guided first buy + equip.
+- **Phase C — DONE (Run #51):** Guided Cyberdeck purchase + Cosmetics equip via a reusable
+  `GuidedHint` banner; the MetaIntroCard's "open" path now runs a buy → equip → done tour
+  (`GuidedStep` state in RootView). **Onboarding fully implemented.**
 
 ## Deferred / minor open questions
 - Exact starter CR (150 is a placeholder — tune so the first RAM upgrade is affordable
