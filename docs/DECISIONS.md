@@ -167,6 +167,20 @@ flip your audio off or re-show the tutorial. Guarded by the existing `ConfirmDia
 the same shared-singleton/global pattern already used for audio (D12) and cosmetics
 (`NeonTheme.current` D16 / `TrailSkins.equipped` D17), set at launch + on toggle.
 
+## D19 — Endless grid escalates 3×3 → 4×4 mid-session (Q2)
+**2026-06-08.** Endless steps the grid up once score ≥ `gridEscalationScore`
+(default 40), rather than picking a size per session — the run gets a visible
+late-game gear shift while the opening stays approachable (brief §10.3 "ceiling
+grows with score"). Scoped to endless: campaign cores are hand-tuned for a fixed
+3×3 (escalation would break their target/time tuning) and Flow stays a calm fixed
+3×3 — both set `gridEscalationScore = nil`. Live nodes are **remapped** to the same
+top-left cells (`old/3*4 + old%3`, preserving `id`+`hitsRemaining`) so they slide
+into place as the grid grows instead of jumping; `gridSize` became `private(set) var`
+and the change is a real `GameEvent` (`gridExpanded`) so the juice layer (haptic +
+sting + animated resize) traces to engine truth, not a guess. Threshold lives in
+`GameConfig` (one tunable place); verified via the deterministic headless sim + an
+on-device visual check.
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

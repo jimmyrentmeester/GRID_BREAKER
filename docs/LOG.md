@@ -3,6 +3,23 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #28 — 4×4 grid escalation (Q2) (2026-06-08)
+Endless now escalates 3×3 → 4×4 mid-session for a late-game difficulty step.
+- **Config:** `GameConfig.gridEscalationScore` (default 40; nil in `campaign()` and
+  `chill()` — those stay a fixed 3×3). Tunable in one place.
+- **Engine:** `gridSize` is now `private(set) var`; `checkGridEscalation()` (run in
+  the decode path alongside checkFever/checkTarget) grows the grid once score ≥
+  threshold and **remaps live nodes** to the same top-left cells
+  (`old/3*4 + old%3`) preserving `id` + `hitsRemaining`, so they slide into place as
+  a 4th column/row appears rather than jumping. New `GameEvent.gridExpanded`.
+- **Feel:** `gridExpanded` → success haptic + the fever sting; the board tweens its
+  resize (`.animation(value: gridSize)`, reduce-motion aware). `targetActiveNodes`
+  already scales with `cellCount`, so 4×4 naturally allows a fuller board.
+- **Verified:** clean build; headless perfect-player sim — expanded at score 41,
+  grew to 4×4, played on to 65; remap formula unit-checked = [0,1,2,4,5,6,8,9,10].
+  On-device (temp low threshold + autoplay, both reverted): the 4×4 renders cleanly,
+  16 square cells fit the board, HUD/score/Data Core intact.
+
 ## Run #27 — Full SFX set matched to the FM theme (2026-06-08)
 Brought the remaining SFX into the Run #26 FM "decrypt" family (asset-free synth):
 - **miss** = low downward-bending FM "denied" blip (G3, subharmonic ratio) + grit,

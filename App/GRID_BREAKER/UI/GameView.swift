@@ -148,6 +148,8 @@ final class GameViewModel {
                 haptics.success(); audio.play(.fever)
             case .feverEnded:
                 haptics.impact(.soft)
+            case .gridExpanded:
+                haptics.success(); audio.play(.fever)   // a positive "grid grew" cue
             case .gameOver:
                 audio.play(.gameOver)
             }
@@ -693,6 +695,7 @@ private struct GridBoard: View {
                     }
                 }
                 .animation(.easeOut(duration: 0.12), value: snapshot.nodes.map(\.id))
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.45), value: snapshot.gridSize)
 
                 EffectsLayer(cols: cols, cell: cell, spacing: spacing,
                              reduceMotion: reduceMotion, seq: effectSeq, drain: drainEffects)

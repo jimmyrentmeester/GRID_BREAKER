@@ -14,6 +14,8 @@ Resolved questions move to `DECISIONS.md`.
   €0 ethos. [Run #7]
 - **Q5 — Haptics fidelity** → `UIImpactFeedback`/`UINotificationFeedback` generators
   (not Core Haptics) — enough fidelity, far less code. [Run #2/M2]
+- **Q2 — Grid progression** → start 3×3, escalate to 4×4 mid-session at a score
+  threshold (endless only; campaign/Flow stay 3×3) — D19. [Run #28]
 
 ## Open
 - **Q1 — Modes:** Endless high-score only, or also the brief's "campaign" (target

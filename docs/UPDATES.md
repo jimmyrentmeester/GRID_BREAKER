@@ -2,6 +2,11 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.20 — The grid grows (2026-06-08)
+- Push your score far enough in an endless run and the grid expands from 3×3 to 4×4
+  — more targets, faster hands, a real late-game gear shift. Your current daemons
+  slide into place as the grid grows around them. (Campaign & Flow stay 3×3.)
+
 ## 0.19 — Full sound set matched (2026-06-08)
 - The rest of the sound effects now match the new hit sounds: a darker "denied"
   miss, a heavier digital firewall blast, a brighter fever sting, a moody game-over

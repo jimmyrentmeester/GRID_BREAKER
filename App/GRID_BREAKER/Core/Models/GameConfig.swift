@@ -71,6 +71,11 @@ struct GameConfig: Sendable {
     /// by Flow mode to keep a flat, calm pace.
     var fixedActiveNodes: Int? = nil
 
+    /// Endless only: once the score reaches this, the grid grows 3×3 → 4×4 for a
+    /// late-game escalation (nil = never; disabled in campaign/Flow). brief §10.3 /
+    /// QUESTIONS Q2.
+    var gridEscalationScore: Int? = 40
+
     // MARK: Input tolerance (brief 10.7 risk mitigation)
     /// Hitbox is enlarged beyond the visual sprite for touch tolerance.
     var hitboxPadding: CGFloat = 1.20
@@ -91,6 +96,7 @@ struct GameConfig: Sendable {
         c.baseRAMSeconds = timeBudget
         c.bonusStandardDecode = 0
         c.bonusArmoredDecode = 0
+        c.gridEscalationScore = nil      // cores are hand-tuned for a fixed 3×3
         return c
     }
 
@@ -115,6 +121,7 @@ struct GameConfig: Sendable {
         c.lifespanCompression = 0
         c.fixedActiveNodes = 3
         c.feverEnabled = false
+        c.gridEscalationScore = nil      // Flow stays a calm, fixed 3×3
         return c
     }
 

@@ -39,6 +39,7 @@ enum GameEvent: Sendable, Equatable {
     case firewallExploded(cell: Int)        // bomb tapped → game over
     case feverStarted                       // combo hit threshold → Fever Mode
     case feverEnded                         // Fever Mode window elapsed
+    case gridExpanded                       // grid grew 3×3 → 4×4 (endless escalation)
     case gameOver(GameOverReason)
 }
 
@@ -92,7 +93,8 @@ struct SessionSnapshot: Sendable {
 /// directly (ground-truth Part 1.1). Hits register locally with no latency.
 struct GridEngine {
     let config: GameConfig
-    let gridSize: GridSize
+    /// May grow 3×3 → 4×4 mid-session in endless (score-based escalation).
+    private(set) var gridSize: GridSize
     /// Campaign target score (nil = endless). Reaching it wins the core.
     let targetScore: Int?
     /// Difficulty offset: scaling is computed from `score + difficultyBias`, so a
@@ -241,14 +243,14 @@ struct GridEngine {
             return [.firewallExploded(cell: cell), endGame(.firewallHit)]
 
         case .standardDaemon:
-            return [decode(at: idx)] + checkFever() + checkTarget()
+            return [decode(at: idx)] + checkFever() + checkTarget() + checkGridEscalation()
 
         case .armoredDaemon:
             if nodes[idx].hitsRemaining > 1 {
                 nodes[idx].hitsRemaining -= 1   // breach the shell
                 return [.nodeBreached(cell: nodes[idx].cellIndex)]
             } else {
-                return [decode(at: idx)] + checkFever() + checkTarget()
+                return [decode(at: idx)] + checkFever() + checkTarget() + checkGridEscalation()
             }
         }
     }
@@ -257,6 +259,23 @@ struct GridEngine {
     private mutating func checkTarget() -> [GameEvent] {
         guard !isGameOver, let target = targetScore, score >= target else { return [] }
         return [endGame(.coreCracked)]
+    }
+
+    /// Endless escalation: at the threshold, grow the grid 3×3 → 4×4. Existing nodes
+    /// keep their top-left position (remapped to the larger grid) so they slide into
+    /// place rather than jumping as a 4th column/row appears around them.
+    private mutating func checkGridEscalation() -> [GameEvent] {
+        guard !isGameOver, gridSize == .threeByThree,
+              let threshold = config.gridEscalationScore, score >= threshold else { return [] }
+        gridSize = .fourByFour
+        nodes = nodes.map { node in
+            let remapped = (node.cellIndex / 3) * 4 + (node.cellIndex % 3)
+            var n = GridNode(id: node.id, cellIndex: remapped, type: node.type,
+                             lifespan: node.lifespan, spawnedAt: node.spawnedAt)
+            n.hitsRemaining = node.hitsRemaining   // preserve a breached shell
+            return n
+        }
+        return [.gridExpanded]
     }
 
     /// Start Fever Mode if a fresh decode pushed the combo to threshold.
