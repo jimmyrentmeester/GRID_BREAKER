@@ -3,6 +3,24 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #68 — New terminal icon + cleaned splash (2026-06-08)
+Maintainer disliked the grid icon (wants cyber/hacky, no grid) and still saw the old
+static splash.
+- **New app icon:** a neon **terminal prompt `>_`** — a cyan chevron + a magenta cursor
+  block on a dark radial glow (no grid). Picked from 3 concepts (Hex Core / Glitch Bolt /
+  Terminal); generator at `scripts/makeicon.swift`. On-device home-screen check passed.
+- **Launch splash cleaned:** removed the grid `LaunchLogo` image from
+  `LaunchScreen.storyboard` (and deleted the unused `LaunchLogo.imageset`) so the static
+  launch screen is just the dark GRID_BREAKER wordmark — a seamless handoff to the
+  animated BootSplash, no grid anywhere.
+- **Verified:** clean build; new icon on the home screen; storyboard valid.
+
+## Run #67 — Release prep: QA sweep + privacy/support pages (2026-06-08)
+First release steps (RELEASE_PLAN A1 + B3/B4). Clean build, no debug residue, v1.0/build1;
+invariant fuzz 1,440 runs (all modes × starter+maxed deck) → 0 violations. Wrote
+`docs/site/{privacy,support,index}.html` (self-contained neon) for the App Store Privacy +
+Support URLs, with a hosting README — maintainer to set the contact email + host.
+
 ## Run #66 — Fuller Cosmetics + Cyberdeck (2026-06-08)
 Pre-release polish (#2): more interesting shop content.
 - **Cosmetics — palettes 5→8:** added **Ultraviolet** (violet/pink/ice, 800), **Inferno**
