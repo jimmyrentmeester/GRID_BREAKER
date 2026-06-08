@@ -8,6 +8,10 @@ Short, human-readable changelog (newest first).
   briefing the first time you meet it. Levels run longer with higher score targets,
   ramping to the finale.
 
+## 0.30 — Rewarding purchases (2026-06-08)
+- Buying an upgrade or cosmetic now lands with a satisfying "ACQUIRED" flash, a bright
+  confirm chime, and a success buzz.
+
 ## 0.29 — Redesigned main menu (2026-06-08)
 - The main menu is cleaner and easier to read: a big JACK IN button up top, your
   modes and shop grouped into labelled tiles with icons, your best/credits at a glance,

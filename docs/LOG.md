@@ -24,6 +24,18 @@ mostly via targets).
   the new targets/times, core 1 briefing ("DECODE THE GRID", target 25) held the clock
   at 40 s, JACK IN started the run.
 
+## Run #38 — Purchase reward feedback (2026-06-08)
+Buying in a shop now feels rewarding on completion (visual + audio).
+- New `.purchase` SFX: a bright ascending FM-bell arpeggio ("acquired").
+- Shared `celebratePurchase(_:_:)` helper + `PurchaseFlash` overlay: a gold
+  "ACQUIRED · <item>" card (checkmark seal, glow, scale-in), success haptic, and the
+  chime — auto-dismissed (~1.3 s). Wired into Cyberdeck (upgrade Lv) and Cosmetics
+  (palette/trail) on a *successful* buy only.
+- **Verified:** clean build; on-device — buying a trail deducted Credits, equipped it,
+  and showed the gold ACQUIRED flash (captured with a temporarily lengthened window;
+  the live 1.3 s flash kept being missed by screenshot latency). Temp cosmetic
+  price/flash-duration overrides reverted.
+
 ## Run #37 — Main menu redesign (hierarchy + grouping) (2026-06-08)
 Reworked the menu from 7 equal rainbow buttons into a clear hierarchy (D22).
 - **Primary CTA:** a large filled JACK IN (play icon + "ENDLESS").

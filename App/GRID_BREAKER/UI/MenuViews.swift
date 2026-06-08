@@ -40,6 +40,49 @@ struct ConfirmDialog: View {
     }
 }
 
+// MARK: - Purchase celebration (shared by the shops)
+
+/// Fire the rewarding feedback for a completed purchase: a sound, a success haptic,
+/// and a brief "ACQUIRED" flash (auto-dismissed). Shared by Cyberdeck + Cosmetics.
+@MainActor
+func celebratePurchase(_ bought: Binding<String?>, _ name: String) {
+    AudioEngine.shared.play(.purchase)
+    Haptics().success()
+    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { bought.wrappedValue = name }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
+        withAnimation(.easeOut(duration: 0.3)) {
+            if bought.wrappedValue == name { bought.wrappedValue = nil }
+        }
+    }
+}
+
+/// A brief gold "ACQUIRED" reward card shown over a shop on a completed buy.
+struct PurchaseFlash: View {
+    let name: String
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 46, weight: .bold))
+                .foregroundStyle(NeonTheme.gold).neonGlow(NeonTheme.gold, radius: 16)
+            Text("ACQUIRED")
+                .font(.system(size: 24, weight: .heavy, design: .monospaced))
+                .foregroundStyle(NeonTheme.gold).neonGlow(NeonTheme.gold, radius: 8)
+            Text(name)
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundStyle(NeonTheme.textPrimary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(30)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(NeonTheme.background.opacity(0.92))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(NeonTheme.gold.opacity(0.6), lineWidth: 1.5)))
+        .neonGlow(NeonTheme.gold, radius: 10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .allowsHitTesting(false)
+        .transition(.scale(scale: 0.8).combined(with: .opacity))
+    }
+}
+
 // MARK: - Cyberdeck upgrade screen
 
 /// Spend Credits on permanent Cyberdeck upgrades. The store is the authority for
@@ -48,6 +91,7 @@ struct CyberdeckView: View {
     @Bindable var store: GameStore
     let onBack: () -> Void
     @State private var pending: CyberdeckUpgrade?
+    @State private var bought: String?
 
     var body: some View {
         ZStack {
@@ -80,9 +124,14 @@ struct CyberdeckView: View {
                 let lvl = p.currentLevel(in: store.cyberdeck)
                 ConfirmDialog(title: "CONFIRM PURCHASE",
                               message: "\(p.title) → Lv \(lvl + 1)\n\(p.cost(atLevel: lvl)) CR",
-                              onConfirm: { store.purchase(p); pending = nil },
+                              onConfirm: {
+                                  let ok = store.purchase(p)
+                                  pending = nil
+                                  if ok { celebratePurchase($bought, "\(p.title) Lv \(lvl + 1)") }
+                              },
                               onCancel: { pending = nil })
             }
+            if let bought { PurchaseFlash(name: bought) }
         }
     }
 }
@@ -151,6 +200,7 @@ struct CosmeticsView: View {
     let onBack: () -> Void
     @State private var pending: Palette?
     @State private var pendingTrail: TrailSkin?
+    @State private var bought: String?
 
     private func sectionLabel(_ s: String) -> some View {
         Text(s).font(.system(size: 11, weight: .semibold, design: .monospaced))
@@ -214,6 +264,7 @@ struct CosmeticsView: View {
                               onConfirm: { purchaseAndEquipTrail(t); pendingTrail = nil },
                               onCancel: { pendingTrail = nil })
             }
+            if let bought { PurchaseFlash(name: bought) }
         }
     }
 
@@ -229,6 +280,7 @@ struct CosmeticsView: View {
     private func purchaseAndEquip(_ palette: Palette) {
         guard store.buyPalette(id: palette.id, cost: palette.cost) else { return }
         equip(palette)
+        celebratePurchase($bought, "\(palette.name) palette")
     }
 
     // MARK: Tap trails
@@ -243,6 +295,7 @@ struct CosmeticsView: View {
     private func purchaseAndEquipTrail(_ skin: TrailSkin) {
         guard store.buyTrail(id: skin.id, cost: skin.cost) else { return }
         equipTrail(skin)
+        celebratePurchase($bought, "\(skin.name) trail")
     }
 }
 

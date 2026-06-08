@@ -15,7 +15,7 @@ final class AudioEngine {
     static let shared = AudioEngine()
 
     /// One-shot SFX, each traced to a real game event (mirrors the juice layer).
-    enum SFX { case decode, decodeBig, breach, miss, bomb, fever, gameOver, uiTap }
+    enum SFX { case decode, decodeBig, breach, miss, bomb, fever, gameOver, uiTap, purchase }
 
     private let engine = AVAudioEngine()
     private let musicPlayer = MusicPlayer()
@@ -235,6 +235,16 @@ final class AudioEngine {
         // Subtle UI blip: a clean, quiet member of the FM family.
         buffers[.uiTap] = buffer(seconds: 0.06) { _, t in
             Float(self.fmBlip(1318.5, t, glide: 0.06, index: 1.2, ratio: 2.0, decay: 0.013) * 0.14)
+        }
+        // Purchase confirm: a bright ascending FM-bell arpeggio (a rewarding "acquired").
+        buffers[.purchase] = buffer(seconds: 0.55) { _, t in
+            let steps = [659.25, 830.61, 1108.73]   // E5 G#5 C#6 — bright, rising
+            let idx = min(steps.count - 1, Int(t / 0.07))
+            let f = steps[idx]
+            let local = t - Double(idx) * 0.07
+            let body = self.fmBlip(f, local, glide: 0.03, index: 1.8, ratio: 2.0, decay: 0.16)
+            let shimmer = self.sine(f * 2, t) * self.decayEnv(local, 0.08)
+            return Float((body * 0.5 + shimmer * 0.16) * 0.5)
         }
     }
 }
