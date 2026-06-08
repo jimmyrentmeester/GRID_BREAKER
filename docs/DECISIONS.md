@@ -193,6 +193,21 @@ Credits like endless (shared economy) but is kept **out of the TOP RUNS leaderbo
 server needed now; a future cross-device leaderboard could sync `dailyBestScore` by
 day key.
 
+## D21 — Campaign: granular mechanic introduction + briefings (amends D13)
+**2026-06-08.** Reworked the 10-core campaign so mechanics are introduced **one at a
+time** up the ladder instead of all-at-once: each `DataCore` carries cumulative
+feature gates (armored / bombs / fever / cache / worm / power-up kinds / 4×4) and
+`GameConfig.campaign(for:)` builds the engine config from them (still the D13
+time-attack base). Schedule: 1 standard → 2 armored → 3 bombs → 4 fever → 5 cache →
+6 worm → 7 freeze → 8 overclock+purge → 9 grid-expansion → 10 finale. A `CoreFeature`
+**briefing** explains the new mechanic before the run (the RAM clock is held until
+JACK IN), shown only while the core is **uncleared** (uses `campaignProgress`, no new
+persistence) so it's "explained when new," not every replay. Per the maintainer's
+steer, levels are lengthened **mostly via targets** (25→200 vs the old 15→130) with
+budgets sized so a realistic strong player clears within the clock — verified by the
+headless gating+winnability sim (each core spawns only its unlocked types; all 10
+clearable). Power-up kinds are gated via new `GameConfig.powerUpKinds`.
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

@@ -59,6 +59,7 @@ struct RootView: View {
             case .core:
                 if let core = activeCore {
                     GameView(core: core, deck: store.cyberdeck,
+                             briefing: store.isCleared(core) ? nil : core.briefing,
                              onExit: { screen = .campaign },
                              onNext: Campaign.core(id: core.id + 1).map { next in { activeCore = next } },
                              recordSession: { score, won in

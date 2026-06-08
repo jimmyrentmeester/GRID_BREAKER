@@ -3,6 +3,27 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #35 — Campaign overhaul: granular mechanics + briefings + longer (2026-06-08)
+Reworked the 10-core campaign (D21) per the maintainer's steer (keep 10 cores, longer
+mostly via targets).
+- **Per-core feature gates:** `DataCore` gains armored/bombs/fever/cache/worm/
+  powerKinds/grid4x4 + a `CoreFeature` briefing. `GameConfig.campaign(for:)` builds the
+  config from them (time-attack base, D13); new `GameConfig.powerUpKinds` gates which
+  power-ups can spawn (engine spawn uses it). Schedule: 1 standard → 2 armored →
+  3 bombs → 4 fever → 5 cache → 6 worm → 7 freeze → 8 overclock+purge → 9 grid 4×4 →
+  10 finale.
+- **Longer via targets:** targets 25→200 (was 15→130), budgets 40→70 s, sized so a
+  strong player clears within the clock.
+- **Briefings:** `CoreBriefingOverlay` explains the new mechanic before the run and
+  **holds the RAM clock** until JACK IN (model paused; pause overlay suppressed while
+  it's up). Shown only while the core is uncleared (via `campaignProgress`) → explained
+  when new, not on every replay.
+- **Verified:** clean build; headless sim — gating correct (each core spawns only its
+  unlocked types; power-up kinds gated; 4×4 only from core 9) and all 10 cores
+  clearable by a realistic strong player within budget; on-device — level select shows
+  the new targets/times, core 1 briefing ("DECODE THE GRID", target 25) held the clock
+  at 40 s, JACK IN started the run.
+
 ## Run #34 — Power-up collect flash (2026-06-08)
 Power-ups now announce their effect clearly the instant they're tapped.
 - New `PowerUpFlash` overlay: a bold, color-coded burst (icon + name + effect) —

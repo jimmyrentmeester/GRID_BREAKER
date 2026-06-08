@@ -188,6 +188,7 @@ struct GameView: View {
     @State private var outcome: SessionOutcome?
     @State private var trailPoints: [TrailPoint] = []
     @State private var flashKind: PowerUpKind?
+    @State private var showBriefing: Bool
     let core: DataCore?                 // nil = endless mode
     let onExit: () -> Void
     /// Advance to the next campaign core (nil in endless / on the last core).
@@ -202,12 +203,15 @@ struct GameView: View {
     let daily: Bool
     /// Fixed RNG seed (daily challenge). nil → a fresh seed each run/replay.
     let fixedSeed: UInt64?
+    /// New-mechanic briefing to show before the run (nil = skip, e.g. already cleared).
+    let briefing: CoreFeature?
 
     init(core: DataCore? = nil,
          deck: Cyberdeck,
          chill: Bool = false,
          seed: UInt64? = nil,
          daily: Bool = false,
+         briefing: CoreFeature? = nil,
          onExit: @escaping () -> Void,
          onNext: (() -> Void)? = nil,
          recordSession: @escaping (_ score: Int, _ won: Bool) -> SessionOutcome) {
@@ -215,18 +219,20 @@ struct GameView: View {
         self.chill = chill
         self.daily = daily
         self.fixedSeed = seed
+        self.briefing = briefing
         self.onNext = onNext
         let model: GameViewModel
         if chill {
             model = GameViewModel(config: .chill(), deck: deck, seed: seed ?? GameView.freshSeed(), chill: true)
         } else if let core {
-            model = GameViewModel(config: .campaign(timeBudget: core.timeBudget),
+            model = GameViewModel(config: .campaign(for: core),
                                   deck: deck, seed: seed ?? GameView.freshSeed(),
                                   targetScore: core.targetScore, difficultyBias: core.difficultyBias)
         } else {
             model = GameViewModel(deck: deck, seed: seed ?? GameView.freshSeed())
         }
         _model = State(initialValue: model)
+        _showBriefing = State(initialValue: briefing != nil)
         self.onExit = onExit
         self.recordSession = recordSession
     }
@@ -348,8 +354,16 @@ struct GameView: View {
                 .padding(.bottom, 28)
             }
 
-            if model.isPaused {
+            if model.isPaused && !showBriefing {
                 PauseOverlay(onResume: { model.unpause() }, onQuit: onExit)
+            }
+
+            if showBriefing, let b = briefing {
+                CoreBriefingOverlay(feature: b, coreName: core?.name ?? "DATA CORE",
+                                    target: core?.targetScore ?? 0) {
+                    showBriefing = false
+                    model.unpause()
+                }
             }
 
             if model.snapshot.isGameOver {
@@ -375,7 +389,11 @@ struct GameView: View {
             }
             .allowsHitTesting(false)
         }
-        .onAppear { model.reduceMotion = reduceMotion; AudioEngine.shared.resume() }
+        .onAppear {
+            model.reduceMotion = reduceMotion
+            AudioEngine.shared.resume()
+            if showBriefing { model.pause() }   // hold the clock until the briefing is dismissed
+        }
         .onChange(of: reduceMotion) { _, new in model.reduceMotion = new }
         .onChange(of: model.snapshot.isGameOver) { _, over in
             if over, outcome == nil {
@@ -888,6 +906,54 @@ private struct PowerUpFlash: View {
                 .neonGlow(color, radius: 4)
         }
         .multilineTextAlignment(.center)
+    }
+}
+
+// MARK: - Core briefing (new-mechanic explainer)
+
+/// Shown when a campaign core introduces a new mechanic — names it, explains it in a
+/// line, and holds the RAM clock until the player taps JACK IN.
+private struct CoreBriefingOverlay: View {
+    let feature: CoreFeature
+    let coreName: String
+    let target: Int
+    let onBegin: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.85).ignoresSafeArea()
+            VStack(spacing: 16) {
+                Text("INCOMING · \(coreName.uppercased())")
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textDim)
+                Text("NEW: \(feature.title)")
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.gold)
+                Image(systemName: feature.symbol)
+                    .font(.system(size: 52, weight: .bold))
+                    .foregroundStyle(NeonTheme.cyan)
+                    .neonGlow(NeonTheme.cyan, radius: 14)
+                    .padding(.vertical, 4)
+                Text(feature.detail)
+                    .font(.system(size: 15, weight: .medium, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textPrimary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("TARGET  \(target)")
+                    .font(.system(size: 13, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.gold)
+                    .padding(.top, 2)
+                TerminalButton(title: "JACK IN", color: NeonTheme.cyan, action: onBegin)
+                    .padding(.top, 6)
+            }
+            .padding(30)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(NeonTheme.background.opacity(0.95))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(NeonTheme.cyan.opacity(0.5), lineWidth: 1.5))
+            )
+            .padding(32)
+        }
     }
 }
 

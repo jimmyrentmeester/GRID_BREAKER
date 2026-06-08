@@ -405,7 +405,7 @@ struct GridEngine {
         switch type {
         case .dataCache:  lifespan = baseLife * config.cacheLifespanFactor
         case .wormDaemon: lifespan = baseLife * config.wormLifespanFactor;  nextHop = clock + config.wormHopInterval
-        case .powerUp:    lifespan = baseLife * config.powerLifespanFactor; kind = PowerUpKind.allCases.randomElement(using: &rng)
+        case .powerUp:    lifespan = baseLife * config.powerLifespanFactor; kind = config.powerUpKinds.randomElement(using: &rng) ?? .timeFreeze
         default:          lifespan = baseLife
         }
         return GridNode(cellIndex: cell,

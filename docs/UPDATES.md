@@ -2,6 +2,12 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.27 — Campaign reworked (2026-06-08)
+- Campaign now teaches itself: each core introduces one new mechanic at a time
+  (armored → bombs → fever → cache → worm → power-ups → grid expansion), with a quick
+  briefing the first time you meet it. Levels run longer with higher score targets,
+  ramping to the finale.
+
 ## 0.26 — Clearer power-ups (2026-06-08)
 - Grabbing a power-up now flashes a bold, colour-coded callout of exactly what it does
   (TIME FREEZE / OVERCLOCK ×2 / PURGE), so the effect is unmistakable.

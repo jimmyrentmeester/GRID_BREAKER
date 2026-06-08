@@ -99,6 +99,8 @@ struct GameConfig: Sendable {
     /// Chance a spawn is a power-up pickup (a random `PowerUpKind`). Short-lived.
     var powerUpSpawnChance: Double = 0.04
     var powerLifespanFactor: Double = 0.8
+    /// Which power-up kinds may spawn (campaign gates these in gradually).
+    var powerUpKinds: [PowerUpKind] = PowerUpKind.allCases
 
     // MARK: Power-up effects
     var freezeDuration: TimeInterval = 3.0      // time-freeze window
@@ -122,6 +124,25 @@ struct GameConfig: Sendable {
         c.wormSpawnChance = 0            // …and no worms (fixed mechanical mix)
         c.powerUpSpawnChance = 0         // …and no power-ups
         c.gridEscalationScore = nil      // cores are hand-tuned for a fixed 3×3
+        return c
+    }
+
+    /// Build a core's config from its feature gates (mechanics are introduced
+    /// cumulatively up the ladder). Starts from the time-attack base, then enables
+    /// only what this core has unlocked.
+    static func campaign(for core: DataCore) -> GameConfig {
+        var c = GameConfig.campaign(timeBudget: core.timeBudget)
+        c.armoredSpawnChance = core.armored ? 0.20 : 0
+        c.firewallSpawnChance = core.bombs ? 0.15 : 0
+        c.feverEnabled = core.fever
+        c.cacheSpawnChance = core.cache ? 0.05 : 0
+        c.wormSpawnChance = core.worm ? 0.08 : 0
+        if !core.powerKinds.isEmpty {
+            c.powerUpSpawnChance = 0.05
+            c.powerUpKinds = core.powerKinds
+        }
+        // Grid grows once you're halfway to the target (only on cores that unlock it).
+        c.gridEscalationScore = core.grid4x4 ? max(1, core.targetScore / 2) : nil
         return c
     }
 
