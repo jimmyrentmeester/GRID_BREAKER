@@ -24,6 +24,25 @@ mostly via targets).
   the new targets/times, core 1 briefing ("DECODE THE GRID", target 25) held the clock
   at 40 s, JACK IN started the run.
 
+## Run #39 — App Store readiness pass (2026-06-08)
+Fixed the in-repo blockers; documented the account/store steps in
+`docs/RELEASE_CHECKLIST.md`.
+- **Icon opaque:** the 1024 app icon had an alpha channel (App Store rejects that) —
+  flattened it over the dark bg via a CoreGraphics/ImageIO script (hasAlpha → no),
+  identical appearance. Single-size 1024 → Xcode generates all sizes.
+- **Version 1.0** (`MARKETING_VERSION` 0.14 → 1.0, build 1) — About screen reflects it.
+- **Export compliance:** `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO` (verified
+  `ITSAppUsesNonExemptEncryption: false` in the built Info.plist) → no per-submission
+  prompt.
+- **iPhone-only:** `TARGETED_DEVICE_FAMILY` "1,2" → "1" (the design is iPhone-portrait).
+- Confirmed fine: launch screen, portrait/status-bar, iOS 17 target, bundle id,
+  signing team set, no privacy-sensitive APIs.
+- **Verified:** clean build; built Info.plist shows v1.0 + encryption=false + launch
+  storyboard; icon generates from the opaque source.
+- **Remaining (maintainer + Apple acct, see checklist):** €99 dev program, music
+  licensing, App Store Connect record, privacy "data not collected" + policy URL,
+  screenshots, store copy, pricing, archive & submit.
+
 ## Run #38 — Purchase reward feedback (2026-06-08)
 Buying in a shop now feels rewarding on completion (visual + audio).
 - New `.purchase` SFX: a bright ascending FM-bell arpeggio ("acquired").

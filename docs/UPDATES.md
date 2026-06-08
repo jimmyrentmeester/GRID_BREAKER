@@ -8,6 +8,11 @@ Short, human-readable changelog (newest first).
   briefing the first time you meet it. Levels run longer with higher score targets,
   ramping to the finale.
 
+## 1.0 — App Store readiness (2026-06-08)
+- Prepped for submission: opaque app icon (App Store requirement), version set to 1.0,
+  export-compliance declared, and iPhone-only targeting. Remaining steps (Apple account,
+  screenshots, store listing) are tracked in docs/RELEASE_CHECKLIST.md.
+
 ## 0.30 — Rewarding purchases (2026-06-08)
 - Buying an upgrade or cosmetic now lands with a satisfying "ACQUIRED" flash, a bright
   confirm chime, and a success buzz.
