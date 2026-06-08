@@ -35,6 +35,15 @@ final class AudioEngine {
             musicPlayer.setEnabled(enabled)
         }
     }
+    /// Independent channel volumes (0…1), persisted in settings. SFX defaults a
+    /// little quieter than music so hits don't dominate the mix.
+    var sfxVolume: Double = 0.7 { didSet { applySfxVolume() } }
+    var musicVolume: Double = 0.85 { didSet { musicPlayer.setVolume(musicVolume) } }
+
+    private func applySfxVolume() {
+        let v = Float(max(0, min(1, sfxVolume)))
+        sfxPool.forEach { $0.volume = v }
+    }
 
     private var sampleRate: Double { format.sampleRate }
 
@@ -59,6 +68,7 @@ final class AudioEngine {
             sfxPool.append(node)
         }
         engine.mainMixerNode.outputVolume = 0.9
+        applySfxVolume()                       // per-channel SFX level
 
         engine.prepare()
         do {
@@ -71,6 +81,7 @@ final class AudioEngine {
 
         // Music is independent of the SFX engine (plays the player's MP3s).
         musicPlayer.loadTracks()
+        musicPlayer.setVolume(musicVolume)
         musicPlayer.setEnabled(enabled)
 
         registerObservers()
@@ -244,6 +255,13 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
     private var index = 0
     private var player: AVAudioPlayer?
     private var enabled = true
+    private var volume: Float = 0.85
+
+    /// Set the music level (0…1); applies live and to future tracks.
+    func setVolume(_ v: Double) {
+        volume = Float(max(0, min(1, v)))
+        player?.volume = volume
+    }
 
     /// Discover bundled tracks and shuffle them (random first track per launch).
     func loadTracks() {
@@ -289,6 +307,7 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
         do {
             let p = try AVAudioPlayer(contentsOf: queue[index])
             p.delegate = self
+            p.volume = volume
             p.prepareToPlay()
             p.play()
             player = p

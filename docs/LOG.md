@@ -3,6 +3,18 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #32 — Independent music/SFX volume (2026-06-08)
+- **Per-channel volumes:** `AudioEngine.sfxVolume` (applied to the SFX player-node
+  pool) and `musicVolume` (applied to `MusicPlayer` live + to each new track).
+  SFX default 0.7 (a bit quieter than before, per request); music 0.85. The master
+  SOUND toggle still gates everything.
+- **Settings:** two new neon sliders (MUSIC, EFFECTS) with live % in the SYSTEM
+  section (`SettingSliderRow`); EFFECTS previews a decode tick on release. Persisted
+  via `SaveData.musicVolume`/`sfxVolume` (+ tolerant decode), applied at launch, and
+  preserved across a progress reset.
+- **Verified:** clean build; on-device — Settings shows MUSIC 85% / EFFECTS 70%
+  sliders; dragging EFFECTS updated to 22% live (binding → store + engine).
+
 ## Run #31 — Power-up pickups (gameplay 3/4) (2026-06-08)
 Rare power-up pickups, all three kinds. Modeled as one `.powerUp` NodeType carrying
 a `PowerUpKind` (timeFreeze / overclock / purge), so the per-type switches stay thin.

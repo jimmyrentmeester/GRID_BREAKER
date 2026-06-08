@@ -765,6 +765,15 @@ struct SettingsView: View {
                             AudioEngine.shared.enabled = on
                             if on { AudioEngine.shared.play(.uiTap) }
                         }
+                        SettingSliderRow(label: "MUSIC", systemImage: "music.note",
+                                         value: store.musicVolume) { v in
+                            store.setMusicVolume(v); AudioEngine.shared.musicVolume = v
+                        }
+                        SettingSliderRow(label: "EFFECTS", systemImage: "waveform",
+                                         value: store.sfxVolume,
+                                         onCommit: { AudioEngine.shared.play(.decode) }) { v in
+                            store.setSfxVolume(v); AudioEngine.shared.sfxVolume = v
+                        }
                         SettingToggleRow(label: "HAPTICS",
                                          systemImage: "iphone.radiowaves.left.and.right",
                                          isOn: store.hapticsEnabled) {
@@ -878,6 +887,45 @@ private struct SettingToggleRow: View {
             .background(SettingRowBackground())
         }
         .buttonStyle(TerminalButtonStyle())
+    }
+}
+
+/// A labelled 0–100% volume slider. Applies live via `onChange`; `onCommit` fires
+/// when the drag ends (used to preview the new SFX level).
+private struct SettingSliderRow: View {
+    let label: String
+    let systemImage: String
+    var onCommit: (() -> Void)? = nil
+    let onChange: (Double) -> Void
+    @State private var live: Double
+
+    init(label: String, systemImage: String, value: Double,
+         onCommit: (() -> Void)? = nil, onChange: @escaping (Double) -> Void) {
+        self.label = label
+        self.systemImage = systemImage
+        self.onCommit = onCommit
+        self.onChange = onChange
+        _live = State(initialValue: value)
+    }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Label(label, systemImage: systemImage)
+                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textPrimary)
+                Spacer()
+                Text("\(Int((live * 100).rounded()))%")
+                    .font(.system(size: 13, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.cyan)
+                    .frame(width: 52, alignment: .trailing)
+            }
+            Slider(value: $live, in: 0...1) { editing in if !editing { onCommit?() } }
+                .tint(NeonTheme.cyan)
+                .onChange(of: live) { _, v in onChange(v) }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .background(SettingRowBackground())
     }
 }
 

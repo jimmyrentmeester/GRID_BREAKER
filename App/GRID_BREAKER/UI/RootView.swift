@@ -72,6 +72,8 @@ struct RootView: View {
             NeonTheme.current = Palettes.byID(store.equippedPaletteID)   // apply cosmetics
             TrailSkins.equipped = TrailSkins.byID(store.equippedTrailID)
             Haptics.enabled = store.hapticsEnabled
+            AudioEngine.shared.musicVolume = store.musicVolume
+            AudioEngine.shared.sfxVolume = store.sfxVolume
             AudioEngine.shared.enabled = store.soundEnabled
             AudioEngine.shared.start()
             if !store.tutorialSeen { screen = .tutorial }   // first-launch onboarding

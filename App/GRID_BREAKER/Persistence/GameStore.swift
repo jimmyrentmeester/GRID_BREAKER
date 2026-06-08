@@ -40,6 +40,18 @@ final class GameStore {
         persist()
     }
 
+    var musicVolume: Double { save.musicVolume }
+    func setMusicVolume(_ v: Double) {
+        save.musicVolume = min(1, max(0, v))
+        persist()
+    }
+
+    var sfxVolume: Double { save.sfxVolume }
+    func setSfxVolume(_ v: Double) {
+        save.sfxVolume = min(1, max(0, v))
+        persist()
+    }
+
     var tutorialSeen: Bool { save.tutorialSeen }
     func markTutorialSeen() {
         guard !save.tutorialSeen else { return }
@@ -54,6 +66,8 @@ final class GameStore {
         var fresh = SaveData.empty
         fresh.soundEnabled = save.soundEnabled
         fresh.hapticsEnabled = save.hapticsEnabled
+        fresh.musicVolume = save.musicVolume
+        fresh.sfxVolume = save.sfxVolume
         fresh.tutorialSeen = save.tutorialSeen
         save = fresh
         persist()

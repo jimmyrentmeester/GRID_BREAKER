@@ -2,6 +2,10 @@
 
 Short, human-readable changelog (newest first).
 
+## 0.24 — Separate music & effects volume (2026-06-08)
+- Settings now has independent MUSIC and EFFECTS volume sliders, so you can mix them
+  to taste. Gameplay sounds are a touch quieter by default too.
+
 ## 0.23 — Power-up pickups (2026-06-08)
 - Grab a rare white pickup for a burst of power: ❄ FREEZE (time stops draining your
   RAM for a few seconds), ⚡ OVERCLOCK (double score), or 🌀 PURGE (wipes every
