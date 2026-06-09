@@ -46,12 +46,18 @@ A1 + B3/B4 + C in the meantime.
       **1320×2868 (6.9")** + resized **1242×2688 (6.5")** set, in
       `docs/screenshots/{iphone-6.9,iphone-6.5}/`: menu, Fever gameplay (×6, streak),
       campaign ladder, cyberdeck, cosmetics. 👤 uploads in App Store Connect.
-- [ ] **C2 🤖 (optional) App Preview video** — a 15–30s gameplay capture.
+- [x] **C2 🤖 App Preview video** (Run #69) — `docs/preview/app-preview-6.9.mov`:
+      25.5 s, 1320×2868 (6.9"), H.264, of the boot + Fever gameplay. ⚠️ recorded at ~50 fps;
+      if App Store Connect rejects the frame rate, re-encode to 30 fps (e.g.
+      `ffmpeg -i in.mov -r 30 -c:v libx264 -pix_fmt yuv420p out.mov`, or a QuickTime export).
+- [x] **C1b 🤖 Marketing (captioned) screenshots** — `docs/screenshots/iphone-6.9-marketing/`
+      (+ 6.5"): neon headline + framed shot per state. Use either these or the plain set.
 - [x] **C3 🤖 Store copy** — `docs/store-copy.md`: name, subtitle ("Neon reflex
       grid-hacking"), promo text, description, keywords, what's-new, metadata. 👤 review.
 - [x] **C4 App icon** — new neon "breached grid" icon shipped (Run #65).
 
 ## Phase D — App Store Connect setup (👤, using C content)
+> 📘 Click-by-click guide: **`docs/appstoreconnect-walkthrough.md`** (covers D + E).
 - [ ] **D1 👤 Create app record** — bundle id `nl.gridbreaker.app`, name "GRID_BREAKER",
       primary category **Games**, secondary **Arcade** (or Action).
 - [ ] **D2 👤 Age rating** — questionnaire → likely **9+** (mild/infrequent fantasy
