@@ -42,10 +42,10 @@ A1 + B3/B4 + C in the meantime.
       👤 to: host → Support URL.
 
 ## Phase C — Store listing content (🤖 produces, 👤 reviews)
-- [ ] **C1 🤖 Screenshots** — required iPhone sizes **6.9"** (iPhone 16 Pro Max) and
-      **6.5"/6.7"** (older Plus/Pro Max). Capture polished frames: menu, gameplay+Fever,
-      a streak/milestone moment, campaign briefing, cosmetics. (Use temp state hooks +
-      `simctl io` per the verification workflow.)
+- [x] **C1 🤖 Screenshots** (Run #69) — 5 frames captured on iPhone 16 Pro Max at
+      **1320×2868 (6.9")** + resized **1242×2688 (6.5")** set, in
+      `docs/screenshots/{iphone-6.9,iphone-6.5}/`: menu, Fever gameplay (×6, streak),
+      campaign ladder, cyberdeck, cosmetics. 👤 uploads in App Store Connect.
 - [ ] **C2 🤖 (optional) App Preview video** — a 15–30s gameplay capture.
 - [x] **C3 🤖 Store copy** — `docs/store-copy.md`: name, subtitle ("Neon reflex
       grid-hacking"), promo text, description, keywords, what's-new, metadata. 👤 review.
