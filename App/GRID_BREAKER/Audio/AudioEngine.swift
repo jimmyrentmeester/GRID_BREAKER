@@ -167,6 +167,26 @@ final class AudioEngine {
     private func square(_ f: Double, _ t: Double) -> Double { sine(f, t) >= 0 ? 1 : -1 }
     private func decayEnv(_ t: Double, _ tau: Double) -> Double { exp(-t / tau) }
     private func noise() -> Double { Double.random(in: -1...1) }
+    /// Analog-style warmth/limiting.
+    private func softClip(_ x: Double) -> Double { tanh(1.5 * x) }
+    /// Two slightly-detuned saws — the fat "synth stab" core of the dark set.
+    private func detSaw(_ f: Double, _ t: Double, det: Double = 0.006) -> Double {
+        (saw(f * (1 - det), t) + saw(f * (1 + det), t)) * 0.5
+    }
+
+    /// One-pole low-pass with a per-sample cutoff. A *closing* sweep is the
+    /// signature "dark pluck" of the SFX family; an opening one reads as energy
+    /// building. Reference type so render closures can drive it statefully.
+    private final class LowPass {
+        private var y = 0.0
+        private let sr: Double
+        init(sampleRate: Double) { self.sr = sampleRate }
+        func step(_ x: Double, cutoff: Double) -> Double {
+            let a = 1 - exp(-2 * .pi * max(20, cutoff) / sr)
+            y += a * (x - y)
+            return y
+        }
+    }
 
     /// A short FM "blip" — a carrier phase-modulated by a sibling oscillator, with a
     /// quick downward pitch glide. The FM gives a clean metallic/digital timbre
@@ -180,109 +200,149 @@ final class AudioEngine {
     }
 
     private func buildBuffers() {
-        // Decode hit: a rewarding, layered "decrypt unlocked" — a click transient for
-        // tactility, an FM pluck body, a consonant octave bell, a bright data-bit sparkle,
-        // and a short shimmer tail for polish. Rendered up a rising minor-pentatonic run
-        // (now 1.5 octaves) so a chain climbs an ever-brighter melody (see `play(_:step:)`).
-        let decodeScale: [Double] = [440, 523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66]
-        decodeSteps = decodeScale.map { f in
-            buffer(seconds: 0.15) { _, t in
-                let click   = self.noise() * self.decayEnv(t, 0.003)                        // attack
-                let body    = self.fmBlip(f, t, glide: 0.10, index: 2.0, ratio: 2.0, decay: 0.05)
-                let bell    = self.sine(f * 2, t) * self.decayEnv(t, 0.06)                   // reward ring
-                let sparkle = self.sine(f * 4.01, t) * self.decayEnv(t, 0.018)               // data-bit
-                let tail    = self.sine(f * 3, t) * self.decayEnv(t, 0.085)                  // shimmer tail
-                return Float(click * 0.16 + body * 0.40 + bell * 0.16 + sparkle * 0.10 + tail * 0.06)
+        // Dark-cyberpunk synth family (D24; prototyped as WAVs in the session's
+        // `gb_sfx.py` before this rewrite). Design language: detuned dual-saw
+        // stabs through a CLOSING one-pole low-pass (the "dark pluck"), sub-sine
+        // weight an octave down, tanh soft-clip warmth, dark minor fundamentals
+        // an octave below the old bell set. Noise is only ever a short attack
+        // transient, never the body.
+
+        // Decode hit: a dark "data pulse" rendered up a rising minor run
+        // (A3…D5). The filter opens per step, so a clean chain audibly brightens
+        // as the combo climbs (see `play(_:step:)`).
+        let decodeScale: [Double] = [220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33]
+        decodeSteps = decodeScale.enumerated().map { step, f in
+            let lp = LowPass(sampleRate: sampleRate)
+            let baseCut = 700.0 + 350.0 * Double(step)
+            return buffer(seconds: 0.16) { _, t in
+                let x = self.detSaw(f, t) * self.decayEnv(t, 0.055) * 0.55
+                      + self.sine(f / 2, t) * self.decayEnv(t, 0.07) * 0.35
+                      + self.noise() * self.decayEnv(t, 0.004) * 0.25
+                let cut = baseCut * (0.35 + 0.65 * self.decayEnv(t, 0.03))
+                return Float(self.softClip(lp.step(x, cutoff: cut) * 1.6) * 0.6)
             }
         }
         buffers[.decode] = decodeSteps.first    // fallback for step-less callers
-        // Worm decode: a wet, wobbling "slither" chirp — an upward vibrato sweep, now with
-        // a bright sparkle so the catch still feels rewarding. Distinct from the clean hit.
-        buffers[.decodeWorm] = buffer(seconds: 0.16) { _, t in
-            let vib = 1 + 0.07 * self.sine(34, t)                    // fast vibrato → "alive"
-            let f = (500.0 + 430 * min(1, t / 0.085)) * vib         // squirms upward
-            let click   = self.noise() * self.decayEnv(t, 0.003)
-            let body    = self.fmBlip(f, t, glide: -0.06, index: 1.7, ratio: 1.51, decay: 0.07)
-            let bell    = self.sine(f * 2, t) * self.decayEnv(t, 0.05)   // reward ring
-            let sparkle = self.sine(f * 3, t) * self.decayEnv(t, 0.03)
-            return Float(click * 0.15 + body * 0.42 + bell * 0.14 + sparkle * 0.10)
-        }
-        // Armored / cache kill: heavier, lower "big unlock" — a sub thump for weight, a
-        // fat FM body, a consonant 12th bell ring and a bright top, so the payoff lands.
-        buffers[.decodeBig] = buffer(seconds: 0.22) { _, t in
-            let f = 330.0                                   // E4 — meaty but not muddy
-            let click   = self.noise() * self.decayEnv(t, 0.004)
-            let sub     = self.sine(f * 0.5, t) * self.decayEnv(t, 0.12)     // weight
-            let body    = self.fmBlip(f, t, glide: 0.09, index: 3.0, ratio: 1.5, decay: 0.10)
-            let bell    = self.sine(f * 3, t) * self.decayEnv(t, 0.11)       // rewarding ring
-            let sparkle = self.sine(f * 6, t) * self.decayEnv(t, 0.03)       // bright top
-            return Float(click * 0.18 + sub * 0.30 + body * 0.34 + bell * 0.13 + sparkle * 0.09)
-        }
-        // Armored shell breach (1st tap): a tense mid-pitched "crack" (G5) that SETS UP
-        // the kill — deliberately lower than `.decodeArmored` so the two taps rise.
-        buffers[.breach] = buffer(seconds: 0.09) { _, t in
-            let tick = self.fmBlip(784, t, glide: 0.0, index: 1.5, ratio: 2.5, decay: 0.018)
-            let ring = self.sine(1568, t) * self.decayEnv(t, 0.03)
-            return Float(tick * 0.22 + ring * 0.10)
-        }
-        // Armored kill (2nd tap): the rewarding RESOLUTION — a brighter, higher "unlock!"
-        // (C6) ringing above the breach, with a little warmth for body. Rising = payoff.
-        buffers[.decodeArmored] = buffer(seconds: 0.20) { _, t in
-            let f = 1046.5                                  // C6 — clearly above the G5 breach
-            let click   = self.noise() * self.decayEnv(t, 0.003)
-            let body    = self.fmBlip(f, t, glide: 0.06, index: 1.8, ratio: 2.0, decay: 0.085)
-            let bell    = self.sine(f * 1.5, t) * self.decayEnv(t, 0.12)   // ringing 5th
-            let warmth  = self.sine(f * 0.5, t) * self.decayEnv(t, 0.10)   // body (C5)
-            let sparkle = self.sine(f * 3, t) * self.decayEnv(t, 0.03)
-            return Float(click * 0.13 + body * 0.38 + bell * 0.15 + warmth * 0.16 + sparkle * 0.08)
-        }
-        // Miss: a low, downward-bending FM "denied" blip with a little grit — same
-        // FM family as the hits but dark and dropping (G3, subharmonic ratio).
-        buffers[.miss] = buffer(seconds: 0.16) { _, t in
-            let body = self.fmBlip(196, t, glide: 0.45, index: 1.1, ratio: 0.5, decay: 0.06)
-            let grit = self.noise() * self.decayEnv(t, 0.045)
-            return Float(body * 0.22 + grit * 0.10)
-        }
-        // Firewall detonation: a sub boom + a dissonant metallic FM crash (tritone
-        // ratio = alarm) + a noise blast. Heavier and more "digital" than a rumble.
-        buffers[.bomb] = buffer(seconds: 0.55) { _, t in
-            let sub = self.sine(55 + 40 * self.decayEnv(t, 0.15), t) * self.decayEnv(t, 0.30)
-            let crash = self.fmBlip(140, t, glide: 0.6, index: 4.0, ratio: 1.414, decay: 0.22)
-            let blast = self.noise() * self.decayEnv(t, 0.16)
-            return Float((sub * 0.34 + crash * 0.18 + blast * 0.26) * min(1, t * 60)) // tiny attack
-        }
-        // Fever sting: a bright ascending FM arpeggio (the decrypt "breaks open").
-        buffers[.fever] = buffer(seconds: 0.5) { _, t in
-            let steps = [523.25, 698.46, 880.0, 1046.5]   // C5 F5 A5 C6 — bright, rising
-            let idx = min(steps.count - 1, Int(t / 0.11))
-            let f = steps[idx]
-            let local = t - Double(idx) * 0.11
-            let body = self.fmBlip(f, local, glide: 0.05, index: 2.4, ratio: 2.0, decay: 0.10)
-            let shimmer = self.sine(f * 2, t) * self.decayEnv(local, 0.05)
-            return Float((body * 0.5 + shimmer * 0.16) * 0.5)
-        }
-        // Game over: a slow descending FM minor fall (connection lost).
-        buffers[.gameOver] = buffer(seconds: 0.8) { _, t in
-            let f = 392 * pow(2.0, -t * 1.1)
-            let mod = self.sine(f * 1.5, t) * self.decayEnv(t, 0.35)
-            let carrier = sin(2 * .pi * f * t + 1.8 * mod)
-            let body = (carrier * 0.6 + self.saw(f, t) * 0.3) * self.decayEnv(t, 0.45)
-            return Float(body * 0.24)
-        }
-        // Subtle UI blip: a clean, quiet member of the FM family.
-        buffers[.uiTap] = buffer(seconds: 0.06) { _, t in
-            Float(self.fmBlip(1318.5, t, glide: 0.06, index: 1.2, ratio: 2.0, decay: 0.013) * 0.14)
-        }
-        // Purchase confirm: a bright ascending FM-bell arpeggio (a rewarding "acquired").
-        buffers[.purchase] = buffer(seconds: 0.55) { _, t in
-            let steps = [659.25, 830.61, 1108.73]   // E5 G#5 C#6 — bright, rising
-            let idx = min(steps.count - 1, Int(t / 0.07))
-            let f = steps[idx]
-            let local = t - Double(idx) * 0.07
-            let body = self.fmBlip(f, local, glide: 0.03, index: 1.8, ratio: 2.0, decay: 0.16)
-            let shimmer = self.sine(f * 2, t) * self.decayEnv(local, 0.08)
-            return Float((body * 0.5 + shimmer * 0.16) * 0.5)
-        }
+        // Worm decode: a dark upward "slither" — wobbling detuned saw, low-passed.
+        buffers[.decodeWorm] = {
+            let lp = LowPass(sampleRate: sampleRate)
+            return buffer(seconds: 0.18) { _, t in
+                let wob = 1 + 0.06 * self.sine(28, t)                  // alive, squirming
+                let f = (180.0 + 140 * min(1, t / 0.10)) * wob         // dark upward slither
+                let x = self.detSaw(f, t) * self.decayEnv(t, 0.07) * 0.6
+                      + self.noise() * self.decayEnv(t, 0.004) * 0.2
+                let cut = 900 * (0.4 + 0.6 * self.decayEnv(t, 0.05))
+                return Float(self.softClip(lp.step(x, cutoff: cut) * 1.6) * 0.55)
+            }
+        }()
+        // Cache kill: a heavy, dark "haul" — sub drop + low saw stab + FM ping.
+        buffers[.decodeBig] = {
+            let lp = LowPass(sampleRate: sampleRate)
+            return buffer(seconds: 0.26) { _, t in
+                let fsub = 55 + 45 * self.decayEnv(t, 0.05)            // 100 → 55 Hz drop
+                let sub  = self.sine(fsub, t) * self.decayEnv(t, 0.16) * 0.5
+                let stab = self.detSaw(110, t) * self.decayEnv(t, 0.09) * 0.45
+                let ping = self.fmBlip(440, t, glide: 0.05, index: 2.5, ratio: 1.5, decay: 0.05) * 0.15
+                let cut = 1200 * (0.35 + 0.65 * self.decayEnv(t, 0.05))
+                return Float(self.softClip((sub + lp.step(stab, cutoff: cut) + ping) * 1.3) * 0.6)
+            }
+        }()
+        // Armored shell breach (1st tap): a muted, low "crack" that SETS UP the
+        // kill — deliberately darker/duller than `.decodeArmored` so the two taps rise.
+        buffers[.breach] = {
+            let lp = LowPass(sampleRate: sampleRate)
+            return buffer(seconds: 0.10) { _, t in
+                let thunk = self.sine(185 * (1 + 0.3 * self.decayEnv(t, 0.010)), t) * self.decayEnv(t, 0.04) * 0.55
+                let snap  = self.noise() * self.decayEnv(t, 0.012) * 0.35
+                let cut = 2500 * self.decayEnv(t, 0.03) + 300
+                return Float(self.softClip(lp.step(thunk + snap, cutoff: cut) * 1.4) * 0.5)
+            }
+        }()
+        // Armored kill (2nd tap): the dark "unlock" — the filter sweeps OPEN then
+        // shuts (a rising "zhwip"), clearly resolving above the muted breach.
+        buffers[.decodeArmored] = {
+            let lp = LowPass(sampleRate: sampleRate)
+            return buffer(seconds: 0.22) { _, t in
+                let stab = self.detSaw(220, t) * self.decayEnv(t, 0.08) * 0.55
+                let sub  = self.sine(110, t) * self.decayEnv(t, 0.12) * 0.30
+                let tick = self.noise() * self.decayEnv(t, 0.003) * 0.2
+                let cut = 500 + 1700 * min(1, t / 0.06) * self.decayEnv(t, 0.10)
+                return Float(self.softClip(lp.step(stab + tick, cutoff: cut) * 1.6 + sub) * 0.6)
+            }
+        }()
+        // Miss: "access denied" — a dark descending buzz, heavily low-passed.
+        buffers[.miss] = {
+            let lp = LowPass(sampleRate: sampleRate)
+            return buffer(seconds: 0.18) { _, t in
+                let f = 98 * pow(2.0, -t * 2)
+                let x = self.square(f, t) * self.decayEnv(t, 0.07) * 0.30
+                      + self.noise() * self.decayEnv(t, 0.05) * 0.12
+                return Float(self.softClip(lp.step(x, cutoff: 700) * 1.5) * 0.5)
+            }
+        }()
+        // Firewall detonation: sub boom + detuned tritone saw crash (130/184 Hz =
+        // alarm dissonance) + noise blast, all through a slamming-shut filter.
+        buffers[.bomb] = {
+            let lp = LowPass(sampleRate: sampleRate)
+            return buffer(seconds: 0.60) { _, t in
+                let sub   = self.sine(48 + 50 * self.decayEnv(t, 0.12), t) * self.decayEnv(t, 0.32) * 0.5
+                let crash = (self.detSaw(130, t) * 0.35 + self.detSaw(184, t) * 0.25) * self.decayEnv(t, 0.20)
+                let blast = self.noise() * self.decayEnv(t, 0.14) * 0.35
+                let cut = 300 + 2700 * self.decayEnv(t, 0.12)
+                let x = sub + lp.step(crash + blast, cutoff: cut)
+                return Float(self.softClip(x * 1.4) * 0.62 * min(1, t * 80))   // tiny attack
+            }
+        }()
+        // Fever: a dark riser — minor arp (A3 C4 E4 A4) with an OPENING filter and
+        // a swelling sub. Energy building, not a fanfare.
+        buffers[.fever] = {
+            let lp = LowPass(sampleRate: sampleRate)
+            let steps: [Double] = [220, 261.63, 329.63, 440]
+            return buffer(seconds: 0.55) { _, t in
+                let idx = min(steps.count - 1, Int(t / 0.13))
+                let local = t - Double(idx) * 0.13
+                let stab = self.detSaw(steps[idx], t) * self.decayEnv(local, 0.09) * 0.5
+                let sub  = self.sine(110, t) * 0.18 * min(1, t / 0.55)
+                let cut = 600 + 1800 * min(1, t / 0.55)
+                return Float(self.softClip(lp.step(stab, cutoff: cut) * 1.5 + sub) * 0.5)
+            }
+        }()
+        // Game over: a power-down — an accelerating "tape-stop" pitch fall with the
+        // filter dying alongside it (the connection physically winding down).
+        buffers[.gameOver] = {
+            let lp = LowPass(sampleRate: sampleRate)
+            return buffer(seconds: 0.95) { _, t in
+                let f = 196 * pow(2.0, -2.2 * t * t)
+                let x = self.detSaw(f, t) * 0.5 + self.sine(f / 2, t) * 0.3
+                      + self.noise() * self.decayEnv(t, 0.3) * 0.05
+                let cut = 1400 * pow(2.0, -2 * t)
+                return Float(self.softClip(lp.step(x, cutoff: cut) * 1.4) * self.decayEnv(t, 0.50) * 0.55)
+            }
+        }()
+        // Subtle UI blip: a quiet, dark tick.
+        buffers[.uiTap] = {
+            let lp = LowPass(sampleRate: sampleRate)
+            return buffer(seconds: 0.05) { _, t in
+                let x = self.sine(660, t) * self.decayEnv(t, 0.012) * 0.6
+                      + self.noise() * self.decayEnv(t, 0.002) * 0.2
+                return Float(self.softClip(lp.step(x, cutoff: 1800) * 1.4) * 0.30)
+            }
+        }()
+        // Purchase confirm: "transaction accepted" — two dark stabs a fifth apart
+        // (A3 → E4), weighty rather than bell-bright.
+        buffers[.purchase] = {
+            let lp = LowPass(sampleRate: sampleRate)
+            return buffer(seconds: 0.45) { _, t in
+                var out = 0.0
+                for (f, start) in [(220.0, 0.0), (330.0, 0.18)] where t >= start {
+                    let lt = t - start
+                    out += self.detSaw(f, t) * self.decayEnv(lt, 0.10) * 0.45
+                         + self.sine(f / 2, t) * self.decayEnv(lt, 0.12) * 0.25
+                }
+                let cut = 1500 * (0.4 + 0.6 * self.decayEnv(t.truncatingRemainder(dividingBy: 0.18), 0.06))
+                return Float(self.softClip(lp.step(out, cutoff: cut) * 1.4) * 0.5)
+            }
+        }()
     }
 }
 
@@ -349,8 +409,10 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
         playCurrent()
     }
 
-    private func playCurrent() {
-        guard !queue.isEmpty else { return }          // no MP3s bundled yet
+    private func playCurrent(attempts: Int = 0) {
+        // `attempts` guards the retry walk: if every file is unreadable, stop
+        // after one full pass instead of recursing forever (audit C6).
+        guard !queue.isEmpty, attempts < queue.count else { return }
         if index >= queue.count { queue.shuffle(); index = 0 }   // wrap → reshuffle
         do {
             let p = try AVAudioPlayer(contentsOf: queue[index])
@@ -360,9 +422,10 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
             p.play()
             player = p
         } catch {
-            // Skip an unreadable file and try the next one.
+            // Skip an unreadable file and try the next (wrapping at the top) —
+            // failing on the *last* track no longer leaves permanent silence.
             index += 1
-            if index < queue.count { playCurrent() }
+            playCurrent(attempts: attempts + 1)
         }
     }
 
