@@ -15,7 +15,7 @@ final class AudioEngine {
     static let shared = AudioEngine()
 
     /// One-shot SFX, each traced to a real game event (mirrors the juice layer).
-    enum SFX { case decode, decodeWorm, decodeBig, decodeArmored, breach, miss, bomb, fever, gameOver, uiTap, purchase }
+    enum SFX { case decode, decodeWorm, decodeBig, decodeArmored, breach, miss, bomb, fever, gameOver, uiTap, purchase, ramLow }
 
     private let engine = AVAudioEngine()
     private let musicPlayer = MusicPlayer()
@@ -326,6 +326,18 @@ final class AudioEngine {
                 let x = self.sine(660, t) * self.decayEnv(t, 0.012) * 0.6
                       + self.noise() * self.decayEnv(t, 0.002) * 0.2
                 return Float(self.softClip(lp.step(x, cutoff: 1800) * 1.4) * 0.30)
+            }
+        }()
+        // Low-RAM warning: two urgent low pulses — a dark "power dying" cue that
+        // cuts under the music without celebrating anything (fires once per dip).
+        buffers[.ramLow] = {
+            let lp = LowPass(sampleRate: sampleRate)
+            return buffer(seconds: 0.22) { _, t in
+                let lt = t < 0.11 ? t : t - 0.11          // pulse at 0 ms and 110 ms
+                let x = self.detSaw(147, t) * self.decayEnv(lt, 0.035) * 0.6
+                      + self.sine(73.5, t) * self.decayEnv(lt, 0.05) * 0.3
+                let cut = 900 * self.decayEnv(lt, 0.04) + 200
+                return Float(self.softClip(lp.step(x, cutoff: cut) * 1.5) * 0.45)
             }
         }()
         // Purchase confirm: "transaction accepted" — two dark stabs a fifth apart

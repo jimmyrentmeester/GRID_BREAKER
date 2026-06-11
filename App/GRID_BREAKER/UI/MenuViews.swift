@@ -626,7 +626,7 @@ struct OnboardingView: View {
     private var prompt: String {
         switch beat {
         case 0: return "Tap the glowing daemon to decode it."
-        case 1: return "Decoding refills your RAM — your clock. Tap to decode."
+        case 1: return "Decoding refills your RAM — your clock. Mistaps drain it!"
         case 2: return wrongFirewall ? "✕ Firewall! Never tap red. Hit the cyan daemon."
                                      : "Decode the cyan daemon — but NEVER the red firewall."
         case 3: return armoredBreached ? "Shell breached — tap again to crack it!"
@@ -1047,6 +1047,7 @@ struct CampaignView: View {
                         CoreRow(core: core,
                                 cleared: store.isCleared(core),
                                 unlocked: store.isUnlocked(core),
+                                best: store.bestScore(for: core),
                                 action: { if store.isUnlocked(core) { onPlay(core) } })
                     }
                 }
@@ -1063,6 +1064,8 @@ private struct CoreRow: View {
     let core: DataCore
     let cleared: Bool
     let unlocked: Bool
+    /// Best score ever decoded on this core (0 = none) — the replay hook.
+    var best: Int = 0
     let action: () -> Void
 
     private var accent: Color {
@@ -1086,7 +1089,8 @@ private struct CoreRow: View {
                     Text(core.name)
                         .font(.system(size: 15, weight: .bold, design: .monospaced))
                         .foregroundStyle(unlocked ? NeonTheme.textPrimary : NeonTheme.textDim)
-                    Text("TARGET \(core.targetScore)  ·  \(Int(core.timeBudget))s")
+                    Text("TARGET \(core.targetScore)  ·  \(Int(core.timeBudget))s"
+                         + (best > 0 ? "  ·  BEST \(best)" : ""))
                         .font(.system(size: 11, weight: .regular, design: .monospaced))
                         .foregroundStyle(NeonTheme.textDim)
                 }
@@ -1108,7 +1112,7 @@ private struct CoreRow: View {
         .disabled(!unlocked)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Core \(core.id), \(core.name)")
-        .accessibilityValue(cleared ? "Cleared. Target \(core.targetScore), \(Int(core.timeBudget)) seconds. Tap to replay."
+        .accessibilityValue(cleared ? "Cleared\(best > 0 ? ", best \(best)" : ""). Target \(core.targetScore), \(Int(core.timeBudget)) seconds. Tap to replay."
                             : unlocked ? "Target \(core.targetScore), \(Int(core.timeBudget)) seconds. Tap to play."
                                        : "Locked. Clear the previous core to unlock.")
         .accessibilityAddTraits(cleared ? [.isButton, .isSelected] : .isButton)

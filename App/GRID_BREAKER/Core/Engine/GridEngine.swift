@@ -39,6 +39,7 @@ enum GameEvent: Sendable, Equatable {
     case firewallExploded(cell: Int)        // bomb tapped → game over
     case feverStarted                       // combo hit threshold → Fever Mode
     case feverEnded                         // Fever Mode window elapsed
+    case ramCritical                        // RAM dipped below the danger line (once per dip)
     case gridExpanded                       // grid grew 3×3 → 4×4 (endless escalation)
     case powerUpCollected(PowerUpKind)      // a power-up pickup was tapped
     case milestoneReached(Int)              // score crossed a landmark (endless)
@@ -68,6 +69,9 @@ struct SessionSnapshot: Sendable {
     var targetScore: Int?              // campaign goal (nil in endless)
     var isGameOver: Bool
     var gameOverReason: GameOverReason?
+    var elapsed: TimeInterval          // session clock (run recap)
+    var bestCleanStreak: Int           // longest clean chain this run (run recap)
+    var feversTriggered: Int           // fevers this run (run recap)
 
     /// Campaign win.
     var didWin: Bool { gameOverReason == .coreCracked }
@@ -121,6 +125,11 @@ struct GridEngine {
     private(set) var combo: Int = 0
     /// Clean-decode chain (resets on a miss/expiry) driving the base streak multiplier.
     private(set) var cleanStreak: Int = 0
+    /// Longest clean chain this session (run recap).
+    private(set) var bestCleanStreak: Int = 0
+    /// Whether the low-RAM warning has fired for the current dip (hysteresis:
+    /// re-arms once RAM recovers above the re-arm line, so it never spams).
+    private var ramWarned = false
     /// Index of the next score milestone to award.
     private var nextMilestoneIndex = 0
     private(set) var feverActive = false
@@ -173,7 +182,10 @@ struct GridEngine {
             overclockActive: powerOverclockRemaining > 0,
             targetScore: targetScore,
             isGameOver: isGameOver,
-            gameOverReason: gameOverReason
+            gameOverReason: gameOverReason,
+            elapsed: clock,
+            bestCleanStreak: bestCleanStreak,
+            feversTriggered: feversTriggered
         )
     }
 
@@ -288,12 +300,28 @@ struct GridEngine {
             nodes[i].nextHopAt = clock + config.wormHopInterval   // reschedule even if boxed in
         }
 
-        // 4. RAM depletion ends the run.
+        // 4. Low-RAM warning (once per dip), then depletion ends the run.
+        events += checkRAMWarning()
         if ramRemaining <= 0 {
             ramRemaining = 0
             events.append(endGame(.ramDepleted))
         }
         return events
+    }
+
+    /// Fire `.ramCritical` once when RAM crosses below 25% of capacity, re-arming
+    /// only after it recovers above 35% — a tension cue (Part 2.1: tension before
+    /// reveal), never a spam. Inert in Flow (RAM never drains there).
+    private mutating func checkRAMWarning() -> [GameEvent] {
+        guard ramCapacity > 0, !isGameOver else { return [] }
+        let fraction = ramRemaining / ramCapacity
+        if ramWarned {
+            if fraction >= 0.35 { ramWarned = false }   // recovered → re-arm
+            return []
+        }
+        guard fraction <= 0.25, fraction > 0 else { return [] }
+        ramWarned = true
+        return [.ramCritical]
     }
 
     // MARK: Input
@@ -320,6 +348,7 @@ struct GridEngine {
             cleanStreak = 0       // a mistap breaks the streak multiplier
             ramRemaining -= config.penaltyMiss
             var events: [GameEvent] = [.emptyMiss(cell: cellIndex)]
+            events += checkRAMWarning()
             if ramRemaining <= 0 { ramRemaining = 0; events.append(endGame(.ramDepleted)) }
             return events
         }
@@ -420,6 +449,7 @@ struct GridEngine {
         let node = nodes[idx]
         combo += 1
         cleanStreak += 1
+        bestCleanStreak = max(bestCleanStreak, cleanStreak)
         let multiplier = effectiveMultiplier
         let refill = refillFactor
         switch node.type {

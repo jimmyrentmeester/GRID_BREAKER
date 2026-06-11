@@ -188,6 +188,10 @@ final class GameViewModel {
                 haptics.success(); audio.play(.fever)
             case .feverEnded:
                 haptics.impact(.soft)
+            case .ramCritical:
+                guard !chill else { break }              // Flow stays pressure-free
+                haptics.impact(.rigid, intensity: 1.0)
+                audio.play(.ramLow)
             case .gridExpanded:
                 gridExpandedSeq += 1                     // drives the toast
                 haptics.success(); audio.play(.fever)   // a positive "grid grew" cue
@@ -244,6 +248,13 @@ struct GameView: View {
     let fixedSeed: UInt64?
     /// New-mechanic briefing to show before the run (nil = skip, e.g. already cleared).
     let briefing: CoreFeature?
+    /// The score to beat (endless: top run; daily: today's best). 0 = no record yet —
+    /// crossing it mid-run fires a one-shot "PERSONAL BEST" moment.
+    let bestScore: Int
+    @State private var showPB = false
+    @State private var pbFired = false
+    /// Best across replays this screen-visit, so a replay must beat the *new* record.
+    @State private var sessionBest = 0
 
     init(core: DataCore? = nil,
          deck: Cyberdeck,
@@ -251,6 +262,7 @@ struct GameView: View {
          seed: UInt64? = nil,
          daily: Bool = false,
          briefing: CoreFeature? = nil,
+         bestScore: Int = 0,
          onExit: @escaping () -> Void,
          onNext: (() -> Void)? = nil,
          recordSession: @escaping (_ score: Int, _ won: Bool) -> SessionOutcome) {
@@ -259,6 +271,7 @@ struct GameView: View {
         self.daily = daily
         self.fixedSeed = seed
         self.briefing = briefing
+        self.bestScore = bestScore
         self.onNext = onNext
         let model: GameViewModel
         if chill {
@@ -442,6 +455,23 @@ struct GameView: View {
                     .transition(.scale(scale: 0.8).combined(with: .opacity))
             }
 
+            // Personal-best moment (endless/daily): the run just became your best ever.
+            // One-shot per run; sits above the milestone toast slot so they can't collide.
+            if showPB && !model.snapshot.isGameOver {
+                Text(daily ? "▲ DAILY BEST" : "▲ PERSONAL BEST")
+                    .font(.system(size: 16, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.gold)
+                    .neonGlow(NeonTheme.gold, radius: 10)
+                    .padding(.horizontal, 16).padding(.vertical, 8)
+                    .background(Capsule().fill(NeonTheme.background.opacity(0.85))
+                        .overlay(Capsule().stroke(NeonTheme.gold.opacity(0.6), lineWidth: 1)))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .offset(y: -176)
+                    .allowsHitTesting(false)
+                    .transition(.scale(scale: 0.7).combined(with: .opacity))
+                    .accessibilityHidden(true)
+            }
+
             // Score-milestone landmark toast (endless): a brief gold flash on 50/100/250…
             if showMilestone && !model.snapshot.isGameOver {
                 Text("◆ \(model.milestoneValue) ◆")
@@ -497,7 +527,8 @@ struct GameView: View {
                                 daily: daily,
                                 outcome: outcome,
                                 isFinalCore: core.map { $0.id >= Campaign.count } ?? false,
-                                onReplay: { outcome = nil; model.restart(seed: fixedSeed ?? GameView.freshSeed()); startCountdown() },
+                                onReplay: { outcome = nil; pbFired = false; showPB = false
+                                            model.restart(seed: fixedSeed ?? GameView.freshSeed()); startCountdown() },
                                 onNext: (model.snapshot.didWin && onNext != nil) ? onNext : nil,
                                 onExit: onExit)
             }
@@ -525,6 +556,7 @@ struct GameView: View {
         .onChange(of: model.snapshot.isGameOver) { _, over in
             if over, outcome == nil {
                 outcome = recordSession(model.snapshot.score, model.snapshot.didWin)
+                sessionBest = max(sessionBest, model.snapshot.score)
             }
         }
         .onChange(of: model.shakeTrigger) { _, _ in
@@ -555,6 +587,20 @@ struct GameView: View {
                 if model.milestoneSeq == seq {
                     withAnimation(.easeOut(duration: 0.3)) { showMilestone = false }
                 }
+            }
+        }
+        .onChange(of: model.snapshot.score) { _, score in
+            // Crossing your own record is a *moment* (ground truth 1.4): celebrate it
+            // once per run, live — not just on the game-over screen.
+            let toBeat = max(bestScore, sessionBest)
+            guard !pbFired, toBeat > 0, score > toBeat, core == nil, !chill else { return }
+            pbFired = true
+            AudioEngine.shared.play(.fever)
+            Haptics().success()
+            withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.6)) { showPB = true }
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 1_800_000_000)
+                withAnimation(.easeOut(duration: 0.3)) { showPB = false }
             }
         }
         .onChange(of: model.snapshot.streakMultiplier) { old, new in
@@ -1344,6 +1390,20 @@ private struct GameOverOverlay: View {
                     .font(.system(size: 18, weight: .bold, design: .monospaced))
                     .foregroundStyle(NeonTheme.cyan)
                     .padding(.top, 2)
+                // Campaign win margin: how close was it? Makes a clear replay goal.
+                if didWin, core != nil {
+                    Text("\(Int(ceil(max(0, snapshot.ramRemaining))))s TO SPARE")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold.opacity(0.85))
+                }
+                // Run recap (endless/daily): the story of the run in one line —
+                // deaths sting less when you can see what you built (Part 1.4).
+                if core == nil {
+                    Text("\(Int(snapshot.elapsed))s ONLINE · STREAK \(snapshot.bestCleanStreak) · FEVER ×\(snapshot.feversTriggered)")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textDim)
+                        .accessibilityLabel("Run lasted \(Int(snapshot.elapsed)) seconds, best streak \(snapshot.bestCleanStreak), \(snapshot.feversTriggered) fevers")
+                }
                 if let earned = outcome?.creditsEarned, earned > 0 {
                     Label("+\(earned) CR", systemImage: "bitcoinsign.circle.fill")
                         .font(.system(size: 16, weight: .bold, design: .monospaced))

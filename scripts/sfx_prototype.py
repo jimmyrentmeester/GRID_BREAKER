@@ -147,6 +147,16 @@ def ui_tap():            # quiet dark tick
         return softclip(lp.step(x, 1800) * 1.4) * 0.30
     return render(0.05, fill)
 
+def ram_low():           # low-RAM warning: two urgent low pulses, fires once per dip
+    lp = LPF()
+    def fill(i, t):
+        lt = t if t < 0.11 else t - 0.11                 # pulse at 0 ms and 110 ms
+        x = (detsaw(147, t) * env(lt, 0.035) * 0.6
+             + sine(73.5, t) * env(lt, 0.05) * 0.3)
+        cut = 900 * env(lt, 0.04) + 200
+        return softclip(lp.step(x, cut) * 1.5) * 0.45
+    return render(0.22, fill)
+
 def purchase():          # transaction confirmed: two dark stabs, a fifth apart
     lp = LPF()
     def fill(i, t):
@@ -186,6 +196,7 @@ def main():
         "10_gameover": game_over(),
         "11_uitap": ui_tap(),
         "12_purchase": purchase(),
+        "13_ramlow": ram_low(),
     }
     gap = [0.0] * int(SR * 0.45)
     demo = []

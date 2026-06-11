@@ -3,6 +3,26 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #71 — Gameplay feedback pass: PB moment, run recap, low-RAM warning, core bests (2026-06-11)
+Walked the tutorial, campaign and endless flows as a player; applied the gaps found:
+- **Personal-best moment (endless/daily):** crossing your own record mid-run now fires
+  a one-shot gold "▲ PERSONAL BEST / DAILY BEST" toast + sting + haptic (view-level,
+  derived from the engine score vs. the stored best passed in by RootView; replays
+  must beat the *new* session best).
+- **Run recap on game-over (endless/daily):** "(n)s ONLINE · STREAK n · FEVER ×n" —
+  engine snapshot now exposes `elapsed`, `bestCleanStreak`, `feversTriggered`.
+- **Low-RAM warning:** new engine event `.ramCritical` fires once when RAM crosses
+  below 25% of capacity (re-arms above 35% — hysteresis, no spam) in every drained
+  mode incl. campaign's countdown; juiced as a dark two-pulse `.ramLow` SFX (recipe
+  also added to `scripts/sfx_prototype.py`) + rigid haptic. Inert in Flow.
+- **Campaign replay value:** per-core best scores persisted (`SaveData.campaignBests`,
+  tolerant decode) and shown on the level select ("BEST n"); CORE CRACKED now shows
+  the win margin ("(n)s TO SPARE").
+- **Tutorial:** beat 1 now warns that mistaps drain RAM (the costliest beginner
+  mistake was untaught).
+- **Verified:** static review of the full diff; deterministic engine changes are
+  event-only (no RNG/balance change). Xcode build + device pass pending (Q6/Q7).
+
 ## Run #70 — SFX rebuilt as a dark-cyberpunk synth family (2026-06-11)
 Maintainer verdict on the old set: too musical/bell-like for the theme (Q6). All 11
 SFX redesigned (D24), still fully synthesized in `AudioEngine.buildBuffers()`:

@@ -2,6 +2,17 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.24 — Moments that matter (2026-06-11)
+- Beat your own record mid-run and the game tells you *right then* — a gold
+  "▲ PERSONAL BEST" flash in endless and the daily challenge.
+- Game-over now shows your run's story: how long you stayed online, your best
+  streak and how many Fevers you chained.
+- When your RAM dips into the red you'll hear a low double-pulse warning (once,
+  not nagging) — in campaign too, where it means the clock is nearly up.
+- Campaign cores now remember your best score ("BEST 31" on the level select),
+  and a cracked core shows how many seconds you had to spare.
+- The training now warns you that mistaps drain your RAM.
+
 ## 1.0.23 — A darker, meaner soundscape (2026-06-11)
 - Every sound effect is rebuilt in a dark cyberpunk style: gritty detuned synth-stabs
   and sub-bass instead of bright bells. Decodes still climb in pitch as your combo

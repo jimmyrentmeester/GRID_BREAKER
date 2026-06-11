@@ -36,6 +36,7 @@ struct RootView: View {
                 titleScreen.transition(.opacity)
             case .endless:
                 GameView(deck: store.cyberdeck,
+                         bestScore: store.highScores.first?.score ?? 0,
                          onExit: { screen = .menu },
                          recordSession: { score, _ in
                              let isHigh = store.isHighScore(score)
@@ -47,6 +48,7 @@ struct RootView: View {
                 // Daily challenge — endless rules on today's shared seed; its own best.
                 let today = Self.today()
                 GameView(deck: store.cyberdeck, seed: today.seed, daily: true,
+                         bestScore: store.dailyBest(forDay: today.key),
                          onExit: { screen = .menu },
                          recordSession: { score, _ in store.recordDaily(score: score, day: today.key) })
                     .transition(.opacity)

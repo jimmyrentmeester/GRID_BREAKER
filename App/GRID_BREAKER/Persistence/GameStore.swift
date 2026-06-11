@@ -138,14 +138,22 @@ final class GameStore {
     /// Core 1 is always open; core N opens once the previous is cleared.
     func isUnlocked(_ core: DataCore) -> Bool { core.id <= save.campaignProgress + 1 }
     func isCleared(_ core: DataCore) -> Bool { core.id <= save.campaignProgress }
+    /// Best score ever decoded on this core (0 = never attempted).
+    func bestScore(for core: DataCore) -> Int {
+        let idx = core.id - 1
+        return idx >= 0 && idx < save.campaignBests.count ? save.campaignBests[idx] : 0
+    }
 
     /// Record a campaign attempt: always pay Credits for the decodes (shared
-    /// economy → progress never fully stalls), and advance the campaign if this
-    /// win cleared the next locked core. Returns Credits earned.
+    /// economy → progress never fully stalls), track the per-core best, and
+    /// advance the campaign if this win cleared the next locked core.
+    /// Returns Credits earned.
     @discardableResult
     func recordCore(_ core: DataCore, won: Bool, score: Int, on date: Date) -> Int {
         let earned = salvaged(forScore: score)
         save.cyberdeck.credits += earned
+        while save.campaignBests.count < core.id { save.campaignBests.append(0) }
+        save.campaignBests[core.id - 1] = max(save.campaignBests[core.id - 1], score)
         if won && core.id == save.campaignProgress + 1 {
             save.campaignProgress = core.id
         }
