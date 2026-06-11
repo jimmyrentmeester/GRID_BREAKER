@@ -125,6 +125,11 @@ struct GridEngine {
     private var nextMilestoneIndex = 0
     private(set) var feverActive = false
     private var feverRemaining: TimeInterval = 0
+    /// Fevers triggered this session — drives the rising threshold (D23).
+    private(set) var feversTriggered = 0
+    /// The cell a worm most recently vacated (+ when, + which worm) — a tap landing
+    /// there within `wormTapGrace` still counts as the worm hit (audit C7).
+    private var lastWormVacated: (cell: Int, at: TimeInterval, nodeID: UUID)?
     private var powerFreezeRemaining: TimeInterval = 0     // time-freeze window
     private var powerOverclockRemaining: TimeInterval = 0  // bonus-multiplier window
     private(set) var isGameOver = false
@@ -157,7 +162,7 @@ struct GridEngine {
             ramCapacity: ramCapacity,
             shieldCharges: shieldCharges,
             combo: combo,
-            comboThreshold: config.feverComboThreshold,
+            comboThreshold: feverThresholdEff,
             cleanStreak: cleanStreak,
             streakMultiplier: streakMultiplier,
             feverActive: feverActive,
@@ -188,6 +193,27 @@ struct GridEngine {
     /// Score used for difficulty scaling (campaign cores can start faster).
     private var scaledScore: Int { score + difficultyBias }
 
+    /// Effective fever threshold: rises per fever already triggered (D23), so a
+    /// long run has to *earn* each successive fever. Static when the ramp is off.
+    var feverThresholdEff: Int {
+        guard config.feverThresholdRampPerFever > 0 else { return config.feverComboThreshold }
+        return min(config.feverThresholdMax,
+                   config.feverComboThreshold + feversTriggered * config.feverThresholdRampPerFever)
+    }
+
+    /// Effective RAM drain multiplier at the current score (1 when the ramp is off).
+    private var drainMultiplier: Double {
+        guard config.drainRampPerScore > 0 else { return 1 }
+        return min(config.drainRampCap, 1 + Double(score) * config.drainRampPerScore)
+    }
+
+    /// Effective decode-refill factor at the current score (1 when decay is off).
+    /// Applies to the per-node bonuses only — never to the Decode-Speed upgrade.
+    private var refillFactor: Double {
+        guard config.refillDecayPerScore > 0 else { return 1 }
+        return max(config.refillDecayFloor, exp(-config.refillDecayPerScore * Double(score)))
+    }
+
     // MARK: Per-frame update
 
     /// Advance the simulation by `deltaTime` seconds. Returns the events that
@@ -215,8 +241,9 @@ struct GridEngine {
             }
         }
 
-        // 1. Drain the RAM buffer (paused while frozen).
-        if !frozen { ramRemaining -= config.ramDrainPerSecond * deltaTime }
+        // 1. Drain the RAM buffer (paused while frozen). The drain ramps with
+        // score in endless (D23) so late-game survival is a real fight.
+        if !frozen { ramRemaining -= config.ramDrainPerSecond * drainMultiplier * deltaTime }
 
         // 2. Expire timed-out nodes. Daemons penalize + break combo; bombs vanish safely.
         let expired = nodes.filter { clock >= $0.expiresAt }
@@ -235,20 +262,29 @@ struct GridEngine {
         timeSinceLastSpawn += deltaTime
         let interval = feverActive ? config.feverSpawnInterval : config.spawnInterval(atScore: scaledScore)
         let target = feverActive
-            ? min(gridSize.cellCount, config.feverActiveNodes)
+            ? min(gridSize.cellCount, config.feverActiveNodes(for: gridSize))
             : config.targetActiveNodes(atScore: scaledScore, gridSize: gridSize)
         while timeSinceLastSpawn >= interval, nodes.count < target,
               let node = spawnNode() {
             nodes.append(node)
             timeSinceLastSpawn -= interval
         }
+        // Don't bank spawn debt while the board is at its ceiling — otherwise
+        // freeing cells after a saturated stretch dumps a burst of simultaneous
+        // spawns in one tick (audit C1).
+        timeSinceLastSpawn = min(timeSinceLastSpawn, interval)
 
         // 3.5 Worms scuttle to an adjacent free cell on their hop timer.
         for i in nodes.indices where nodes[i].type == .wormDaemon {
             guard let next = nodes[i].nextHopAt, clock >= next else { continue }
             let occupied = Set(nodes.map(\.cellIndex))
             let dests = adjacentCells(nodes[i].cellIndex).filter { !occupied.contains($0) }
-            if let dest = dests.randomElement(using: &rng) { nodes[i].cellIndex = dest }
+            if let dest = dests.randomElement(using: &rng) {
+                // Remember the vacated cell briefly — a tap racing the hop still
+                // lands (audit C7, brief §10.7 anti-frustration).
+                lastWormVacated = (cell: nodes[i].cellIndex, at: clock, nodeID: nodes[i].id)
+                nodes[i].cellIndex = dest
+            }
             nodes[i].nextHopAt = clock + config.wormHopInterval   // reschedule even if boxed in
         }
 
@@ -267,6 +303,14 @@ struct GridEngine {
         guard !isGameOver else { return [] }
 
         guard let idx = nodes.firstIndex(where: { $0.cellIndex == cellIndex }) else {
+            // A tap racing a worm's hop: if the worm vacated this cell within the
+            // grace window and is still alive, credit the hit (audit C7).
+            if let v = lastWormVacated, v.cell == cellIndex,
+               clock - v.at <= config.wormTapGrace,
+               let wormIdx = nodes.firstIndex(where: { $0.id == v.nodeID }) {
+                lastWormVacated = nil   // one redemption per hop
+                return [decode(at: wormIdx)] + checkFever() + checkTarget() + checkGridEscalation() + checkMilestone()
+            }
             // Empty cell — a miss, unless the shield absorbs it.
             if shieldCharges > 0 {
                 shieldCharges -= 1
@@ -355,12 +399,14 @@ struct GridEngine {
     }
 
     /// Start Fever Mode if a fresh decode pushed the combo to threshold.
-    /// On trigger: hazards vanish (bombs removed safely), window resets.
+    /// On trigger: hazards vanish (bombs removed safely), window resets, and the
+    /// next threshold rises (D23) so fever stays a *moment*, not a steady state.
     private mutating func checkFever() -> [GameEvent] {
-        guard config.feverEnabled, !feverActive, combo >= config.feverComboThreshold else { return [] }
+        guard config.feverEnabled, !feverActive, combo >= feverThresholdEff else { return [] }
         feverActive = true
         feverRemaining = feverDurationEff
         combo = 0
+        feversTriggered += 1
         nodes.removeAll { $0.type == .firewallBomb }
         return [.feverStarted]
     }
@@ -368,24 +414,27 @@ struct GridEngine {
     // MARK: Helpers
 
     /// Fully clear the daemon at `idx`: bump combo, award score (×fever) + RAM, remove.
+    /// The per-node RAM bonus decays with score in endless (D23); the Decode-Speed
+    /// upgrade's `decodeTimeBonus` never decays, so the upgrade stays meaningful late.
     private mutating func decode(at idx: Int) -> GameEvent {
         let node = nodes[idx]
         combo += 1
         cleanStreak += 1
         let multiplier = effectiveMultiplier
+        let refill = refillFactor
         switch node.type {
         case .standardDaemon:
             score += config.scoreStandard * multiplier
-            ramRemaining = min(ramCapacity, ramRemaining + config.bonusStandardDecode + decodeTimeBonus)
+            ramRemaining = min(ramCapacity, ramRemaining + config.bonusStandardDecode * refill + decodeTimeBonus)
         case .armoredDaemon:
             score += config.scoreArmored * multiplier
-            ramRemaining = min(ramCapacity, ramRemaining + config.bonusArmoredDecode + decodeTimeBonus)
+            ramRemaining = min(ramCapacity, ramRemaining + config.bonusArmoredDecode * refill + decodeTimeBonus)
         case .dataCache:
             score += config.scoreCache * multiplier
-            ramRemaining = min(ramCapacity, ramRemaining + config.bonusCacheDecode + decodeTimeBonus)
+            ramRemaining = min(ramCapacity, ramRemaining + config.bonusCacheDecode * refill + decodeTimeBonus)
         case .wormDaemon:
             score += config.scoreWorm * multiplier
-            ramRemaining = min(ramCapacity, ramRemaining + config.bonusStandardDecode + decodeTimeBonus)
+            ramRemaining = min(ramCapacity, ramRemaining + config.bonusStandardDecode * refill + decodeTimeBonus)
         case .firewallBomb, .powerUp:
             break // never decoded (power-ups go through applyPowerUp)
         }

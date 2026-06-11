@@ -73,6 +73,33 @@ struct GameConfig: Sendable {
     /// During fever: faster spawns + a fuller grid of golden bonus nodes.
     var feverSpawnInterval: TimeInterval = 0.34
     var feverActiveNodes: Int = 4
+    /// Fever density on the escalated 4×4 grid (4/16 cells read sparse vs 4/9 —
+    /// keep late-game fever a gold flood). Used only after grid escalation.
+    var feverActiveNodes4x4: Int = 7
+    /// The combo threshold rises by this much per fever already triggered this
+    /// session (0 = off), capped at `feverThresholdMax`. Stops fever from being
+    /// self-sustaining in long runs: bombs vanish during fever, making the next
+    /// 8-chain trivial — uptime hit 55% for strong play in the audit sim (D23).
+    var feverThresholdRampPerFever: Int = 0
+    var feverThresholdMax: Int = 8
+
+    // MARK: Late-game pressure (endless skill ceiling, D23)
+    /// RAM drain is multiplied by min(`drainRampCap`, 1 + score·ramp). At the
+    /// difficulty floor a competent player's decode refill (~3/s × 1.05s) outruns
+    /// the flat 1.0/s drain forever; this restores a ceiling. 0 = off.
+    var drainRampPerScore: Double = 0
+    var drainRampCap: Double = 1.0
+    /// Decode RAM refill is multiplied by max(`refillDecayFloor`,
+    /// exp(-decay·score)). Applies to the per-node bonuses only — the Decode-Speed
+    /// upgrade's bonus never decays, so the upgrade stays meaningful late. 0 = off.
+    var refillDecayPerScore: Double = 0
+    var refillDecayFloor: Double = 1.0
+
+    // MARK: Input tolerance (brief 10.7 anti-frustration)
+    /// A tap landing on the cell a worm just vacated (within this window) still
+    /// counts as the worm hit, not a miss — the hop/tap race shouldn't cost
+    /// 1.5s RAM + the streak (audit C7). 0 = off.
+    var wormTapGrace: TimeInterval = 0.08
 
     // MARK: Endless progression (score milestones + clean-streak multiplier)
     /// Score thresholds that fire a milestone (flash + chime + a small RAM top-up).
@@ -93,10 +120,6 @@ struct GameConfig: Sendable {
     /// late-game escalation (nil = never; disabled in campaign/Flow). brief §10.3 /
     /// QUESTIONS Q2.
     var gridEscalationScore: Int? = 40
-
-    // MARK: Input tolerance (brief 10.7 risk mitigation)
-    /// Hitbox is enlarged beyond the visual sprite for touch tolerance.
-    var hitboxPadding: CGFloat = 1.20
 
     // MARK: Spawn mix (procedural selection, brief 10.3)
     var armoredSpawnChance: Double = 0.20
@@ -189,9 +212,20 @@ struct GameConfig: Sendable {
         c.gridEscalationScore = 80     // grid grows later (was 40)
         // Progression: landmark milestones (with a small RAM top-up) + a clean-streak
         // base multiplier so long, clean survival is rewarded exponentially.
-        c.milestoneScores = [50, 100, 250, 500, 1000, 2000, 4000, 8000]
+        c.milestoneScores = [50, 100, 250, 500, 1000, 2000, 4000, 8000, 16000, 32000]
         c.milestoneRAMBonus = 2.5
         c.streakTierThresholds = [12, 30, 60, 120]   // ×2, ×3, ×4, ×5
+        // Late-game pressure (D23, "mastery = endless"): the audit sim showed good
+        // play surviving indefinitely on the old flat drain (refill outran it at the
+        // difficulty floor) and fever self-sustaining at 31–55% uptime. These ramps
+        // restore a ~3–4 min ceiling for good play while leaving the casual opening
+        // (~80–100 s) intact; a truly strong player can still go on a legend run.
+        c.drainRampPerScore = 0.0007   // ×2 drain at score ~1430
+        c.drainRampCap = 2.5
+        c.refillDecayPerScore = 0.0003
+        c.refillDecayFloor = 0.75
+        c.feverThresholdRampPerFever = 1   // 8, 9, 10, … per fever triggered
+        c.feverThresholdMax = 12
         return c
     }
 
@@ -252,6 +286,12 @@ struct GameConfig: Sendable {
     func spawnInterval(atScore score: Int) -> TimeInterval {
         let scaled = baseSpawnInterval * exp(-spawnCompression * Double(score))
         return max(minSpawnInterval, scaled)
+    }
+
+    /// Fever's active-node ceiling for a given grid (denser on 4×4 so the gold
+    /// flood keeps its density after escalation).
+    func feverActiveNodes(for gridSize: GridSize) -> Int {
+        gridSize == .fourByFour ? feverActiveNodes4x4 : feverActiveNodes
     }
 
     /// How many nodes may be active at once at a given score (brief §10.3:

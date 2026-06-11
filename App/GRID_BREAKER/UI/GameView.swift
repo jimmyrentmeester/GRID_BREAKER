@@ -226,6 +226,7 @@ struct GameView: View {
     @State private var showMilestone = false
     @State private var streakPulse = false
     @State private var countdownValue: Int? = nil   // 3·2·1·0(GO); nil = not counting
+    @State private var countdownTask: Task<Void, Never>?
     @State private var showBriefing: Bool
     let core: DataCore?                 // nil = endless mode
     let onExit: () -> Void
@@ -282,8 +283,12 @@ struct GameView: View {
 
     /// True only on devices with a Dynamic Island / notch (a real top inset).
     /// On flat-top devices (e.g. SE) we keep score/RAM inline in the HUD instead
-    /// of flanking the top, so nothing overlaps or is lost.
-    private var hasIslandOrNotch: Bool {
+    /// of flanking the top, so nothing overlaps or is lost. Cached: `body`
+    /// re-evaluates every frame during play, and the scene/key-window walk is
+    /// not free (audit C3) — the inset can't change mid-session anyway.
+    @State private var hasIslandOrNotch = false
+
+    private static func detectIslandOrNotch() -> Bool {
         #if canImport(UIKit)
         let top = UIApplication.shared.connectedScenes
             .compactMap { ($0 as? UIWindowScene)?.keyWindow?.safeAreaInsets.top }
@@ -308,23 +313,26 @@ struct GameView: View {
     }
 
     /// Run the pre-game "sync" countdown (every mode): hold the engine paused through
-    /// 3·2·1, release it on GO. Each beat ticks an SFX + haptic.
+    /// 3·2·1, release it on GO. Each beat ticks an SFX + haptic. The task is stored
+    /// and cancelled on disappear so a quit mid-countdown can't unpause a session
+    /// that's leaving the screen (audit C4).
     private func startCountdown() {
         guard countdownValue == nil else { return }
         model.pause()
         let h = Haptics()
-        Task { @MainActor in
+        countdownTask?.cancel()
+        countdownTask = Task { @MainActor in
             for n in [3, 2, 1] {
                 countdownValue = n
                 AudioEngine.shared.play(.uiTap)
                 h.impact(.light)
-                try? await Task.sleep(nanoseconds: 560_000_000)
+                do { try await Task.sleep(nanoseconds: 560_000_000) } catch { return }
             }
             countdownValue = 0                 // GO
             AudioEngine.shared.play(.fever)
             h.success()
             model.unpause()                    // the run begins on GO
-            try? await Task.sleep(nanoseconds: 450_000_000)
+            do { try await Task.sleep(nanoseconds: 450_000_000) } catch { return }
             countdownValue = nil
         }
     }
@@ -507,10 +515,12 @@ struct GameView: View {
             .allowsHitTesting(false)
         }
         .onAppear {
+            hasIslandOrNotch = Self.detectIslandOrNotch()
             model.reduceMotion = reduceMotion
             model.pause()                       // hold the clock for the briefing / countdown
             if !showBriefing { startCountdown() }
         }
+        .onDisappear { countdownTask?.cancel() }
         .onChange(of: reduceMotion) { _, new in model.reduceMotion = new }
         .onChange(of: model.snapshot.isGameOver) { _, over in
             if over, outcome == nil {
