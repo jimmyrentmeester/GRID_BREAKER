@@ -217,6 +217,46 @@ icons; and at-a-glance **stat chips** (Best/Daily/Credits). Color is restrained 
 *meaningful* — cyan = play, gold = spend Credits, dim = utility — instead of a different
 hue per button. One primary action, clear groups, less visual noise.
 
+## D23 — Endless late-game pressure ("mastery = endless")
+**2026-06-11.** A balance audit with a Python mirror of the engine (D10 player model,
+5 seeds, 60 fps) found endless had **no skill ceiling**: good play (0.28 s reaction)
+survived a 20-minute sim cap on every seed (~8.6k score), strong play ~23k, because
+(a) decode refill at the difficulty floor (~3/s × 1.05 s) outruns the flat 1.0/s
+drain, and (b) fever is self-sustaining — bombs vanish during fever, making the next
+8-chain trivial (55% fever uptime for strong play). That also collapsed the economy:
+one good run ≈ 8.6k CR vs the 20.2k CR full upgrade tree.
+
+Fix: three deterministic levers in `GameConfig`, **endless-only** (campaign/Flow
+keep them off):
+- **Drain ramp** — RAM drain × min(2.5, 1 + 0.0007·score).
+- **Refill decay** — per-node RAM bonus × max(0.75, exp(-0.0003·score)); the
+  Decode-Speed upgrade's bonus never decays (upgrade stays meaningful late).
+- **Fever threshold ramp** — +1 combo per fever triggered, capped at 12.
+
+Philosophy chosen: **"mastery = endless"** — sim'd result: casual ~83 s (intent:
+barely changed), good ~3.3 min (a real ceiling), a truly strong player can still go
+on a legend run (sim-unbounded). The alternative ("everyone dies", harsher numbers
+T8 in the audit) narrowed the casual↔good gap and was rejected. Milestones extended
+to 16k/32k so long runs keep landmarks. Full audit + sim scripts vendored in
+`docs/audit/`. Campaign curve re-validated unchanged: casual
+walls at core 9, good clears all, strong full-clears — matches D13/D21 intent.
+**Numbers are sim-validated, device feel-pass pending (Q7).**
+
+## D24 — SFX redesigned: dark-cyberpunk synth family (amends D12)
+**2026-06-11.** The maintainer judged the original FM/bell SFX set "too musical
+arcade, not hacker" (the deferred Q6 real-device listen). Replaced all 11 SFX with a
+**dark-cyberpunk synth family**, still 100% synthesized (€0/asset-free ethos, Q4):
+detuned dual-saw stabs through a *closing* one-pole low-pass (the signature "dark
+pluck"), sub-sine weight, tanh soft-clip warmth, dark minor fundamentals an octave
+below the old set; noise only as attack transient. Functional contracts preserved:
+decode still climbs 8 steps with the combo (now also opening the filter per step),
+breach still resolves *upward* into the armored kill, fever is a riser not a
+fanfare, game-over is a tape-stop power-down. Workflow: recipes were prototyped in
+Python (`scripts/sfx_prototype.py`) and rendered to WAV for the maintainer's ears
+*before* the Swift rewrite — synthesis math is 1:1 transliterable, so future SFX
+iterations can be auditioned the same way. API unchanged
+(`SFX` enum, `decodeSteps`, `play(_:step:)`).
+
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.

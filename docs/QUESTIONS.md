@@ -21,5 +21,12 @@ Resolved questions move to `DECISIONS.md`.
 
 ## Open
 - **Q6 — Real-device audio listen:** SFX/music verified at engine+buffer level only;
-  confirm they sound right (and balanced vs. game) on a physical device — now covers
-  the full FM SFX set, the music/effects volume sliders, and the purchase chime.
+  confirm they sound right (and balanced vs. game) on a physical device. Now covers
+  the **new dark-cyberpunk SFX set (D24, Run #70)**: do the darker, lower hits still
+  cut through the darksynth music in play (both live around A minor / the low-mids)?
+  Preview WAVs from the prototyping session approximate the in-game sound.
+- **Q7 — Endless late-game feel pass (D23, Run #69):** the new pressure curve
+  (drain ramp, refill decay, fever threshold 8→12) is sim-validated but needs a
+  human run on device: does a good ~3-minute run die in a way that feels *earned*
+  (creeping tension) rather than sudden? Watch the RAM bar around score 500–1500.
+  Also build-verify Run #69 — the sandbox couldn't run xcodebuild/sim this session.

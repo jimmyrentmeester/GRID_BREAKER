@@ -2,6 +2,24 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.23 — A darker, meaner soundscape (2026-06-11)
+- Every sound effect is rebuilt in a dark cyberpunk style: gritty detuned synth-stabs
+  and sub-bass instead of bright bells. Decodes still climb in pitch as your combo
+  grows — they just sound like cracking ice, not a music box.
+- Firewall hits boom harder, Fever now *surges* in, and game-over winds down like the
+  connection physically dying.
+
+## 1.0.22 — Endless gets a real endgame (2026-06-11)
+- Long endless runs are now a genuine fight: the RAM drain creeps up as your score
+  climbs, decodes refill a little less at high scores, and each Fever raises the bar
+  for the next one (8 → up to 12 clean hits). Short and casual runs feel the same.
+- Two new score milestones — 16,000 and 32,000 — for the legends.
+- Fever on the expanded 4×4 grid now floods more gold nodes, matching its 3×3 density.
+- Tapping the cell a worm *just* hopped out of now counts as catching it — no more
+  losing your streak to a coin-flip race.
+- Under the hood: smoother spawn pacing after a full board, and a few stability fixes
+  (countdown, music playlist edge case, performance during play).
+
 ## 1.0.21 — More cosmetics & cyberdeck upgrades (2026-06-08)
 - Three new neon palettes — Ultraviolet, Inferno and Wireframe — and three new tap-trails:
   Laser, Hexbits and Voidstream.

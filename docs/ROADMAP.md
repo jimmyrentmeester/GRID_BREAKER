@@ -102,7 +102,16 @@ need skill/upgrades. Shared economy (cores pay Credits; upgrades apply). Level
 select with lock/clear states, in-session target HUD, CORE CRACKED / INTRUSION
 FAILED screens, persisted progress. See D13.
 
+## ✅ Balance audit + hardening (post-release-prep) (2026-06-11)
+Full-codebase review + headless sim audit (D23, Run #69). Endless gains a real
+late-game ceiling (drain ramp, refill decay, fever-threshold ramp — campaign/Flow
+untouched), fever stays dense on the 4×4 grid, worm hop/tap races resolve in the
+player's favor, plus small hardening fixes (spawn-debt clamp, dead config removed,
+cached notch check, cancellable countdown, music-queue wrap). **Pending: Xcode
+build + on-device feel pass of the new endless curve (Q7).**
+
 ## Later (out of current scope)
-4×4 grid escalation (engine supports it; Q2). Android (Skip or CMP rewrite),
-web-WASM demo + backend proxy for high-score sync, cosmetics. Revisit only if the
+Android (Skip or CMP rewrite), web-WASM demo + backend proxy for high-score sync.
+Optional balance follow-ups from the audit: reduced credits on daily-challenge
+replays (B4 — only if seed-farming shows up in the wild). Revisit only if the
 project graduates from hobby scope.

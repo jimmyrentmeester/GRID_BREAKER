@@ -3,6 +3,47 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #70 — SFX rebuilt as a dark-cyberpunk synth family (2026-06-11)
+Maintainer verdict on the old set: too musical/bell-like for the theme (Q6). All 11
+SFX redesigned (D24), still fully synthesized in `AudioEngine.buildBuffers()`:
+- New synthesis kit: `detSaw` (detuned dual-saw), `softClip` (tanh) and a stateful
+  `LowPass` (one-pole, per-sample cutoff) alongside the existing FM helpers.
+- Decode chain: dark minor run A3→D5 (octave down), closing-filter pluck; the
+  filter base opens per step so a clean chain audibly brightens. Worm = dark
+  slither; cache = sub-drop haul; breach = muted crack → armored kill = opening
+  "zhwip" (still rises); miss = low denied buzz; bomb = sub boom + tritone saw
+  crash through a slamming filter; fever = minor-arp riser (not a fanfare);
+  game-over = tape-stop power-down; UI/purchase = dark ticks/stabs.
+- Workflow: prototyped in Python (`scripts/sfx_prototype.py`), rendered 13 preview
+  WAVs for the maintainer to audition, then transliterated 1:1 to Swift. API untouched.
+- **Verified:** preview WAVs rendered + peak-checked (0.24–0.59, in line with the
+  old set); Swift mirrors the auditioned math. Xcode build + on-device listen
+  pending (Q6 still covers the device check).
+
+## Run #69 — Balance audit fixes: endless ceiling + hardening (2026-06-11)
+Implemented the findings of the full balance audit + code review (see D23 and the
+session report `GRID_BREAKER_audit.md`; audit IDs in parentheses).
+- **Endless skill ceiling (B1/B2, D23):** `GameConfig` gains drain-ramp, refill-decay
+  and fever-threshold-ramp levers; `endless()` sets them (drain ×≤2.5, refill floor
+  0.75, threshold 8→12). Engine applies them in `tick`/`decode`/`checkFever`;
+  snapshot `comboThreshold` now reports the effective threshold so the combo meter
+  tracks it automatically. Milestones extended to 16k/32k.
+- **Fever density on 4×4 (B5):** `feverActiveNodes4x4 = 7` via
+  `config.feverActiveNodes(for:)` — the gold flood keeps its density after escalation.
+- **Spawn-debt clamp (C1):** `timeSinceLastSpawn` no longer banks while the board is
+  at its ceiling — frees no burst of simultaneous spawns.
+- **Worm hop/tap grace (C7):** a tap on the cell a worm vacated ≤80 ms ago counts as
+  the worm hit (engine-side, deterministic) instead of a 1.5 s + streak-reset miss.
+- **Hardening:** dead `hitboxPadding` removed from `GameConfig` (C2; Core is now
+  CGFloat-free). `hasIslandOrNotch` cached in a `@State` instead of walking UIKit
+  scenes every body evaluation (C3). Pre-run countdown task stored + cancelled on
+  disappear (C4). `MusicPlayer.playCurrent` wraps past an unreadable final track,
+  with a one-full-pass guard (C6).
+- **Verified:** T9 lever numbers validated in the Python mirror sim before
+  implementation (casual ~83 s / good ~3.3 min / strong unbounded; campaign
+  unchanged: casual walls at core 9, good clears all). Xcode build + on-device feel
+  pass pending (sandbox had no disk space for further sim runs this session) — Q7.
+
 ## Run #68 — New terminal icon + cleaned splash (2026-06-08)
 Maintainer disliked the grid icon (wants cyber/hacky, no grid) and still saw the old
 static splash.
