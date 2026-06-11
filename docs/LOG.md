@@ -3,6 +3,23 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #73 — Promo App Preview video + release-docs sweep (2026-06-11)
+Pre-release pass: Q6 + Q7 resolved by the maintainer (device passes approved).
+- **App Preview rebuilt as a promo** (`docs/preview/app-preview-promo-886x1920.mov`):
+  the Run #69 capture didn't meet the App Preview spec (1320×2868 @ ~50 fps — that's
+  the *screenshot* size) and had **no audio track**. Rebuilt with ffmpeg to
+  886×1920 @ 30 fps H.264 + AAC (~6 MB): subtle neon bloom pass (screen-blend,
+  opacity 0.16) + grade tuned to keep the deep blacks, eight timed neon caption
+  beats matched to the footage (BREACH THE GRID → TAP·DECODE·SURVIVE → OVERCLOCK →
+  CHAIN FEVER → STREAK → THE GRID GROWS → MULTIPLY EVERYTHING → JACK IN NOW), and an
+  Arcade_Fever music bed (fade in/out). Reproducible: `scripts/make_preview_promo.sh`.
+- **Release docs updated:** RELEASE_PLAN A1 reopened (fuzz re-run needed after
+  #69–72), A2 narrowed to the remaining walkthrough items, C2 points at the promo
+  file, C1 notes the optional screenshot recapture. QUESTIONS Q6/Q7 → Resolved.
+- **Verified:** ffprobe confirms 886×1920 / 30 fps / H.264+AAC / 25.49 s; caption
+  timing + grade checked against extracted frames (two-pass tune: first grade washed
+  the blacks purple, corrected).
+
 ## Run #72 — Tutorial streak lesson + HUD milestone hint (2026-06-11)
 The two deferred items from the Run #71 walkthrough, requested by the maintainer:
 - **Tutorial beat 7 (new): the streak lesson.** Level 3 now runs fever → streak →

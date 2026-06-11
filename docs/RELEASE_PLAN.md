@@ -16,14 +16,14 @@ A1 + B3/B4 + C in the meantime.
 ---
 
 ## Phase A — Lock the build
-- [x] **A1 🤖 Final code/QA sweep** (Run #67) — clean build; no temp/debug residue;
-      version 1.0 / build 1; invariant fuzz **1,440 runs** (60 seeds × starter+maxed deck ×
-      endless + 10 cores + flow) → **0 violations**. Balance was sim-validated when last
-      tuned and is unchanged since.
-- [ ] **A2 👤 On-device playthrough** (real iPhone) — the one thing the sim can't judge:
-      audio/SFX mix + haptics feel; full onboarding (3 levels → payday → guided shops);
-      the 3·2·1 countdown; streak multiplier + milestones; new cosmetics/cyberdeck;
-      boot splash; every mode end-to-end. Jot down anything that feels off.
+- [~] **A1 🤖 Final code/QA sweep** — Run #67 was green, but Runs #69–72 changed the
+      engine (D23 pressure curve, ramCritical, worm grace), all SFX (D24) and gameplay
+      feedback since. **Redo before archiving:** clean build, no debug residue, and
+      re-run the invariant fuzz across endless + 10 cores + flow.
+- [~] **A2 👤 On-device playthrough** (real iPhone) — audio mix (Q6 ✓) and the endless
+      curve (Q7 ✓) are approved on device. Still to walk once: the **new tutorial
+      streak lesson (beat 7)**, PB-toast + run recap + low-RAM warning in play,
+      campaign BEST scores on the level select, and a full onboarding → shops pass.
 - [ ] **A3 👤 Accessibility pass with VoiceOver ON** (device) — menus/shops/settings/HUD
       navigable; Reduce Motion respected. 🤖 fixes any gaps found.
 - [ ] **A4 🤖 Apply A2/A3 feedback** — any feel/tuning/bug tweaks you flag.
@@ -46,10 +46,17 @@ A1 + B3/B4 + C in the meantime.
       **1320×2868 (6.9")** + resized **1242×2688 (6.5")** set, in
       `docs/screenshots/{iphone-6.9,iphone-6.5}/`: menu, Fever gameplay (×6, streak),
       campaign ladder, cyberdeck, cosmetics. 👤 uploads in App Store Connect.
-- [x] **C2 🤖 App Preview video** (Run #69) — `docs/preview/app-preview-6.9.mov`:
-      25.5 s, 1320×2868 (6.9"), H.264, of the boot + Fever gameplay. ⚠️ recorded at ~50 fps;
-      if App Store Connect rejects the frame rate, re-encode to 30 fps (e.g.
-      `ffmpeg -i in.mov -r 30 -c:v libx264 -pix_fmt yuv420p out.mov`, or a QuickTime export).
+      *(Note: captured pre-Run #71/72 — the live HUD now also shows the "NEXT ◆"
+      milestone hint and campaign rows show BEST scores. Recapture is optional;
+      screenshots don't have to be pixel-identical to the shipped build.)*
+- [x] **C2 🤖 App Preview video** — **upload `docs/preview/app-preview-promo-886x1920.mov`**
+      (Run #73): the Run #69 capture rebuilt to the actual App Preview spec
+      (**886×1920 portrait, 30 fps**, H.264 + AAC, 25.5 s, ~6 MB) with a subtle neon
+      bloom/grade, eight timed caption beats (BREACH THE GRID → … → JACK IN NOW) and
+      an Arcade_Fever music bed (the raw capture had **no audio track**). Reproducible
+      via `scripts/make_preview_promo.sh` (needs ffmpeg). The original
+      `app-preview-6.9.mov` (1320×2868 @ ~50 fps, silent) is kept as source — it does
+      NOT meet the preview spec; don't upload it.
 - [x] **C1b 🤖 Marketing (captioned) screenshots** — `docs/screenshots/iphone-6.9-marketing/`
       (+ 6.5"): neon headline + framed shot per state. Use either these or the plain set.
 - [x] **C3 🤖 Store copy** — `docs/store-copy.md`: name, subtitle ("Neon reflex
