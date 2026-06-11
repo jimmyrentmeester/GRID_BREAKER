@@ -2,6 +2,13 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.25 — Learn the streak, chase the next landmark (2026-06-11)
+- The training now teaches streaks: chain five clean decodes on a hopping daemon —
+  with the rising combo sound — and earn the STREAK ×2 badge, so you know the
+  multiplier (and what a miss costs) before your first real run.
+- Endless and the daily now show your next score landmark ("NEXT ◆ 250") right under
+  the score — there's always a goal in sight.
+
 ## 1.0.24 — Moments that matter (2026-06-11)
 - Beat your own record mid-run and the game tells you *right then* — a gold
   "▲ PERSONAL BEST" flash in endless and the daily challenge.

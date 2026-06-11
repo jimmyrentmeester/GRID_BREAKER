@@ -72,6 +72,7 @@ struct SessionSnapshot: Sendable {
     var elapsed: TimeInterval          // session clock (run recap)
     var bestCleanStreak: Int           // longest clean chain this run (run recap)
     var feversTriggered: Int           // fevers this run (run recap)
+    var nextMilestone: Int?            // next score landmark (nil = none/disabled)
 
     /// Campaign win.
     var didWin: Bool { gameOverReason == .coreCracked }
@@ -185,7 +186,9 @@ struct GridEngine {
             gameOverReason: gameOverReason,
             elapsed: clock,
             bestCleanStreak: bestCleanStreak,
-            feversTriggered: feversTriggered
+            feversTriggered: feversTriggered,
+            nextMilestone: nextMilestoneIndex < config.milestoneScores.count
+                ? config.milestoneScores[nextMilestoneIndex] : nil
         )
     }
 

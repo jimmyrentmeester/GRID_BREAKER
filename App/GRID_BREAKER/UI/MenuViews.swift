@@ -571,7 +571,7 @@ private struct PaletteRow: View {
 /// separately after the first real run (see ONBOARDING_PROPOSAL.md, Acts 1.5–2).
 ///
 /// Beat map: 0 decode · 1 ram · 2 firewall | 3 armored · 4 cache · 5 worm | 6 fever ·
-/// 7 power-up | 8 outro. Beats 0/3/6 open with a level card.
+/// 7 streak · 8 power-up | 9 outro. Beats 0/3/6 open with a level card.
 struct OnboardingView: View {
     /// First-launch shows the starter-CR "payday"; a Settings revisit does not.
     var showPayday: Bool = true
@@ -601,9 +601,14 @@ struct OnboardingView: View {
     @State private var feverCell = 4
     @State private var feverOn = false           // beat 6: fever-active phase
     @State private var feverGold: Set<Int> = []  // beat 6: gold nodes to clear in Fever
-    @State private var powerLabel: String? = nil // beat 7
-    @State private var powerStep = 0             // beat 7: which power-up (0…2)
-    @State private var powerRevealed = false     // beat 7: collected → wait for CONTINUE
+    @State private var streakHits = 0            // beat 7: clean-chain progress (0…5)
+    @State private var streakDone = false        // beat 7: chain complete → badge moment
+    @State private var powerLabel: String? = nil // beat 8
+    @State private var powerStep = 0             // beat 8: which power-up (0…2)
+    @State private var powerRevealed = false     // beat 8: collected → wait for CONTINUE
+
+    /// Beat 7: the daemon hops along this fixed path so the chain *moves* like real play.
+    private let streakCells = [4, 0, 8, 2, 6]
 
     /// The three power-ups, taught one after another in beat 7 (glyph matches the
     /// real white pickups; label names the effect).
@@ -621,7 +626,7 @@ struct OnboardingView: View {
     private let hopTimer = Timer.publish(every: 0.7, on: .main, in: .common).autoconnect()
 
     private var level: Int { beat <= 2 ? 1 : beat <= 5 ? 2 : 3 }   // 1…3 (outro stays 3)
-    private var isOutro: Bool { beat == 8 }
+    private var isOutro: Bool { beat == 9 }
 
     private var prompt: String {
         switch beat {
@@ -635,7 +640,9 @@ struct OnboardingView: View {
         case 5: return "The green worm hops — tap it wherever it lands."
         case 6: return feverOn ? "FEVER! Tap the gold nodes for double points!"
                                : "Chain decodes to charge Fever — keep tapping!"
-        case 7: return powerLabel ?? "Grab the power-up pickup (\(powerStep + 1)/\(powerUps.count)) — tap it!"
+        case 7: return streakDone ? "STREAK ×2! Long clean chains multiply your score — a miss resets it."
+                                  : "Now chain clean decodes — no misses! (\(streakHits)/5)"
+        case 8: return powerLabel ?? "Grab the power-up pickup (\(powerStep + 1)/\(powerUps.count)) — tap it!"
         default: return ""
         }
     }
@@ -674,19 +681,20 @@ struct OnboardingView: View {
                 Text(prompt)
                     .font(.system(size: 14, weight: .medium, design: .monospaced))
                     .foregroundStyle(wrongFirewall && beat == 2 ? NeonTheme.danger
-                                     : (feverOn || powerRevealed) ? NeonTheme.gold : NeonTheme.textPrimary)
+                                     : (feverOn || powerRevealed || streakDone) ? NeonTheme.gold : NeonTheme.textPrimary)
                     .multilineTextAlignment(.center)
                     .frame(height: 40)
 
                 if beat == 1 { ramBar }
                 if beat == 6 { comboMeter }
+                if beat == 7 && streakDone { streakBadge }
 
                 grid
 
                 Spacer(minLength: 0)
 
                 // Power-up: the player must press to advance, so each effect is read.
-                if beat == 7 && powerRevealed {
+                if beat == 8 && powerRevealed {
                     TerminalButton(title: powerStep + 1 < powerUps.count ? "NEXT POWER-UP" : "GOT IT",
                                    color: NeonTheme.cyan, wide: true, action: advancePower)
                 }
@@ -715,7 +723,7 @@ struct OnboardingView: View {
             case 2: return ("square.grid.3x3.fill", "Read the Grid",
                             "Armored shells, gold caches, and worms that hop.")
             default: return ("bolt.fill", "Overload",
-                             "Chain a Fever, then grab all three power-ups.")
+                             "Chain a Fever, build a streak, and grab all three power-ups.")
             }
         }()
         return VStack(spacing: 18) {
@@ -774,6 +782,23 @@ struct OnboardingView: View {
             }
         }
         .padding(.horizontal, 4)
+    }
+
+    /// Beat 7 payoff: the same STREAK badge the real game shows (visual recognition).
+    private var streakBadge: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "flame.fill").font(.system(size: 11, weight: .bold))
+            Text("STREAK ×2")
+                .font(.system(size: 12, weight: .heavy, design: .monospaced))
+                .monospacedDigit()
+        }
+        .foregroundStyle(NeonTheme.gold)
+        .neonGlow(NeonTheme.gold, radius: 4)
+        .padding(.horizontal, 10).padding(.vertical, 4)
+        .background(Capsule().fill(NeonTheme.gold.opacity(0.12))
+            .overlay(Capsule().stroke(NeonTheme.gold.opacity(0.5), lineWidth: 1)))
+        .transition(.scale(scale: 0.6).combined(with: .opacity))
+        .accessibilityLabel("Streak multiplier times 2")
     }
 
     // MARK: Grid
@@ -839,7 +864,9 @@ struct OnboardingView: View {
                 sprite(NeonTheme.worm, "scribble.variable", ringed: true)
             case 6 where idx == feverCell:
                 sprite(NeonTheme.cyan, "circle.grid.cross.fill")
-            case 7 where idx == centerCell:
+            case 7 where !streakDone && idx == streakCells[streakHits % streakCells.count]:
+                sprite(NeonTheme.cyan, "circle.grid.cross.fill")
+            case 8 where idx == centerCell:
                 sprite(NeonTheme.textPrimary, powerUps[powerStep].symbol, ringed: true)
             default:
                 EmptyView()
@@ -904,7 +931,24 @@ struct OnboardingView: View {
                     advance()
                 }
             }
-        case 7 where !powerRevealed && idx == centerCell:
+        case 7 where !streakDone && idx == streakCells[streakHits % streakCells.count]:
+            // Chain lesson: five clean decodes in a row — the daemon hops, the decode
+            // arpeggio climbs (the real chain *sound*), then the STREAK badge lands.
+            let step = streakHits
+            streakHits += 1
+            AudioEngine.shared.play(.decode, step: step)
+            flashCell = idx
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                flashCell = nil
+                if streakHits >= 5 {
+                    AudioEngine.shared.play(.fever)
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { streakDone = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+                        withAnimation(.easeInOut(duration: 0.2)) { advance() }
+                    }
+                }
+            }
+        case 8 where !powerRevealed && idx == centerCell:
             // Collect a power-up: reveal its effect and WAIT for the player to press
             // CONTINUE, so each one is actually read before the next appears.
             AudioEngine.shared.play(.fever)

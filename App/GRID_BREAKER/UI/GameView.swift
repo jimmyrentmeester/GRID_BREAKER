@@ -840,13 +840,26 @@ private struct BigScoreView: View {
                     .foregroundStyle(NeonTheme.gold)
                     .padding(.top, 2)
             }
+            // Next landmark (endless/daily only — the engine reports nil elsewhere):
+            // a quiet, always-true goal line so there's forever a "why am I here"
+            // (ground truth 1.5) without shouting over the score.
+            if let next = snapshot.nextMilestone, !snapshot.isGameOver {
+                Text("NEXT ◆ \(next)")
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textDim)
+                    .padding(.top, 1)
+            }
         }
         .animation(.easeOut(duration: 0.25), value: snapshot.score)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Score")
-        .accessibilityValue(snapshot.scoreMultiplier > 1
-            ? "\(snapshot.score), multiplier times \(snapshot.scoreMultiplier)"
-            : "\(snapshot.score)")
+        .accessibilityValue({
+            var v = snapshot.scoreMultiplier > 1
+                ? "\(snapshot.score), multiplier times \(snapshot.scoreMultiplier)"
+                : "\(snapshot.score)"
+            if let next = snapshot.nextMilestone { v += ", next milestone \(next)" }
+            return v
+        }())
     }
 }
 

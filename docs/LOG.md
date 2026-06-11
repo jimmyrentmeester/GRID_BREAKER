@@ -3,6 +3,20 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #72 — Tutorial streak lesson + HUD milestone hint (2026-06-11)
+The two deferred items from the Run #71 walkthrough, requested by the maintainer:
+- **Tutorial beat 7 (new): the streak lesson.** Level 3 now runs fever → streak →
+  power-ups (beats renumbered, outro = 9). The player chains five clean decodes on a
+  daemon that hops a fixed path (4→0→8→2→6) while the decode arpeggio climbs —
+  hearing the real chain sound — then the exact in-game STREAK ×2 badge lands with
+  the lesson line ("a miss resets it"). Level-3 card blurb updated.
+- **HUD milestone hint:** `SessionSnapshot.nextMilestone` (engine-computed; nil when
+  `milestoneScores` is empty) renders as a quiet "NEXT ◆ n" under the big score —
+  endless/daily get a permanent goal line (ground truth 1.5), campaign/Flow are
+  automatically unaffected. VoiceOver score value includes the next milestone.
+- **Verified:** static diff review; no engine mechanics touched beyond the read-only
+  snapshot field. Device pass rides Q6/Q7.
+
 ## Run #71 — Gameplay feedback pass: PB moment, run recap, low-RAM warning, core bests (2026-06-11)
 Walked the tutorial, campaign and endless flows as a player; applied the gaps found:
 - **Personal-best moment (endless/daily):** crossing your own record mid-run now fires
