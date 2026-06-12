@@ -173,11 +173,13 @@ final class GameViewModel {
                 pendingEffects.append(.init(cell: cell, style: .shield, color: NeonTheme.gold, points: nil))
                 queued = true
                 haptics.impact(.soft); audio.play(.breach)
+                if !chill { GameCenterService.shared.report(.failsafe) }
             case let .firewallDefused(cell):
                 // Shield saved you — a bright gold "blocked" pop, no game over.
                 pendingEffects.append(.init(cell: cell, style: .shield, color: NeonTheme.gold, points: nil))
                 queued = true
                 haptics.impact(.medium); audio.play(.decodeBig)
+                if !chill { GameCenterService.shared.report(.failsafe) }
             case let .firewallExploded(cell):
                 decodeRun = 0                  // chain broken → arpeggio resets
                 pendingEffects.append(.init(cell: cell, style: .bomb, color: NeonTheme.danger, points: nil))
@@ -186,6 +188,7 @@ final class GameViewModel {
                 haptics.error(); audio.play(.bomb)
             case .feverStarted:
                 haptics.success(); audio.play(.fever)
+                if !chill { GameCenterService.shared.report(.firstFever) }
             case .feverEnded:
                 haptics.impact(.soft)
             case .ramCritical:
@@ -195,10 +198,12 @@ final class GameViewModel {
             case .gridExpanded:
                 gridExpandedSeq += 1                     // drives the toast
                 haptics.success(); audio.play(.fever)   // a positive "grid grew" cue
+                if !chill { GameCenterService.shared.report(.gridExpanded) }
             case let .powerUpCollected(kind):
                 powerUpFlashKind = kind
                 powerUpFlashSeq += 1                     // drives the effect-announcement flash
                 haptics.success(); audio.play(.fever)   // bright sting on pickup
+                if !chill { GameCenterService.shared.report(.toolbelt) }
             case let .milestoneReached(value):
                 milestoneValue = value
                 milestoneSeq += 1                        // drives the landmark toast
@@ -557,6 +562,11 @@ struct GameView: View {
             if over, outcome == nil {
                 outcome = recordSession(model.snapshot.score, model.snapshot.didWin)
                 sessionBest = max(sessionBest, model.snapshot.score)
+                // Game Center mirror (report-only): same funnel, same final
+                // snapshot the recap renders. Flow is skipped inside.
+                GameCenterService.shared.reportRunEnd(
+                    model.snapshot,
+                    mode: core != nil ? .campaign : daily ? .daily : chill ? .flow : .endless)
             }
         }
         .onChange(of: model.shakeTrigger) { _, _ in

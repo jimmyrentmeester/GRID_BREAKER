@@ -110,6 +110,19 @@ player's favor, plus small hardening fixes (spawn-debt clamp, dead config remove
 cached notch check, cancellable countdown, music-queue wrap). **Pending: Xcode
 build + on-device feel pass of the new endless curve (Q7).**
 
+## 🔶 Game Center — global boards + achievements (built, verification pending)
+Report-only GameKit layer (`Services/GameCenterService.swift`, Run #75): optional
+auth, endless + daily leaderboards (replaces the out-of-scope web backend),
+13 achievements fired from the verified `GameEvent` stream + idempotent meta sync,
+`GKAccessPoint` on the menu hub only. Engine authority untouched; Flow exempt.
+**Pending (Q8):** Xcode build, App Store Connect Game Center config (IDs in the
+service file), on-device pass (auth sheet, access-point placement, banners).
+
+## Monetization (planned — see docs/MONETIZATION.md)
+Free, **no ads**, no pay-to-win ever. Phase 0: ship free. Phase 1: in-fiction tip
+jar (consumable IAPs; Small Business Program first). Phase 2: cosmetic theme packs
+(non-consumable, render-layer only). Build only after release traction.
+
 ## Later (out of current scope)
 Android (Skip or CMP rewrite), web-WASM demo + backend proxy for high-score sync.
 Optional balance follow-ups from the audit: reduced credits on daily-challenge

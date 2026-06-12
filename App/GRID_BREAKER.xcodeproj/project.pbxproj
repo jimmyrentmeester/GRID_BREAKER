@@ -25,6 +25,7 @@
 		GB000000000000000000001F /* Music in Resources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000101 /* Music */; };
 		GB0000000000000000000103 /* Campaign.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000102 /* Campaign.swift */; };
 		GB0000000000000000000105 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000104 /* LaunchScreen.storyboard */; };
+		GB0000000000000000000108 /* GameCenterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000106 /* GameCenterService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +48,8 @@
 		GB0000000000000000000101 /* Music */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Music; sourceTree = "<group>"; };
 		GB0000000000000000000102 /* Campaign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Campaign.swift; sourceTree = "<group>"; };
 		GB0000000000000000000104 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		GB0000000000000000000106 /* GameCenterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterService.swift; sourceTree = "<group>"; };
+		GB0000000000000000000107 /* GRID_BREAKER.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GRID_BREAKER.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,10 +78,12 @@
 				GB0000000000000000000023 /* Core */,
 				GB0000000000000000000028 /* Audio */,
 				GB0000000000000000000027 /* Persistence */,
+				GB0000000000000000000029 /* Services */,
 				GB0000000000000000000026 /* UI */,
 				GB0000000000000000000101 /* Music */,
 				GB000000000000000000000A /* Assets.xcassets */,
 				GB0000000000000000000104 /* LaunchScreen.storyboard */,
+				GB0000000000000000000107 /* GRID_BREAKER.entitlements */,
 			);
 			path = GRID_BREAKER;
 			sourceTree = "<group>";
@@ -127,6 +132,14 @@
 				GB0000000000000000000100 /* AudioEngine.swift */,
 			);
 			path = Audio;
+			sourceTree = "<group>";
+		};
+		GB0000000000000000000029 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				GB0000000000000000000106 /* GameCenterService.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		GB0000000000000000000025 /* Engine */ = {
@@ -235,6 +248,7 @@
 				GB000000000000000000001D /* MenuViews.swift in Sources */,
 				GB000000000000000000001E /* AudioEngine.swift in Sources */,
 				GB0000000000000000000103 /* Campaign.swift in Sources */,
+				GB0000000000000000000108 /* GameCenterService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -321,6 +335,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = GRID_BREAKER/GRID_BREAKER.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = A652HSR4S9;
@@ -345,6 +360,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = GRID_BREAKER/GRID_BREAKER.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = A652HSR4S9;

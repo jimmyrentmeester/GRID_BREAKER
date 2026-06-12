@@ -25,4 +25,11 @@ Resolved questions move to `DECISIONS.md`.
   D23 pressure curve plays well on device; Run #69–72 build-verified. Approved.
 
 ## Open
-- *(none — Q6/Q7 resolved 2026-06-11; see Resolved above)*
+- **Q8 — Game Center verification pass (Run #75).** Needs the maintainer's Mac +
+  device: (1) Xcode build of the new `GameCenterService` + entitlement; (2) App
+  Store Connect → Game Center: create 2 leaderboards + 13 achievements with the
+  exact IDs listed in `Services/GameCenterService.swift` (daily board = recurring,
+  daily reset); (3) on-device: auth sheet on first launch, `GKAccessPoint`
+  placement vs the menu's top-trailing area (move to `.topLeading` if it crowds
+  the stat chips), achievement banner timing during play, declined-auth path
+  (game must behave identically).

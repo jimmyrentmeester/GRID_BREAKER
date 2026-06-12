@@ -2,6 +2,14 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.0.26 — Game Center: global rankings & achievements (2026-06-12)
+- Sign in to Game Center (optional!) and your endless and daily-challenge scores
+  join global leaderboards — see how your best run stacks up worldwide.
+- 13 achievements to hunt: your first Fever, a 25-decode clean streak, cracking
+  The Monolith, maxing a Cyberdeck track, and more. All earned by playing —
+  none can ever be bought.
+- Skip Game Center entirely and nothing changes: your local TOP RUNS remain.
+
 ## 1.0.25 — Learn the streak, chase the next landmark (2026-06-11)
 - The training now teaches streaks: chain five clean decodes on a hopping daemon —
   with the rising combo sound — and earn the STREAK ×2 badge, so you know the

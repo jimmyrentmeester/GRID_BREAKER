@@ -260,3 +260,18 @@ iterations can be auditioned the same way. API unchanged
 ## D6 — Hand-authored pbxproj
 Mirrors the maintainer's PeuterGames convention (explicit file refs, `GB…` hex ids,
 objectVersion 56) rather than file-system-synchronized groups, for predictable diffs.
+
+## D25 — Game Center: report-only, optional, replaces the web backend idea
+**2026-06-12 (Run #75).** Global leaderboards + achievements via GameKit instead of
+the brief's web high-score backend (out of hobby scope since the vertical slice):
+Apple-hosted, €0, no server, no accounts. Constraints that make it fit the
+constitution: the service is **report-only** (observes finished snapshots + the
+verified `GameEvent` stream; never feeds anything back into a session — engine
+authority, Part 1.1, untouched); **auth is optional** (declining changes nothing;
+the local top-5 in `GameStore` stays the offline truth); **Flow reports nothing**
+(stake-free by design); achievements are earnable-only, never purchasable
+(MONETIZATION.md hard rule). Score landmarks are endless/daily only — campaign
+targets are hand-tuned, so its "score" isn't comparable. Known trade-off: scores
+are client-reported and technically spoofable; with zero rewards attached this is
+acceptable at hobby scope. `GKAccessPoint` shows on the menu hub only — nothing
+may overlay the grid mid-run (Part 2.5 discipline applies to overlays too).

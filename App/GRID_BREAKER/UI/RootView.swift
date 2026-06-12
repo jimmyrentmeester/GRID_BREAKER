@@ -122,6 +122,23 @@ struct RootView: View {
             AudioEngine.shared.enabled = store.soundEnabled
             AudioEngine.shared.start()
             if !store.tutorialSeen { onboardingPayday = true; screen = .tutorial }   // first-launch onboarding
+            // Game Center (optional, report-only): auth once, then mirror any
+            // already-earned meta progress (campaign clears, maxed deck tracks).
+            GameCenterService.shared.menuVisible = (screen == .menu)
+            GameCenterService.shared.authenticate { [weak store] in
+                guard let store else { return }
+                GameCenterService.shared.syncMeta(campaignProgress: store.campaignProgress,
+                                                  deck: store.cyberdeck)
+            }
+        }
+        .onChange(of: screen) { _, new in
+            // Apple's floating Game Center widget lives on the menu hub only —
+            // nothing may overlay the grid (or the shops) mid-flow.
+            GameCenterService.shared.menuVisible = (new == .menu)
+            if new == .menu {   // returning from a run/shop may have advanced meta
+                GameCenterService.shared.syncMeta(campaignProgress: store.campaignProgress,
+                                                  deck: store.cyberdeck)
+            }
         }
     }
 

@@ -3,6 +3,33 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #75 — Monetization plan + Game Center (leaderboards & achievements) (2026-06-12)
+Monetization scoped, then the engagement layer it depends on was built.
+- **`docs/MONETIZATION.md` (new):** free game, **no ads**, goal = cover costs.
+  Phase 1 tip jar (consumable IAPs, in-fiction tiers) + Phase 2 cosmetic packs
+  (palettes/skins/synths). Hard rule: real money never touches Credits/Cyberdeck —
+  cosmetics stay render-layer only. Enroll in the App Store Small Business Program
+  (15%) *before* first sale.
+- **`Services/GameCenterService.swift` (new):** report-only GameKit bridge (the
+  engine stays the authority). Optional auth (declining changes nothing; local
+  save stays the offline truth), `GKAccessPoint` on the menu hub only, score
+  submission, achievement reporting with launch-local dedupe.
+- **Two leaderboards:** endless (classic) + daily (recurring) — replaces the
+  out-of-scope web high-score backend with Apple-hosted boards.
+- **13 achievements**, all earnable, never purchasable: run (first fever, fever ×3,
+  streak 25, failsafe save, power-up, 4×4 grid), landmarks (100/250/500, endless +
+  daily only), meta (cores 1/5/10, maxed deck track — synced idempotently from the
+  save on menu return).
+- **Wiring:** event-driven reports ride the verified `GameEvent` stream in
+  `GameViewModel.process(_:)` (Part 2.5 — same funnel as juice/SFX); end-of-run
+  reporting sits next to `recordSession` in GameView's game-over hook with the
+  final snapshot; Flow reports nothing (stake-free by design).
+- **Project:** Game Center entitlement (`GRID_BREAKER.entitlements` +
+  `CODE_SIGN_ENTITLEMENTS`), new Services group, pbxproj refs (GB…106–108).
+- **Pending (Q8):** Xcode build + on-device pass (auth sheet, access-point
+  placement vs the menu layout, banner timing), and App Store Connect Game Center
+  config — IDs are listed in `GameCenterService.swift` and must match exactly.
+
 ## Run #74 — App Store screenshots re-shot on the current build (2026-06-12)
 All four sets regenerated (plain + marketing, 6.9" + 6.5") so the listing shows what
 1.0 actually ships: campaign per-core BEST scores, the NEXT ◆ milestone hint, the
