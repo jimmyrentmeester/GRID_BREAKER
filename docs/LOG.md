@@ -3,6 +3,26 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #74 — App Store screenshots re-shot on the current build (2026-06-12)
+All four sets regenerated (plain + marketing, 6.9" + 6.5") so the listing shows what
+1.0 actually ships: campaign per-core BEST scores, the NEXT ◆ milestone hint, the
+streak system (×5) and a ×10 Fever frame.
+- **Capture:** iPhone 17 Pro Max simulator (the 16 Pro Max sim no longer exists
+  locally; same 1320×2868 class), driven end-to-end without the input bridge:
+  temporary hooks (screen-tour task, perfect-play autoplay bot, demo-save seed
+  — BEST 327 / DAILY 198 / 484 CR / campaign 6/10 / deck levels — and an 8 s fever
+  window) + Simulator Cmd+S saves to the Desktop. ~20 frames captured; best five
+  chosen. All hooks reverted (working tree verified identical to HEAD before the
+  image commit).
+- **Sets:** `iphone-6.9` (native), `iphone-6.5` (1242×2688 resize), and the
+  captioned `-marketing` variants rebuilt in the Run #69 style (same five
+  headlines); generator vendored as `scripts/make_marketing_screens.py`, which can
+  now regenerate marketing + 6.5" sets from the plain set alone.
+- **Verified:** all PNGs exactly 1320×2868 / 1242×2688; contact-sheet review of
+  plain + marketing sets; repo tree clean of temp captures.
+- Note: ~20 `Simulator Screenshot…` PNGs remain on the maintainer's Desktop —
+  safe to delete.
+
 ## Run #73 — Promo App Preview video + release-docs sweep (2026-06-11)
 Pre-release pass: Q6 + Q7 resolved by the maintainer (device passes approved).
 - **App Preview rebuilt as a promo** (`docs/preview/app-preview-promo-886x1920.mov`):

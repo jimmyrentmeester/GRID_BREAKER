@@ -46,9 +46,8 @@ A1 + B3/B4 + C in the meantime.
       **1320×2868 (6.9")** + resized **1242×2688 (6.5")** set, in
       `docs/screenshots/{iphone-6.9,iphone-6.5}/`: menu, Fever gameplay (×6, streak),
       campaign ladder, cyberdeck, cosmetics. 👤 uploads in App Store Connect.
-      *(Note: captured pre-Run #71/72 — the live HUD now also shows the "NEXT ◆"
-      milestone hint and campaign rows show BEST scores. Recapture is optional;
-      screenshots don't have to be pixel-identical to the shipped build.)*
+      **Re-shot on the current build (Run #74):** ×10 Fever + STREAK ×5, campaign
+      BEST scores, NEXT ◆ hint — plain + marketing sets both refreshed.
 - [x] **C2 🤖 App Preview video** — **upload `docs/preview/app-preview-promo-886x1920.mov`**
       (Run #73): the Run #69 capture rebuilt to the actual App Preview spec
       (**886×1920 portrait, 30 fps**, H.264 + AAC, 25.5 s, ~6 MB) with a subtle neon
