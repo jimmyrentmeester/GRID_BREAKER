@@ -54,6 +54,53 @@ Left sidebar ▸ **iOS App ▸ 1.0 Prepare for Submission**:
 Left sidebar ▸ **App Privacy ▸ Get Started/Edit** → **Data Not Collected** (the app
 collects nothing). Publish.
 
+## D6 — Game Center (leaderboards + achievements) (20–30 min)
+The code is report-only and fails silently until these exist, so the app ships fine
+without them — but creating them now lights up the boards/badges. **IDs must match the
+code in `App/GRID_BREAKER/Services/GameCenterService.swift` exactly** (copy-paste them).
+
+App page ▸ left sidebar ▸ **Services ▸ Game Center ▸ Set up / Enable**.
+
+### Leaderboards (▸ Leaderboards ▸ + ) — create **two**
+| Reference name | Leaderboard ID | Type | Score format | Sort |
+| --- | --- | --- | --- | --- |
+| Endless – All Time | `nl.gridbreaker.lb.endless` | **Classic** | Integer | High → Low |
+| Daily Challenge | `nl.gridbreaker.lb.daily` | **Recurring** (daily reset) | Integer | High → Low |
+- For the **daily** board choose **Recurring**, duration **1 day**, so it mirrors the
+  in-game daily challenge. Each needs at least one **localization** (display name, e.g.
+  "English (U.S.)" → "Endless" / "Daily"). Image optional.
+
+### Achievements (▸ Achievements ▸ + ) — create all **13**
+For each: set **Achievement ID** (below), **Point value** (suggested; total ≤ 1000),
+**Hidden = No**, **Achievable more than once = No**, add a localization (title +
+pre-/post-earned description), and upload a **1024×1024** image (required).
+
+| Achievement ID | Suggested title | Pts |
+| --- | --- | --- |
+| `nl.gridbreaker.ach.firstfever` | First Fever | 10 |
+| `nl.gridbreaker.ach.feverloop` | Fever Loop (3 in a run) | 25 |
+| `nl.gridbreaker.ach.streak25` | Clean Streak ×25 | 50 |
+| `nl.gridbreaker.ach.failsafe` | Failsafe | 10 |
+| `nl.gridbreaker.ach.toolbelt` | Toolbelt (grab a power-up) | 10 |
+| `nl.gridbreaker.ach.grid4x4` | Grid Expanded (4×4) | 25 |
+| `nl.gridbreaker.ach.score100` | Score 100 | 10 |
+| `nl.gridbreaker.ach.score250` | Score 250 | 25 |
+| `nl.gridbreaker.ach.score500` | Score 500 | 50 |
+| `nl.gridbreaker.ach.core1` | First Core | 25 |
+| `nl.gridbreaker.ach.core5` | Core Depth (core 5) | 75 |
+| `nl.gridbreaker.ach.core10` | The Monolith (all 10) | 150 |
+| `nl.gridbreaker.ach.maxtrack` | Maxed Track | 100 |
+
+(Total = 565 / 1000.) The 13 images are the only asset gap — in-theme neon badge PNGs
+can be generated on request.
+
+### Wire it to the build
+- The **`com.apple.developer.game-center`** entitlement is already in the project; with
+  your team selected (E1) signing includes it automatically.
+- Game Center config is **app-level** in modern ASC — once the leaderboards/achievements
+  are created and the build is uploaded, they're live for that version. No per-version
+  toggle to set.
+
 ---
 
 ## E — Build, upload, submit

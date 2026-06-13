@@ -31,8 +31,7 @@ A1 + B3/B4 + C in the meantime.
       `CURRENT_PROJECT_VERSION` (build) for each new archive upload.
 
 ## Phase B — Legal & accounts (👤 blockers; 🤖 assists)
-- [~] **B1 👤 Apple Developer Program** — maintainer **approved** the €99/yr enrollment;
-      action: enroll at developer.apple.com.
+- [x] **B1 👤 Apple Developer Program** — enrolled; paid developer account active.
 - [x] **B2 👤 Music rights** — maintainer decision: keep the Gemini-generated tracks
       as-is. (Risk noted: verify the tool's terms allow commercial distribution before
       submit; swap is drop-in if ever needed.)

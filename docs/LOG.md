@@ -3,6 +3,25 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #76 — Game Center verification + ASC setup steps; B1 done (2026-06-13)
+Verified the Run #75 Game Center layer end-to-end and prepped the App Store Connect side.
+- **Build:** clean (`GameCenterService.swift` compiles; entitlement +
+  `CODE_SIGN_ENTITLEMENTS` wired in both configs). All referenced engine/store APIs
+  confirmed to exist (snapshot fields, `Campaign.count`, `CyberdeckUpgrade`
+  `currentLevel/maxLevel/allCases`, store progress/deck); achievement hooks land on
+  the real shield events (`.missAbsorbed` + `.firewallDefused`); mode routing uses
+  real `GameView` props; Flow exempt.
+- **Runtime (sim, no sandbox account):** auth fires at launch (`GC Activity: Starting
+  Authentication…` logged), Apple's sign-in sheet presents correctly (the `present()`
+  chain-walk works), app stays alive and the declined/unauth path is a clean no-op —
+  exactly the report-only design. Full score/achievement landing still needs ASC config
+  + a signed-in GC account on device (by design; can't be sim-tested).
+- **`docs/appstoreconnect-walkthrough.md`:** new **D6 — Game Center** section: the two
+  leaderboard IDs (endless classic, daily recurring) + all 13 achievement IDs with
+  suggested titles/points (565/1000) + per-achievement requirements. Flags the 13
+  achievement images as the only remaining asset gap.
+- **B1 done:** paid Apple Developer account active (RELEASE_PLAN updated).
+
 ## Run #75 — Monetization plan + Game Center (leaderboards & achievements) (2026-06-12)
 Monetization scoped, then the engagement layer it depends on was built.
 - **`docs/MONETIZATION.md` (new):** free game, **no ads**, goal = cover costs.
