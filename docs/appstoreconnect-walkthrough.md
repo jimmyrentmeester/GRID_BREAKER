@@ -20,7 +20,7 @@ hosted** (B3/B4). Everything to paste lives in `docs/store-copy.md`; screenshots
 Left sidebar ▸ **App Information**:
 - **Subtitle**: `Neon reflex grid-hacking` (from store-copy.md).
 - **Category**: Primary **Games**, choose subcategory **Arcade**; Secondary **Action**.
-- **Privacy Policy URL**: paste your hosted `…/privacy.html`.
+- **Privacy Policy URL**: `https://k6czwyxg8g-cmyk.github.io/gridbreaker/privacy.html`
 - **Content Rights**: confirm it contains no third-party content (note your music
    decision, B2).
 - Save.
@@ -43,7 +43,8 @@ Left sidebar ▸ **iOS App ▸ 1.0 Prepare for Submission**:
   the **6.9" Display** slot, in order 01→05. (Optional: add the 6.5" set; optional: the
   App Preview video from C2 — drop the `.mov` into the same 6.9" slot.)
 - **Promotional Text**, **Description**, **Keywords** — paste from store-copy.md.
-- **Support URL**: your hosted `…/support.html`. **Marketing URL** (optional): the root.
+- **Support URL**: `https://k6czwyxg8g-cmyk.github.io/gridbreaker/support.html`.
+  **Marketing URL** (optional): `https://k6czwyxg8g-cmyk.github.io/gridbreaker/`.
 - **Build**: attach after upload (E2). **What's New**: paste 1.0 note.
 - **App Review Information**: your contact (name/phone/email = jimmy.rentmeester@gmail.com);
   Notes: "No login required; everything is offline." Sign-in not required.

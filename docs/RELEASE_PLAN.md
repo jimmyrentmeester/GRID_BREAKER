@@ -35,10 +35,12 @@ A1 + B3/B4 + C in the meantime.
 - [x] **B2 👤 Music rights** — maintainer decision: keep the Gemini-generated tracks
       as-is. (Risk noted: verify the tool's terms allow commercial distribution before
       submit; swap is drop-in if ever needed.)
-- [~] **B3 🤖→👤 Privacy policy** — written + email set (`docs/site/privacy.html`, "Data
-      Not Collected"). 👤 to: host (see `docs/site/README.md`) → Privacy URL.
-- [~] **B4 🤖→👤 Support page** — written + email set (`docs/site/support.html` + landing).
-      👤 to: host → Support URL.
+- [x] **B3 Privacy policy** — hosted & live (GitHub Pages, "Data Not Collected"):
+      **https://k6czwyxg8g-cmyk.github.io/gridbreaker/privacy.html**
+- [x] **B4 Support page** — hosted & live:
+      **https://k6czwyxg8g-cmyk.github.io/gridbreaker/support.html**
+      (Hub: https://k6czwyxg8g-cmyk.github.io/ — repo `k6czwyxg8g-cmyk.github.io`,
+      each future app = a new subfolder.)
 
 ## Phase C — Store listing content (🤖 produces, 👤 reviews)
 - [x] **C1 🤖 Screenshots** (Run #69) — 5 frames captured on iPhone 16 Pro Max at

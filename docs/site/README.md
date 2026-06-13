@@ -3,18 +3,29 @@
 Static pages for the App Store **Privacy Policy URL** (required) and **Support URL**
 (required). No build step — plain HTML, self-contained.
 
-## ⚠️ Before hosting: set your contact email
-Replace `REPLACE_WITH_YOUR_EMAIL` (in `privacy.html` and `support.html`) with the email
-you want shown publicly for support.
+## ✅ LIVE (hosted on GitHub Pages)
+These files are the source of truth; they are deployed to the **user-site repo**
+`k6czwyxg8g-cmyk/k6czwyxg8g-cmyk.github.io`, each app in its own subfolder:
+- Privacy: https://k6czwyxg8g-cmyk.github.io/gridbreaker/privacy.html
+- Support: https://k6czwyxg8g-cmyk.github.io/gridbreaker/support.html
+- Hub: https://k6czwyxg8g-cmyk.github.io/
 
-## Host for free with GitHub Pages
-1. Create a public GitHub repo (e.g. `gridbreaker-site`) and put these files in its root.
-2. Repo ▸ Settings ▸ Pages ▸ Source: `Deploy from a branch` → `main` / root → Save.
-3. After a minute your URLs are live:
-   - Privacy: `https://<user>.github.io/gridbreaker-site/privacy.html`
-   - Support: `https://<user>.github.io/gridbreaker-site/support.html`
-   - (Marketing/root, optional: `https://<user>.github.io/gridbreaker-site/`)
-4. Paste the Privacy + Support URLs into App Store Connect (plan steps D3 / D-listing).
+The contact email (`jimmy.rentmeester@gmail.com`) is already set in `privacy.html`
+and `support.html`.
 
-Any static host works (Netlify, Cloudflare Pages, your own domain) — just upload the
-three HTML files.
+## Updating the live pages
+Edit the files here (source of truth), then copy into the site repo's `gridbreaker/`
+folder and push:
+```
+cp privacy.html support.html index.html <site-repo>/gridbreaker/
+git -C <site-repo> add -A && git -C <site-repo> commit -m "update" && git -C <site-repo> push
+```
+Pages redeploys in ~1 min.
+
+## Adding a future app
+Add a new subfolder in that same repo (e.g. `/nextapp/privacy.html`) and link it from
+the hub `index.html`. No new repo or Pages setup needed — that's why we used the
+`<user>.github.io` user-site repo instead of a per-app repo.
+
+Any static host works too (Netlify, Cloudflare Pages, a custom domain) — just upload
+the HTML files.

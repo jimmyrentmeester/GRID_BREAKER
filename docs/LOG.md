@@ -3,6 +3,20 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #78 — Privacy + Support pages hosted (B3/B4 done) (2026-06-13)
+Published the two App-Store-required pages on GitHub Pages, future-proofed for more apps.
+- **Setup:** created the **user-site repo** `k6czwyxg8g-cmyk.github.io` (public) rather
+  than a per-app repo, so every future app is just a new subfolder — one Pages site
+  forever. GRID_BREAKER lives under `/gridbreaker/`; a small neon hub `index.html` at
+  the root links to it.
+- **Live & verified (HTTP 200, correct content + email):**
+  privacy → https://k6czwyxg8g-cmyk.github.io/gridbreaker/privacy.html ·
+  support → https://k6czwyxg8g-cmyk.github.io/gridbreaker/support.html ·
+  hub → https://k6czwyxg8g-cmyk.github.io/
+- **Docs:** RELEASE_PLAN B3/B4 marked done with URLs; walkthrough D2/D5 now have the
+  exact URLs to paste; `docs/site/README.md` documents the live setup + how to update /
+  add future apps. `docs/site/` stays the source of truth (copy→push to deploy).
+
 ## Run #77 — Game Center achievement badge art (13 PNGs) (2026-06-13)
 Closed the only D6 asset gap: the 13 required achievement images.
 - **`scripts/makebadges.swift` (new):** CoreGraphics/CoreText generator (same neon
