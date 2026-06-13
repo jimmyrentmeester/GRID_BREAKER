@@ -91,8 +91,9 @@ pre-/post-earned description), and upload a **1024×1024** image (required).
 | `nl.gridbreaker.ach.core10` | The Monolith (all 10) | 150 |
 | `nl.gridbreaker.ach.maxtrack` | Maxed Track | 100 |
 
-(Total = 565 / 1000.) The 13 images are the only asset gap — in-theme neon badge PNGs
-can be generated on request.
+(Total = 565 / 1000.) The required **1024×1024 images are ready** in
+`docs/gamecenter/achievements/` — one PNG per ID (see that folder's README for the
+file→ID map). Regenerate with `swift scripts/makebadges.swift`.
 
 ### Wire it to the build
 - The **`com.apple.developer.game-center`** entitlement is already in the project; with

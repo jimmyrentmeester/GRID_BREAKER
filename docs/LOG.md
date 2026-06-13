@@ -3,6 +3,17 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #77 — Game Center achievement badge art (13 PNGs) (2026-06-13)
+Closed the only D6 asset gap: the 13 required achievement images.
+- **`scripts/makebadges.swift` (new):** CoreGraphics/CoreText generator (same neon
+  language as the app icon) — dark radial card + accent frame + one glyph per badge,
+  1024×1024 opaque PNG. Per-achievement accent (gold/cyan/magenta/worm-green) +
+  bespoke glyphs (flame w/ hot core, ×3 flame, bolt+25, shield+check, power-up diamond,
+  4×4 grid, big score numerals, numbered hexagons, rising MAX bars). Outputs a 4×4
+  contact sheet for QA; visually verified + flame reshaped (droplet→flame).
+- **`docs/gamecenter/achievements/`:** the 13 PNGs named by ID suffix + `_preview.png`
+  + README mapping file→ID→title→points. Walkthrough D6 updated to point here.
+
 ## Run #76 — Game Center verification + ASC setup steps; B1 done (2026-06-13)
 Verified the Run #75 Game Center layer end-to-end and prepped the App Store Connect side.
 - **Build:** clean (`GameCenterService.swift` compiles; entitlement +
