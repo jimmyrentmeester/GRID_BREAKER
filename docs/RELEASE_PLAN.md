@@ -36,10 +36,10 @@ A1 + B3/B4 + C in the meantime.
       as-is. (Risk noted: verify the tool's terms allow commercial distribution before
       submit; swap is drop-in if ever needed.)
 - [x] **B3 Privacy policy** — hosted & live (GitHub Pages, "Data Not Collected"):
-      **https://k6czwyxg8g-cmyk.github.io/gridbreaker/privacy.html**
+      **https://jimmyrentmeester.github.io/gridbreaker/privacy.html**
 - [x] **B4 Support page** — hosted & live:
-      **https://k6czwyxg8g-cmyk.github.io/gridbreaker/support.html**
-      (Hub: https://k6czwyxg8g-cmyk.github.io/ — repo `k6czwyxg8g-cmyk.github.io`,
+      **https://jimmyrentmeester.github.io/gridbreaker/support.html**
+      (Hub: https://jimmyrentmeester.github.io/ — repo `jimmyrentmeester.github.io`,
       each future app = a new subfolder.)
 
 ## Phase C — Store listing content (🤖 produces, 👤 reviews)

@@ -3,16 +3,24 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #79 — Rename site to jimmyrentmeester.github.io (2026-06-13)
+Cleaned up the public URL before submission (auto-generated handle → real name).
+- 👤 renamed the GitHub account `k6czwyxg8g-cmyk` → `jimmyrentmeester`; 🤖 renamed the
+  repo to `jimmyrentmeester.github.io`, Pages rebuilt, re-verified all pages **200** at
+  the new URLs, and swapped the username across every doc (RELEASE_PLAN, walkthrough
+  D2/D5, site README, and the run #78 URLs below — now showing the final name).
+- Final: `https://jimmyrentmeester.github.io/gridbreaker/{privacy,support}.html`.
+
 ## Run #78 — Privacy + Support pages hosted (B3/B4 done) (2026-06-13)
 Published the two App-Store-required pages on GitHub Pages, future-proofed for more apps.
-- **Setup:** created the **user-site repo** `k6czwyxg8g-cmyk.github.io` (public) rather
+- **Setup:** created the **user-site repo** `jimmyrentmeester.github.io` (public) rather
   than a per-app repo, so every future app is just a new subfolder — one Pages site
   forever. GRID_BREAKER lives under `/gridbreaker/`; a small neon hub `index.html` at
   the root links to it.
 - **Live & verified (HTTP 200, correct content + email):**
-  privacy → https://k6czwyxg8g-cmyk.github.io/gridbreaker/privacy.html ·
-  support → https://k6czwyxg8g-cmyk.github.io/gridbreaker/support.html ·
-  hub → https://k6czwyxg8g-cmyk.github.io/
+  privacy → https://jimmyrentmeester.github.io/gridbreaker/privacy.html ·
+  support → https://jimmyrentmeester.github.io/gridbreaker/support.html ·
+  hub → https://jimmyrentmeester.github.io/
 - **Docs:** RELEASE_PLAN B3/B4 marked done with URLs; walkthrough D2/D5 now have the
   exact URLs to paste; `docs/site/README.md` documents the live setup + how to update /
   add future apps. `docs/site/` stays the source of truth (copy→push to deploy).

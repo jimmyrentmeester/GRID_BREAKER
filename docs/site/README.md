@@ -5,10 +5,10 @@ Static pages for the App Store **Privacy Policy URL** (required) and **Support U
 
 ## ✅ LIVE (hosted on GitHub Pages)
 These files are the source of truth; they are deployed to the **user-site repo**
-`k6czwyxg8g-cmyk/k6czwyxg8g-cmyk.github.io`, each app in its own subfolder:
-- Privacy: https://k6czwyxg8g-cmyk.github.io/gridbreaker/privacy.html
-- Support: https://k6czwyxg8g-cmyk.github.io/gridbreaker/support.html
-- Hub: https://k6czwyxg8g-cmyk.github.io/
+`jimmyrentmeester/jimmyrentmeester.github.io`, each app in its own subfolder:
+- Privacy: https://jimmyrentmeester.github.io/gridbreaker/privacy.html
+- Support: https://jimmyrentmeester.github.io/gridbreaker/support.html
+- Hub: https://jimmyrentmeester.github.io/
 
 The contact email (`jimmy.rentmeester@gmail.com`) is already set in `privacy.html`
 and `support.html`.
