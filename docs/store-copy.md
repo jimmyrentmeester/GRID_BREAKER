@@ -58,7 +58,7 @@ Crack the grid. The Monolith is waiting.
 - **Primary category:** Games → **Arcade** · **Secondary:** Action
 - **Age rating:** answer the questionnaire honestly — the app has **no violence, no
   objectionable content** (abstract neon tapping), so it should land at **4+**.
-- **Privacy URL:** `https://<your-user>.github.io/<repo>/privacy.html` (after hosting)
-- **Support URL:** `https://<your-user>.github.io/<repo>/support.html` (after hosting)
-- **Marketing URL (optional):** `https://<your-user>.github.io/<repo>/`
+- **Privacy URL:** `https://jimmyrentmeester.github.io/gridbreaker/privacy.html`
+- **Support URL:** `https://jimmyrentmeester.github.io/gridbreaker/support.html`
+- **Marketing URL (optional):** `https://jimmyrentmeester.github.io/gridbreaker/`
 - **Copyright:** `2026 Jimmy Rentmeester`
