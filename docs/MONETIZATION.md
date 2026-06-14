@@ -192,21 +192,29 @@ the IAP review screenshot once the view exists) is 🤖 build work. The human-on
      Foreign Status** (individual/sole proprietor).
    - **DAC7** — Active ✅ (answered "No personal services" — a game isn't a DAC7 personal service).
    - Small Business Program — done ✅ (15% rate).
-   - ⚠️ **Still open: EU DSA trader declaration** (separate — it gates EU *availability/display*,
-     not selling). Pending the public-address decision; see the 19 Jun reminder + [[ ]] options
-     (virtual office recommended).
-2. **Confirm the offer** — the 4 price points + in-fiction tier names (defaults suggested
+   - **EU DSA** — declared **non-trader** for the free launch (no public address required;
+     keeps the app available in the EU/NL store). This is the honest answer while the app is
+     free with no ads/IAP. **Switching to trader is required before monetizing — see step 2.**
+2. **🔑 Switch EU DSA non-trader → trader** (App Store Connect → Business) **before enabling
+   any IAP** — you cannot sell as a non-trader. This is when you provide the **public contact
+   address** (address/phone/email shown on the product page). Decide the address then:
+   - 🥇 **Virtual office / mail address service** (~€10–30/mo) — recommended, fully yours.
+   - ✅ Friend/family **business street address** with informed consent (Apple may ask for
+     proof; it becomes public).
+   - ⚠️ Avoid a **PO box** (DSA leans to a geographical address).
+   - Email → `madebyjire@icloud.com`.
+3. **Confirm the offer** — the 4 price points + in-fiction tier names (defaults suggested
    above; your call to change).
-3. **Create the 4 Consumable IAPs** in ASC (I'll hand you the exact IDs/prices/names to
+4. **Create the 4 Consumable IAPs** in ASC (I'll hand you the exact IDs/prices/names to
    paste, same as we did for Game Center) and attach the review screenshot of `TipJarView`.
-4. **Submit the IAPs with an app version** — IAPs are reviewed alongside a build, not on
+5. **Submit the IAPs with an app version** — IAPs are reviewed alongside a build, not on
    their own.
-5. **Create a Sandbox tester** (ASC → Users and Access → Sandbox) and **test a real purchase
+6. **Create a Sandbox tester** (ASC → Users and Access → Sandbox) and **test a real purchase
    on your iPhone** with it — the one thing neither the `.storekit` file nor I can do for you
    (it needs your device + Apple ID). Test buy, cancel, and a refund.
 
-Sequence: do **#1 early** (it gates everything and is slow), then #2 anytime. #3–#5 happen
-once I've built the feature and you have a build to attach.
+Sequence: #1 is **done**. The rest happens at monetization time: **#2 (switch to trader) +
+#3 anytime**, then **#4–#6** once I've built the feature and you have a build to attach.
 
 ### What was missing from the earlier research (now closed)
 The plan had the *strategy* but not: the StoreKit-2-vs-legacy choice + no-backend rationale,
