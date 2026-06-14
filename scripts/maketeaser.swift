@@ -1,6 +1,7 @@
 import Foundation
 import CoreGraphics
 import CoreText
+import CoreImage
 import ImageIO
 import UniformTypeIdentifiers
 
@@ -28,6 +29,13 @@ func loadImage(_ p: String) -> CGImage? {
     guard let s = CGImageSourceCreateWithURL(URL(fileURLWithPath: p) as CFURL, nil) else { return nil }
     return CGImageSourceCreateImageAtIndex(s, 0, nil)
 }
+func blurred(_ img: CGImage, radius: Double) -> CGImage {
+    let ci = CIImage(cgImage: img).clampedToExtent()
+    guard let f = CIFilter(name: "CIGaussianBlur") else { return img }
+    f.setValue(ci, forKey: kCIInputImageKey); f.setValue(radius, forKey: kCIInputRadiusKey)
+    guard let out = f.outputImage else { return img }
+    return CIContext().createCGImage(out, from: CIImage(cgImage: img).extent) ?? img
+}
 let shot = shotPath.flatMap(loadImage)
 let keyArt = shot != nil
 
@@ -49,7 +57,9 @@ func measureW(_ s: String, _ font: String, _ size: Double) -> Double {
 }
 
 // MARK: background
-if let img = shot {
+if let raw = shot {
+    // teaser = a *glimpse* (heavily blurred); out-now = full sharp reveal
+    let img = isLive ? raw : blurred(raw, radius: Double(raw.width) * 0.035)
     // aspect-fill the gameplay screenshot, then dark scrims top + bottom for legibility
     let iw = Double(img.width), ih = Double(img.height), scale = max(Double(W) / iw, Double(H) / ih)
     let dw = iw * scale, dh = ih * scale
@@ -86,8 +96,10 @@ if !keyArt {
     ctx.setFillColor(col(magenta)); ctx.fillPath(); ctx.restoreGState()
 }
 
+// wide-audience lines (family/friends/colleagues) — warm, not gamer jargon
+let tagline = isLive ? "// my new iPhone game" : "// something I've been building"
 text("GRID_BREAKER", "Menlo-Bold", Double(W) * 0.107, cyan, yFrac: yWord, glow: 42)
-text("// NEON REFLEX GRID-HACKING", "Menlo-Bold", Double(W) * 0.030, magenta, yFrac: yTag, glow: 20)
+text(tagline, "Menlo-Bold", Double(W) * 0.030, magenta, yFrac: yTag, glow: 20)
 
 // status pill — COMING SOON (outline) or OUT NOW (filled)
 let pillLabel = isLive ? "OUT NOW" : "COMING SOON"
@@ -99,8 +111,9 @@ if isLive { ctx.setFillColor(col(gold)); ctx.fillPath() } else { ctx.setStrokeCo
 ctx.restoreGState()
 text(pillLabel, "Menlo-Bold", pillSize, isLive ? (0.04, 0.05, 0.10) : gold, yFrac: yPill, glow: isLive ? 0 : 14)
 
-let footer = isLive ? "FREE ON THE APP STORE  ·  NO ADS · NO TRACKING" : "iOS  ·  FREE  ·  NO ADS  ·  NO TRACKING"
-text(footer, "Menlo", Double(W) * 0.0225, dim, yFrac: yFoot, glow: 8)
+// out-now spells out what it is + where; teaser stays vague (the secret) → no footer
+let footer = isLive ? "A FREE GAME FOR iPHONE  ·  ON THE APP STORE" : ""
+if !footer.isEmpty { text(footer, "Menlo", Double(W) * 0.0225, dim, yFrac: yFoot, glow: 8) }
 
 // neon border frame (key-art only — frames the bleed)
 if keyArt {

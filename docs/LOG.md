@@ -20,9 +20,13 @@ Built the launch kit while v1.0 sits in review.
   sandbox not serving sibling files; they resolve on Pages). App Store badge is a "coming
   soon" placeholder until the app is live + the real URL is known (then a ~2-min swap).
 - **Instagram cards** (`docs/marketing/social/`, `scripts/maketeaser.swift`): 1080×1080
-  feed + 1080×1920 story, in four flavours — **COMING SOON** and **OUT NOW** (filled-gold
-  pill + App Store line), each in a clean type layout and a **key-art** layout that
-  full-bleeds the Fever gameplay screenshot behind dark scrims + a neon frame. 8 PNGs total.
+  feed + 1080×1920 story, in four flavours — **COMING SOON** and **OUT NOW**, each in a
+  clean type layout and a **key-art** layout (full-bleed Fever screenshot, dark scrims,
+  neon frame). 8 PNGs total. **Tailored for a wide personal audience** (family/friends/
+  colleagues, English): jargon dropped for warm lines — teaser `// something I've been
+  building` (name shown + a **heavily blurred** glimpse so it stays partly a secret),
+  out-now `// my new iPhone game` + `A FREE GAME FOR iPHONE · ON THE APP STORE` (clearly an
+  iOS game). Blur via CoreImage; teaser screenshots blurred, out-now sharp.
 
 ## Run #80 — Submitted to the App Store (Phases D + E) (2026-06-14)
 GRID_BREAKER 1.0 is in Apple's review queue. 🎉
