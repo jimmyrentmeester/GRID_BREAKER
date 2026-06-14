@@ -184,14 +184,17 @@ regression test (same seed → bit-identical snapshots, tipped or not).
 Everything else (all the code, the product-ID/price values, the `.storekit` test file, and
 the IAP review screenshot once the view exists) is 🤖 build work. The human-only parts:
 
-1. **Agreements, Tax & Banking** in App Store Connect (the real blocker — start early, it can
-   take days to verify; nothing sells until all three are green):
-   - Accept the **Paid Apps Agreement** (the free-app agreement alone is **not** enough). ⏳ in progress
-   - Add **Bank account** (IBAN) for payouts. ⏳ processing (2026-06-14)
-   - Complete **Tax forms** — **US W-8BEN submitted ✓ (2026-06-14): Article 12, 0% rate,
-     income from sale of applications, foreign TIN = BSN.** (Result: 0% US withholding
-     instead of 30%.) Any local tax info / IAP tax category still to confirm.
-   - Small Business Program: **already done ✓** (15% rate).
+1. **Agreements, Tax & Banking** in App Store Connect — **DONE ✅ (all Active, 2026-06-14):**
+   - **Paid Apps Agreement** — Active ✅
+   - **Bank account** (Rabobank, EUR account / USD royalty currency) — Active ✅
+   - **Tax forms** — both Active ✅: **U.S. W-8BEN** (Article 12, **0%** rate, income from
+     sale of applications, foreign TIN = BSN → 0% US withholding) + **U.S. Certificate of
+     Foreign Status** (individual/sole proprietor).
+   - **DAC7** — Active ✅ (answered "No personal services" — a game isn't a DAC7 personal service).
+   - Small Business Program — done ✅ (15% rate).
+   - ⚠️ **Still open: EU DSA trader declaration** (separate — it gates EU *availability/display*,
+     not selling). Pending the public-address decision; see the 19 Jun reminder + [[ ]] options
+     (virtual office recommended).
 2. **Confirm the offer** — the 4 price points + in-fiction tier names (defaults suggested
    above; your call to change).
 3. **Create the 4 Consumable IAPs** in ASC (I'll hand you the exact IDs/prices/names to
