@@ -180,12 +180,30 @@ regression test (same seed → bit-identical snapshots, tipped or not).
 2. **Sandbox** Apple ID on a device before release.
 3. Optionally `SKTestSession` unit tests around `TipStore`.
 
-### App Store Connect prerequisites (human, one-time)
-- **Paid Apps agreement + banking + tax** must be active to sell anything — the free-app
-  agreement alone is **not** enough. (You're already in the Small Business Program ✓, so the
-  15% rate applies.)
-- Create the 4 **Consumable** IAPs with the IDs above, prices, display names, and a review
-  screenshot of `TipJarView`; submit them **with an app version** (IAPs review alongside a build).
+### Maintainer checklist — what only you (👤) can do
+Everything else (all the code, the product-ID/price values, the `.storekit` test file, and
+the IAP review screenshot once the view exists) is 🤖 build work. The human-only parts:
+
+1. **Agreements, Tax & Banking** in App Store Connect (the real blocker — start early, it can
+   take days to verify; nothing sells until all three are green):
+   - Accept the **Paid Apps Agreement** (the free-app agreement alone is **not** enough).
+   - Add **Bank account** (IBAN) for payouts.
+   - Complete **Tax forms** — as a Netherlands-based dev you'll fill the US tax form
+     (W-8BEN equivalent) Apple collects in ASC, plus your local tax info, and pick a
+     **tax category** for the IAPs.
+   - Small Business Program: **already done ✓** (15% rate).
+2. **Confirm the offer** — the 4 price points + in-fiction tier names (defaults suggested
+   above; your call to change).
+3. **Create the 4 Consumable IAPs** in ASC (I'll hand you the exact IDs/prices/names to
+   paste, same as we did for Game Center) and attach the review screenshot of `TipJarView`.
+4. **Submit the IAPs with an app version** — IAPs are reviewed alongside a build, not on
+   their own.
+5. **Create a Sandbox tester** (ASC → Users and Access → Sandbox) and **test a real purchase
+   on your iPhone** with it — the one thing neither the `.storekit` file nor I can do for you
+   (it needs your device + Apple ID). Test buy, cancel, and a refund.
+
+Sequence: do **#1 early** (it gates everything and is slow), then #2 anytime. #3–#5 happen
+once I've built the feature and you have a build to attach.
 
 ### What was missing from the earlier research (now closed)
 The plan had the *strategy* but not: the StoreKit-2-vs-legacy choice + no-backend rationale,
