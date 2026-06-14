@@ -97,6 +97,102 @@ add more only if anything sells.
 **Phase 3 — only if traction.** Supporter bundle, node skins, synth packs,
 seasonal free theme drops as goodwill.
 
+## Implementation design — Phase 1 tip jar (the "how")
+
+Strategy above is settled; this is the concrete build. Scoped to consumables only
+(cosmetics/non-consumables + Restore come in Phase 2).
+
+### Tech choice: StoreKit 2, no backend
+Use **StoreKit 2** (async/await, `Product`/`Transaction`), not the legacy SKPaymentQueue.
+For a **consumable** tip jar there is **no server and no entitlement store to maintain**:
+StoreKit 2 verifies the transaction cryptographically on-device, you grant the thank-you,
+then `finish()` it. Consumables are **not restorable** by design, so **no Restore button**
+is needed in Phase 1 (it becomes required in Phase 2 when non-consumables ship). This stays
+true to the local-authority, no-backend architecture.
+
+### Product IDs (create as Consumable in App Store Connect)
+| Product ID | In-fiction name | Suggested price |
+| --- | --- | --- |
+| `nl.gridbreaker.tip.energydrink` | ENERGY DRINK | €0.99 |
+| `nl.gridbreaker.tip.ramstick` | RAM STICK | €2.99 |
+| `nl.gridbreaker.tip.gpu` | GPU | €4.99 |
+| `nl.gridbreaker.tip.quantumrig` | QUANTUM RIG | €9.99 |
+
+Never hardcode prices in the UI — always render `product.displayPrice` (localized currency).
+
+### Files to add / touch
+- **`Services/TipStore.swift` (new)** — `@MainActor @Observable final class TipStore`,
+  mirroring `GameStore`'s style. Responsibilities:
+  - `products: [Product]` — loaded via `Product.products(for:)`, sorted by `price`.
+  - `state` enum: `.idle / .loading / .purchasing(Product) / .thanks / .unavailable / .failed(String)`
+    — note the failure carries an **in-world** message, never a raw error (see Game-feel rule).
+  - `purchase(_:)` — the flow below.
+  - A long-lived `Transaction.updates` listener `Task` (started in `init`, cancelled in
+    `deinit`) to catch Ask-to-Buy approvals and interrupted purchases.
+  - Injected callback `onTipped: () -> Void` (or a `GameStore` ref) to flip the flag.
+- **`Core/Models/SaveData.swift`** — add `var hasTippedEver: Bool = false` (tolerant decode
+  already defaults it, like the cosmetics fields).
+- **`Persistence/GameStore.swift`** — `var hasTipped: Bool { save.hasTippedEver }` +
+  `func markTipped() { guard !save.hasTippedEver else { return }; save.hasTippedEver = true; persist() }`.
+- **`UI/TipJarView.swift` (new)** — a sheet: short honest blurb, the tiers (in-fiction name +
+  `displayPrice`), purchasing spinner, an in-world thank-you state (reuse the Juice/confetti
+  layer), graceful unavailable/offline state. Optional permanent `SPONSOR` tag on the menu.
+- **`UI/MenuViews.swift` / hub** — one quiet `SUPPORT THE RUNNER` entry that presents the
+  sheet. **Never** after game-over, never mid-session.
+- **`Configuration/Products.storekit` (new)** — a StoreKit configuration file wired into the
+  Run scheme so the whole flow is testable in the simulator with **no App Store Connect**.
+
+### Purchase flow (StoreKit 2)
+```
+let result = try await product.purchase()
+switch result {
+case .success(let verification):
+    guard case .verified(let txn) = verification else { state = .failed("…"); return }
+    // consumable: grant immediately, persist the flag, then ALWAYS finish
+    onTipped()                 // -> GameStore.markTipped()
+    state = .thanks
+    await txn.finish()         // not finishing => StoreKit re-delivers forever
+case .userCancelled: state = .idle
+case .pending:       state = .idle    // Ask-to-Buy: the updates listener delivers later
+@unknown default:    state = .idle
+}
+```
+The `Transaction.updates` listener runs the same `verified → markTipped → finish` path for
+transactions that arrive outside this call (parental approval, retries).
+
+### Correctness / edge cases (the easy-to-miss ones)
+- **Always `finish()`** verified transactions, or they re-deliver on every launch.
+- Gate on **`AppStore.canMakePayments`** (parental restrictions) → show disabled state.
+- **Offline / products fail to load** → friendly "store unavailable" copy, not an error dump.
+- **`.pending` (Ask to Buy)** → "waiting for approval"; the listener finishes it later.
+- `hasTippedEver` is **idempotent**; tips remain **repeat-purchasable** (that's intended).
+- **No raw errors in the UI** (Game-feel anti-pattern). Catch and reframe in-world; if you
+  must surface a code, do it in a tiny non-diegetic strip, not over the art.
+
+### Determinism & ethics guarantee
+A tip grants **nothing in the engine** — only the render-layer `SPONSOR` tag, which *reads*
+`hasTippedEver` and never writes `SessionSnapshot`. The headless determinism sim stays the
+regression test (same seed → bit-identical snapshots, tipped or not).
+
+### Testing
+1. **`Products.storekit`** config file → test purchase, cancel, Ask-to-Buy, and refunds via
+   Xcode's Transaction Manager, entirely offline.
+2. **Sandbox** Apple ID on a device before release.
+3. Optionally `SKTestSession` unit tests around `TipStore`.
+
+### App Store Connect prerequisites (human, one-time)
+- **Paid Apps agreement + banking + tax** must be active to sell anything — the free-app
+  agreement alone is **not** enough. (You're already in the Small Business Program ✓, so the
+  15% rate applies.)
+- Create the 4 **Consumable** IAPs with the IDs above, prices, display names, and a review
+  screenshot of `TipJarView`; submit them **with an app version** (IAPs review alongside a build).
+
+### What was missing from the earlier research (now closed)
+The plan had the *strategy* but not: the StoreKit-2-vs-legacy choice + no-backend rationale,
+concrete product IDs, the `Transaction.updates` listener (a correctness must), the
+`finish()`/`.pending`/`canMakePayments` edge cases, the "no Restore needed for consumables"
+clarification, and the `.storekit` test-file setup. All captured above.
+
 ## Expectations (honest numbers)
 
 Tip conversion in free apps is typically a fraction of a percent of actives;
@@ -108,6 +204,8 @@ exists so no build effort is wasted finding that out.
 
 ## Sources
 
+- [Apple — StoreKit 2 / In-App Purchase (Product, Transaction)](https://developer.apple.com/documentation/storekit/in-app_purchase)
+- [Apple — Testing with a StoreKit configuration file](https://developer.apple.com/documentation/storekit/setting-up-storekit-testing-in-xcode)
 - [RevenueCat — Building a tip jar feature](https://www.revenuecat.com/blog/engineering/building-a-tip-jar-feature-with-revenuecat/)
 - [Apple — App Store Small Business Program](https://developer.apple.com/app-store/small-business-program/)
 - [RevenueCat — The 15% App Store fee guide](https://www.revenuecat.com/blog/engineering/small-business-program/)
