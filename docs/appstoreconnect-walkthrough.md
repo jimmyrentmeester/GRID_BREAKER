@@ -46,7 +46,7 @@ Left sidebar ▸ **iOS App ▸ 1.0 Prepare for Submission**:
 - **Support URL**: `https://jimmyrentmeester.github.io/gridbreaker/support.html`.
   **Marketing URL** (optional): `https://jimmyrentmeester.github.io/gridbreaker/`.
 - **Build**: attach after upload (E2). **What's New**: paste 1.0 note.
-- **App Review Information**: your contact (name/phone/email = jimmy.rentmeester@gmail.com);
+- **App Review Information**: your contact (name/phone/email = madebyjire@icloud.com);
   Notes: "No login required; everything is offline." Sign-in not required.
 - **Version Release**: "Automatically release after approval" (recommended) or manual.
 - **Copyright**: `2026 Jimmy Rentmeester`.

@@ -10,7 +10,7 @@ These files are the source of truth; they are deployed to the **user-site repo**
 - Support: https://jimmyrentmeester.github.io/gridbreaker/support.html
 - Hub: https://jimmyrentmeester.github.io/
 
-The contact email (`jimmy.rentmeester@gmail.com`) is already set in `privacy.html`
+The contact email (`madebyjire@icloud.com`) is already set in `privacy.html`
 and `support.html`.
 
 ## Updating the live pages
