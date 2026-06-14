@@ -54,6 +54,59 @@ Crack the grid. The Monolith is waiting.
 ## What's New (version 1.0)
 `GRID_BREAKER 1.0 — jack in. Four modes, a 10-core campaign, power-ups, streak multipliers, a deep Cyberdeck & Cosmetics, and a sharp neon look. Crack the grid.`
 
+## 🇳🇱 Dutch localization (add as a "Dutch (Netherlands)" locale in ASC)
+Optional extra locale to widen reach with your core audience. Add under the version's
+language selector → Dutch.
+
+**Subtitle (≤30):** `Neon reflexen, hack het grid`  (28)
+
+**Promotional text (≤170):**
+```
+Jack in. Kraak het neongrid voor je RAM op is, rijg foutloze tikken aaneen tot Fever en jaag op de highscore. Pure reflextest — geen reclame, geen tracking, puur skill.
+```
+
+**Keywords (≤100, geen spaties):**
+```
+reflex,arcade,neon,cyberpunk,tikken,snel,combo,reactie,score,highscore,verslavend,eenhandig,hacken
+```
+
+**Description:**
+```
+GRID_BREAKER is een razendsnelle neon reflexgame. Jack in op het grid, kraak de daemons voordat ze verdwijnen, ontwijk de firewalls en rijg combo's aaneen tot Fever terwijl het tempo oploopt.
+
+Eén duim. Pure reactie. Geen opvulling.
+
+ZO SPEEL JE
+• Tik op oplichtende daemons om ze te kraken en je RAM-klok bij te vullen.
+• Tik nooit op een rode firewall — laat 'm verlopen.
+• Breek gepantserde schillen, pak gouden datacaches, jaag op kruipende worms.
+• Rijg foutloze tikken aaneen voor FEVER: gevaren verdwijnen en je score verdubbelt.
+• Pak power-ups — Freeze, Overclock, Purge — voor een vlaag controle.
+• Houd een foutloze reeks vast en klim in een oplopende score-multiplier.
+
+VIER MODI
+• ENDLESS — overleef zolang je reflexen het houden en jaag op de highscore.
+• CAMPAIGN — 10 zorgvuldig afgestelde datacores, elk met een nieuwe mechaniek, op weg naar een echte finale.
+• FLOW — een rustige modus zonder game-over; gewoon tikken en ontspannen.
+• DAILY HACK — elke dag één gedeeld bord; iedereen speelt dezelfde seed.
+
+VOORTGANG & STIJL
+• Verdien Credits met elke run en geef ze uit in de CYBERDECK aan permanente upgrades — meer RAM, sneller kraken, een failsafe-schild, langere Fever, hogere uitbetalingen.
+• Ontgrendel COSMETICS — neon-paletten die de hele game herkleuren en tap-trail-stijlen die je vinger volgen.
+
+GOED GEBOUWD
+• 100% op je toestel. Geen accounts, geen reclame, geen analytics, geen tracking — er wordt niets verzameld.
+• Respecteert Verminderde beweging; aparte muziek- en effectvolumes.
+• Alle geluid wordt in code gegenereerd — tactiel, belonend, geen bloat.
+
+Kraak het grid. De Monolith wacht.
+```
+
+**What's New (versie 1.0):**
+```
+GRID_BREAKER 1.0 — jack in. Vier modi, een campaign van 10 cores, power-ups, score-multipliers, een diepe Cyberdeck & Cosmetics, en een strakke neon-look. Kraak het grid.
+```
+
 ## Listing metadata
 - **Primary category:** Games → **Arcade** · **Secondary:** Action
 - **Age rating:** answer the questionnaire honestly — the app has **no violence, no

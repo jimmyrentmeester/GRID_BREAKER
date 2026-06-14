@@ -28,6 +28,18 @@ Built the launch kit while v1.0 sits in review.
   out-now `// my new iPhone game` + `A FREE GAME FOR iPHONE · ON THE APP STORE` (clearly an
   iOS game). Blur via CoreImage; teaser screenshots blurred, out-now sharp.
 
+## Run #82 — Social clip, Dutch listing, promo-channel list (2026-06-14)
+More launch prep while in review.
+- **Gameplay clip/GIF** (`scripts/makeclip.swift`, AVFoundation + ImageIO — no ffmpeg
+  available): `docs/marketing/social/clip-story.mp4` (8 s vertical w/ audio, for
+  Reels/Stories) + `clip-square.gif` (5 s, 540², center-cropped, autoplay — for feed/X/
+  Slack). Cut from the promo video at the Fever moment (ring + ◆50 milestone + decode pop).
+- **Dutch App Store localization** added to `docs/store-copy.md`: subtitle, promo text,
+  keywords, full description, what's-new — to add as a Dutch (NL) locale for reach.
+- **`docs/marketing/promo-channels.md`**: tiered launch channel list (personal/IG/LinkedIn,
+  reddit, Product Hunt, the "I built this" HN/newsletter angle, clip platforms, press) with
+  per-channel notes, a cadence, and etiquette do/don'ts.
+
 ## Run #80 — Submitted to the App Store (Phases D + E) (2026-06-14)
 GRID_BREAKER 1.0 is in Apple's review queue. 🎉
 - **E2 pre-flight:** `xcodebuild archive` (Release / generic iOS device) → **ARCHIVE
