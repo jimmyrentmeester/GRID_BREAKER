@@ -15,8 +15,10 @@ Built the launch kit while v1.0 sits in review.
 - **`docs/marketing/launch-copy.md`**: paste-ready X, Product Hunt (tagline + description +
   maker comment), Reddit, hashtags, and a launch-day checklist. All use an `APP_STORE_URL`
   placeholder to swap once the real link exists.
-- **Not yet deployed** to the live Pages site — pending go-ahead (the App Store badge is a
-  "coming soon" placeholder until the app is live + the real URL is known).
+- **Deployed live** to https://jimmyrentmeester.github.io/gridbreaker/ — page + all 5
+  image assets verified HTTP 200 (the broken images in the editor preview were just the
+  sandbox not serving sibling files; they resolve on Pages). App Store badge is a "coming
+  soon" placeholder until the app is live + the real URL is known (then a ~2-min swap).
 
 ## Run #80 — Submitted to the App Store (Phases D + E) (2026-06-14)
 GRID_BREAKER 1.0 is in Apple's review queue. 🎉
