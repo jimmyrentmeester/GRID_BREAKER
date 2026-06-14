@@ -4,12 +4,14 @@ import CoreText
 import ImageIO
 import UniformTypeIdentifiers
 
-// Instagram teaser cards for GRID_BREAKER. Usage: maketeaser <out.png> <W> <H>
-// Neon theme, "COMING SOON" — opaque PNG.
+// Instagram cards for GRID_BREAKER. Usage: maketeaser <out.png> <W> <H> [soon|now]
+// Neon theme — opaque PNG. mode "soon" = COMING SOON, "now" = OUT NOW (launch).
 let args = CommandLine.arguments
 let outPath = args.count > 1 ? args[1] : "/tmp/teaser.png"
 let W = args.count > 3 ? Int(args[2])! : 1080
 let H = args.count > 3 ? Int(args[3])! : 1080
+let mode = args.count > 4 ? args[4] : "soon"
+let isLive = mode == "now"
 let cs = CGColorSpace(name: CGColorSpace.sRGB)!
 let ctx = CGContext(data: nil, width: W, height: H, bitsPerComponent: 8, bytesPerRow: 0,
                     space: cs, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
@@ -58,15 +60,18 @@ ctx.setFillColor(col(magenta)); ctx.fillPath(); ctx.restoreGState()
 text("GRID_BREAKER", "Menlo-Bold", Double(W) * 0.107, cyan, yFrac: 0.525, glow: 42)
 text("// NEON REFLEX GRID-HACKING", "Menlo-Bold", Double(W) * 0.030, magenta, yFrac: 0.435, glow: 20)
 
-// COMING SOON pill
-let pillSize = Double(W) * 0.040, (_, pw, _, _) = measure("COMING SOON", "Menlo-Bold", pillSize)
+// status pill — COMING SOON (outline) or OUT NOW (filled, celebratory)
+let pillLabel = isLive ? "OUT NOW" : "COMING SOON"
+let pillSize = Double(W) * 0.040, (_, pw, _, _) = measure(pillLabel, "Menlo-Bold", pillSize)
 let padX = 44.0, padY = 26.0, pillW = pw + padX * 2, pillH = pillSize + padY * 2, pillY = Double(H) * 0.305
-ctx.saveGState(); ctx.setShadow(offset: .zero, blur: 24, color: col(gold, 0.8))
+ctx.saveGState(); ctx.setShadow(offset: .zero, blur: isLive ? 34 : 24, color: col(gold, isLive ? 1 : 0.8))
 ctx.addPath(CGPath(roundedRect: CGRect(x: cx - pillW / 2, y: pillY - pillH / 2, width: pillW, height: pillH), cornerWidth: pillH / 2, cornerHeight: pillH / 2, transform: nil))
-ctx.setStrokeColor(col(gold)); ctx.setLineWidth(4); ctx.strokePath(); ctx.restoreGState()
-text("COMING SOON", "Menlo-Bold", pillSize, gold, yFrac: 0.305, glow: 14)
+if isLive { ctx.setFillColor(col(gold)); ctx.fillPath() } else { ctx.setStrokeColor(col(gold)); ctx.setLineWidth(4); ctx.strokePath() }
+ctx.restoreGState()
+text(pillLabel, "Menlo-Bold", pillSize, isLive ? (0.04, 0.05, 0.10) : gold, yFrac: 0.305, glow: isLive ? 0 : 14)
 
-text("iOS  ·  FREE  ·  NO ADS  ·  NO TRACKING", "Menlo", Double(W) * 0.0225, dim, yFrac: 0.135, glow: 8)
+let footer = isLive ? "FREE ON THE APP STORE  ·  NO ADS · NO TRACKING" : "iOS  ·  FREE  ·  NO ADS  ·  NO TRACKING"
+text(footer, "Menlo", Double(W) * 0.0225, dim, yFrac: 0.135, glow: 8)
 
 // vignette
 let v = CGGradient(colorsSpace: cs, colors: [col((0, 0, 0), 0), col((0, 0, 0), 0.5)] as CFArray, locations: [0.5, 1])!
