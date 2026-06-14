@@ -70,6 +70,37 @@ synthesized in code. Game Center leaderboards + achievements.
 APP_STORE_URL — happy to answer anything about how it's built.
 ```
 
+## Instagram — feed captions (wide / personal audience)
+**Teaser:**
+```
+So… I've been quietly building something on the side 👀 Can't say too much yet, but it's almost ready. Coming soon 🟦🟪
+```
+**Launch:**
+```
+It's out! 🎉 I made a little iPhone game called GRID_BREAKER — a fast, colourful tap game you can play one-handed. Free on the App Store, no ads. Would mean a lot if you gave it a try (and tried to beat my high score 😄). Link in bio 📱
+```
+
+## Instagram — story text (short, sticker-style overlay)
+- Teaser: `been building something 👀` · then `soon.`
+- Launch: `it's live 🎉` · `my iPhone game` · `free on the App Store ↑` (add the link sticker)
+
+## LinkedIn (colleagues / professional)
+**Teaser:**
+```
+A side project I've been chipping away at after hours is almost ready to share. Sometimes you just need to build something end-to-end yourself. More soon 👀
+```
+**Launch:**
+```
+I shipped something. 🚀
+
+Outside of work I've been building GRID_BREAKER — a small, fast iPhone game — and it's now live on the App Store.
+
+Built solo, start to finish: the game, the artwork, the sound, the store listing. It runs entirely on-device, with no ads, no tracking, and no data collected — a fun constraint to design around.
+
+It's free. I'd genuinely love your feedback (and your high score). Link in the comments 👇
+```
+(Put the App Store link in the first comment, not the post — LinkedIn favours posts that keep people on-platform.)
+
 ## App Store "Promotional Text" (already set, editable anytime)
 ```
 Jack in. Decode the neon grid before your RAM runs out, chain clean hits into Fever, and chase the high score. A pure reflex test — no ads, no tracking, all skill.
