@@ -19,6 +19,9 @@ Built the launch kit while v1.0 sits in review.
   image assets verified HTTP 200 (the broken images in the editor preview were just the
   sandbox not serving sibling files; they resolve on Pages). App Store badge is a "coming
   soon" placeholder until the app is live + the real URL is known (then a ~2-min swap).
+- **Instagram teasers** (`docs/marketing/social/`, `scripts/maketeaser.swift`): a
+  1080×1080 feed card + 1080×1920 story, neon "COMING SOON" — wordmark, chevron/cursor
+  mark, tagline, no-ads/no-tracking strip.
 
 ## Run #80 — Submitted to the App Store (Phases D + E) (2026-06-14)
 GRID_BREAKER 1.0 is in Apple's review queue. 🎉
