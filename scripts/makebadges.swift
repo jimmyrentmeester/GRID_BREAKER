@@ -41,23 +41,23 @@ func text(_ ctx: CGContext, _ s: String, size: Double, _ c: RGB, cx: Double, cy:
     ctx.restoreGState()
 }
 
-// MARK: shared frame
+// MARK: shared frame  (Game Center crops achievement art to a CIRCLE → ring, not card)
 func frame(_ ctx: CGContext, _ accent: RGB) {
     let bg = CGGradient(colorsSpace: cs, colors: [col((0.07, 0.08, 0.14)), col((0.012, 0.012, 0.03))] as CFArray, locations: [0, 1])!
     ctx.drawRadialGradient(bg, startCenter: P(mid, mid), startRadius: 0, endCenter: P(mid, mid), endRadius: CGFloat(S) * 0.72, options: [])
     // faint accent wash behind the glyph
     let wash = CGGradient(colorsSpace: cs, colors: [col(accent, 0.16), col(accent, 0)] as CFArray, locations: [0, 1])!
     ctx.drawRadialGradient(wash, startCenter: P(mid, mid), startRadius: 0, endCenter: P(mid, mid), endRadius: 360, options: [])
-    // rounded-card border
-    let inset = 104.0, r = CGRect(x: inset, y: inset, width: Double(S) - 2 * inset, height: Double(S) - 2 * inset)
+    // circular ring (sits safely inside the 512-radius circular crop)
+    let ringR = 470.0
     ctx.saveGState()
     ctx.setShadow(offset: .zero, blur: 34, color: col(accent, 0.9))
-    ctx.addPath(CGPath(roundedRect: r, cornerWidth: 66, cornerHeight: 66, transform: nil))
-    ctx.setStrokeColor(col(accent)); ctx.setLineWidth(13); ctx.strokePath()
+    ctx.addEllipse(in: CGRect(x: mid - ringR, y: mid - ringR, width: 2 * ringR, height: 2 * ringR))
+    ctx.setStrokeColor(col(accent)); ctx.setLineWidth(14); ctx.strokePath()
     ctx.restoreGState()
-    // inner hairline
-    let r2 = r.insetBy(dx: 18, dy: 18)
-    ctx.addPath(CGPath(roundedRect: r2, cornerWidth: 54, cornerHeight: 54, transform: nil))
+    // inner hairline ring
+    let r2 = 448.0
+    ctx.addEllipse(in: CGRect(x: mid - r2, y: mid - r2, width: 2 * r2, height: 2 * r2))
     ctx.setStrokeColor(col(accent, 0.25)); ctx.setLineWidth(3); ctx.strokePath()
 }
 
@@ -201,7 +201,11 @@ let cc = CGContext(data: nil, width: 1024, height: 1024, bitsPerComponent: 8, by
 cc.setFillColor(col((0, 0, 0))); cc.fill(CGRect(x: 0, y: 0, width: 1024, height: 1024))
 for (i, img) in images.enumerated() {
     let cx = i % 4, cy = i / 4
-    cc.draw(img, in: CGRect(x: cx * 256, y: 1024 - (cy + 1) * 256, width: 256, height: 256))
+    let tile = CGRect(x: cx * 256, y: 1024 - (cy + 1) * 256, width: 256, height: 256)
+    cc.saveGState()                              // circular clip = how Game Center shows it
+    cc.addEllipse(in: tile.insetBy(dx: 6, dy: 6)); cc.clip()
+    cc.draw(img, in: tile)
+    cc.restoreGState()
 }
 save(cc.makeImage()!, "\(outDir)/_contact.png")
 print("wrote \(images.count) badges + _contact.png to \(outDir)")
