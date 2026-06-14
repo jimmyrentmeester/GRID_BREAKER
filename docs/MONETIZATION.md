@@ -186,11 +186,11 @@ the IAP review screenshot once the view exists) is 🤖 build work. The human-on
 
 1. **Agreements, Tax & Banking** in App Store Connect (the real blocker — start early, it can
    take days to verify; nothing sells until all three are green):
-   - Accept the **Paid Apps Agreement** (the free-app agreement alone is **not** enough).
-   - Add **Bank account** (IBAN) for payouts.
-   - Complete **Tax forms** — as a Netherlands-based dev you'll fill the US tax form
-     (W-8BEN equivalent) Apple collects in ASC, plus your local tax info, and pick a
-     **tax category** for the IAPs.
+   - Accept the **Paid Apps Agreement** (the free-app agreement alone is **not** enough). ⏳ in progress
+   - Add **Bank account** (IBAN) for payouts. ⏳ processing (2026-06-14)
+   - Complete **Tax forms** — **US W-8BEN submitted ✓ (2026-06-14): Article 12, 0% rate,
+     income from sale of applications, foreign TIN = BSN.** (Result: 0% US withholding
+     instead of 30%.) Any local tax info / IAP tax category still to confirm.
    - Small Business Program: **already done ✓** (15% rate).
 2. **Confirm the offer** — the 4 price points + in-fiction tier names (defaults suggested
    above; your call to change).
