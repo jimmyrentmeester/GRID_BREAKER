@@ -192,9 +192,9 @@ the IAP review screenshot once the view exists) is 🤖 build work. The human-on
      Foreign Status** (individual/sole proprietor).
    - **DAC7** — Active ✅ (answered "No personal services" — a game isn't a DAC7 personal service).
    - Small Business Program — done ✅ (15% rate).
-   - **EU DSA** — declared **non-trader** for the free launch (no public address required;
-     keeps the app available in the EU/NL store). This is the honest answer while the app is
-     free with no ads/IAP. **Switching to trader is required before monetizing — see step 2.**
+   - **EU DSA** — **declared & Active ✅ (2026-06-14)** as **non-trader** for the free launch
+     (no public address required; app available in the EU/NL store). Honest answer while the
+     app is free with no ads/IAP. **Switching to trader is required before monetizing — see step 2.**
 2. **🔑 Switch EU DSA non-trader → trader** (App Store Connect → Business) **before enabling
    any IAP** — you cannot sell as a non-trader. This is when you provide the **public contact
    address** (address/phone/email shown on the product page). Decide the address then:
