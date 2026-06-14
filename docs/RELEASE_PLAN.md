@@ -32,9 +32,9 @@ A1 + B3/B4 + C in the meantime.
 
 ## Phase B — Legal & accounts (👤 blockers; 🤖 assists)
 - [x] **B1 👤 Apple Developer Program** — enrolled; paid developer account active.
-- [x] **B2 👤 Music rights** — maintainer decision: keep the Gemini-generated tracks
-      as-is. (Risk noted: verify the tool's terms allow commercial distribution before
-      submit; swap is drop-in if ever needed.)
+- [x] **B2 👤 Music rights** — maintainer kept the Gemini-generated tracks and
+      **confirmed they're cleared for commercial distribution (2026-06-14)** — licensing
+      risk **closed**. (Swap remains drop-in if ever needed.)
 - [x] **B3 Privacy policy** — hosted & live (GitHub Pages, "Data Not Collected"):
       **https://jimmyrentmeester.github.io/gridbreaker/privacy.html**
 - [x] **B4 Support page** — hosted & live:
