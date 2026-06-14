@@ -3,6 +3,24 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #80 — Submitted to the App Store (Phases D + E) (2026-06-14)
+GRID_BREAKER 1.0 is in Apple's review queue. 🎉
+- **E2 pre-flight:** `xcodebuild archive` (Release / generic iOS device) → **ARCHIVE
+  SUCCEEDED**; verified v1.0 / build 1, bundle `nl.gridbreaker.app`, iPhone-only,
+  automatic signing, export compliance `ITSAppUsesNonExemptEncryption=NO` (pre-answered).
+- **D (App Store Connect), guided click-by-click:** app record created; App Information
+  (subtitle, Games/Arcade, privacy URL); Age Rating → **4+**; Pricing **Free** / all
+  territories; listing (6.9" screenshots + promo preview + copy + support/marketing URLs
+  + copyright); **App Privacy "Data Not Collected"** published.
+- **D6 Game Center:** 2 leaderboards (`lb.endless` Classic, `lb.daily` Recurring) + all
+  **13 achievements** created with matching IDs, points, and the circular neon badges
+  (reshaped from square after spotting GC's circular crop). Enabled on v1.0.
+- **E (build & submit):** archived + uploaded in Xcode; build attached; cleared the two
+  submit blockers (Game Center checkbox on the version + App Privacy publish);
+  **Submitted for Review on 2026-06-14**, set to auto-release on approval.
+- **Docs/badges:** circular badge frame (`scripts/makebadges.swift`); store-copy URLs
+  filled; RELEASE_PLAN D/E marked done, F1 = Waiting for Review. Next: E5 if rejected.
+
 ## Run #79 — Rename site to jimmyrentmeester.github.io (2026-06-13)
 Cleaned up the public URL before submission (auto-generated handle → real name).
 - 👤 renamed the GitHub account `k6czwyxg8g-cmyk` → `jimmyrentmeester`; 🤖 renamed the

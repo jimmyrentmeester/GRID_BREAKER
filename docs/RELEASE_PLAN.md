@@ -63,27 +63,27 @@ A1 + B3/B4 + C in the meantime.
       grid-hacking"), promo text, description, keywords, what's-new, metadata. 👤 review.
 - [x] **C4 App icon** — new neon "breached grid" icon shipped (Run #65).
 
-## Phase D — App Store Connect setup (👤, using C content)
+## Phase D — App Store Connect setup ✅ DONE
 > 📘 Click-by-click guide: **`docs/appstoreconnect-walkthrough.md`** (covers D + E).
-- [ ] **D1 👤 Create app record** — bundle id `nl.gridbreaker.app`, name "GRID_BREAKER",
-      primary category **Games**, secondary **Arcade** (or Action).
-- [ ] **D2 👤 Age rating** — questionnaire → likely **9+** (mild/infrequent fantasy
-      violence; no objectionable content).
-- [ ] **D3 👤 Privacy** — "Data Not Collected"; paste the B3 Privacy URL.
-- [ ] **D4 👤 Pricing & availability** — Free, all territories (suggested).
-- [ ] **D5 👤 Upload listing** — paste C3 copy, upload C1 screenshots (+C2 video), icon.
+- [x] **D1 Create app record** — `nl.gridbreaker.app`, "GRID_BREAKER", Games/Arcade.
+- [x] **D2 Age rating** — questionnaire all None → **4+**.
+- [x] **D3 Privacy** — App Privacy "Data Not Collected", published; Privacy URL set.
+- [x] **D4 Pricing & availability** — Free, all territories.
+- [x] **D5 Upload listing** — copy + 6.9" screenshots + preview video + icon.
+- [x] **D6 Game Center** — 2 leaderboards + 13 achievements (circular badges), IDs match
+      the code, enabled on v1.0.
 
-## Phase E — Build, test, submit (👤; 🤖 preps)
-- [ ] **E1 👤 Signing** — Automatic signing resolves a distribution profile for
-      `nl.gridbreaker.app` under the new team.
-- [ ] **E2 👤 Archive & upload** — Xcode ▸ Product ▸ Archive (Release) ▸ Distribute App ▸
-      App Store Connect (or Transporter).
-- [ ] **E3 👤 (optional) TestFlight** — internal install on your device; final smoke test.
-- [ ] **E4 👤 Submit for review** — attach the build, export compliance = **No**, submit.
-- [ ] **E5 🤖/👤 Handle review feedback** — fix any rejection (🤖 for code), bump build, resubmit.
+## Phase E — Build, test, submit ✅ DONE
+- [x] **E1 Signing** — automatic; Apple Development cert + Xcode-managed profile, team
+      Jimmy Rentmeester. Pre-flight `xcodebuild archive` (Release/device) succeeded.
+- [x] **E2 Archive & upload** — archived in Xcode, uploaded to App Store Connect.
+- [ ] **E3 👤 (optional) TestFlight** — skipped for 1.0 (A2/A3 done on device already).
+- [x] **E4 Submit for review** — build attached, Game Center enabled on the version,
+      App Privacy published, export compliance auto (NonExempt=NO). **Submitted 2026-06-14.**
+- [ ] **E5 🤖/👤 Handle review feedback** — if rejected, fix (🤖 for code) → bump build → resubmit.
 
 ## Phase F — Launch & post-launch
-- [ ] **F1 👤 Release** — auto on approval, or manual.
+- [~] **F1 👤 Release** — set to auto-release on approval. **Now: Waiting for Review.**
 - [ ] **F2 🤖/👤 Monitor** — crashes/reviews; hotfix → bump build → resubmit if needed.
 
 ---
