@@ -3,6 +3,21 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #81 — Launch & marketing prep (landing page, OG card, copy) (2026-06-14)
+Built the launch kit while v1.0 sits in review.
+- **Marketing landing page** (`docs/site/index.html`, deploys to `/gridbreaker/`): neon
+  hero (icon + wordmark + tagline + App Store badge placeholder), 3 screenshots, four-mode
+  + progress feature cards, "built right" (no ads/tracking), OG/Twitter meta tags, support/
+  privacy footer. Replaced the old bare links page.
+- **Web assets** (`docs/site/assets/`): 3 web-resized screenshots + 180px icon + a
+  **1200×630 OG share card** (`scripts/makeog.swift` — chevron/cursor mark, wordmark,
+  tagline, mode/no-tracking strip).
+- **`docs/marketing/launch-copy.md`**: paste-ready X, Product Hunt (tagline + description +
+  maker comment), Reddit, hashtags, and a launch-day checklist. All use an `APP_STORE_URL`
+  placeholder to swap once the real link exists.
+- **Not yet deployed** to the live Pages site — pending go-ahead (the App Store badge is a
+  "coming soon" placeholder until the app is live + the real URL is known).
+
 ## Run #80 — Submitted to the App Store (Phases D + E) (2026-06-14)
 GRID_BREAKER 1.0 is in Apple's review queue. 🎉
 - **E2 pre-flight:** `xcodebuild archive` (Release / generic iOS device) → **ARCHIVE

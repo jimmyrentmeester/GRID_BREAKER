@@ -3,27 +3,111 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GRID_BREAKER</title>
+<title>GRID_BREAKER — Neon reflex grid-hacking</title>
+<meta name="description" content="A fast neon reflex game. Decode the grid before your RAM runs out, chain clean hits into Fever, chase the high score. No ads, no tracking — all skill.">
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="GRID_BREAKER — Neon reflex grid-hacking">
+<meta property="og:description" content="Decode the grid before your RAM runs out, chain clean hits into Fever, chase the high score. No ads, no tracking — all skill.">
+<meta property="og:image" content="https://jimmyrentmeester.github.io/gridbreaker/assets/og.png">
+<meta property="og:url" content="https://jimmyrentmeester.github.io/gridbreaker/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="GRID_BREAKER — Neon reflex grid-hacking">
+<meta name="twitter:description" content="Decode the grid before your RAM runs out, chain into Fever, chase the high score. No ads, no tracking.">
+<meta name="twitter:image" content="https://jimmyrentmeester.github.io/gridbreaker/assets/og.png">
 <style>
-  :root { --cyan:#33f2ff; --magenta:#ff33cc; --bg:#05060c; }
-  body { margin:0; min-height:100vh; background:var(--bg); color:#e8ecf4; display:flex; align-items:center; justify-content:center;
-         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; text-align:center;
-         background-image:linear-gradient(rgba(120,90,200,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(120,90,200,.07) 1px,transparent 1px); background-size:44px 44px; }
-  .h { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:800; font-size:clamp(30px,8vw,56px); letter-spacing:2px;
-       color:var(--cyan); text-shadow:0 0 26px rgba(51,242,255,.5); margin:0; }
-  .t { color:var(--magenta); font-family:ui-monospace,monospace; margin:8px 0 34px; }
-  a { display:inline-block; margin:6px; padding:11px 20px; border-radius:12px; text-decoration:none; color:var(--cyan);
-      border:1.5px solid var(--cyan); font-family:ui-monospace,monospace; font-weight:700; box-shadow:0 0 14px rgba(51,242,255,.25); }
+  :root{ --cyan:#33f2ff; --magenta:#ff33cc; --gold:#ffd23f; --bg:#05060c; --ink:#e8ecf4; --dim:#9aa3b8; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+        font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height:1.5;
+        background-image:linear-gradient(rgba(120,90,200,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(120,90,200,.06) 1px,transparent 1px);
+        background-size:46px 46px; }
+  .wrap{ max-width:980px; margin:0 auto; padding:0 22px; }
+  .mono{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  /* hero */
+  header{ text-align:center; padding:74px 22px 40px; }
+  header img.icon{ width:104px; height:104px; border-radius:24px; box-shadow:0 0 34px rgba(51,242,255,.34); }
+  h1{ font-family:ui-monospace,Menlo,monospace; font-weight:800; letter-spacing:2px;
+      font-size:clamp(34px,8vw,64px); margin:18px 0 6px; color:var(--cyan); text-shadow:0 0 30px rgba(51,242,255,.5); }
+  .tag{ color:var(--magenta); font-family:ui-monospace,monospace; font-size:clamp(14px,3.4vw,20px); margin:0 0 30px; }
+  .badge{ display:inline-flex; align-items:center; gap:10px; padding:14px 26px; border-radius:14px; text-decoration:none;
+          font-family:ui-monospace,monospace; font-weight:700; color:#04121a; background:var(--cyan);
+          box-shadow:0 0 24px rgba(51,242,255,.4); }
+  .badge.soon{ background:transparent; color:var(--cyan); border:1.6px solid var(--cyan); }
+  .sub{ color:var(--dim); font-size:13px; margin-top:12px; }
+  /* shots */
+  .shots{ display:flex; gap:16px; justify-content:center; flex-wrap:wrap; padding:26px 0 8px; }
+  .shots img{ width:min(30%,220px); border-radius:18px; border:1px solid rgba(51,242,255,.18); box-shadow:0 10px 40px rgba(0,0,0,.5); }
+  /* sections */
+  section{ padding:42px 0; }
+  h2{ font-family:ui-monospace,Menlo,monospace; color:var(--cyan); letter-spacing:1px; font-size:22px; text-align:center; margin:0 0 26px; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+  .card{ background:rgba(255,255,255,.03); border:1px solid rgba(120,90,200,.22); border-radius:16px; padding:20px; }
+  .card h3{ margin:0 0 6px; font-family:ui-monospace,monospace; font-size:16px; color:var(--gold); }
+  .card p{ margin:0; color:var(--dim); font-size:14px; }
+  .pure{ text-align:center; color:var(--dim); font-size:15px; max-width:640px; margin:0 auto; }
+  .pure b{ color:var(--ink); }
+  footer{ text-align:center; padding:40px 22px 60px; border-top:1px solid rgba(120,90,200,.18); margin-top:30px; }
+  footer a{ color:var(--cyan); text-decoration:none; margin:0 10px; font-family:ui-monospace,monospace; }
+  footer .small{ color:var(--dim); font-size:12px; margin-top:14px; }
 </style>
 </head>
 <body>
-  <div>
-    <h1 class="h">GRID_BREAKER</h1>
-    <div class="t">// netrunner reflex hack</div>
+  <header>
+    <img class="icon" src="assets/icon.png" alt="GRID_BREAKER icon">
+    <h1>GRID_BREAKER</h1>
+    <p class="tag">// neon reflex grid-hacking</p>
     <div>
-      <a href="support.html">SUPPORT</a>
-      <a href="privacy.html">PRIVACY</a>
+      <!-- LAUNCH: swap to the real App Store link & change class/text once live:
+           <a class="badge" href="https://apps.apple.com/app/idXXXXXXXXX">▼ Download on the App Store</a> -->
+      <a class="badge soon" href="#">◷ Coming soon to the App Store</a>
     </div>
+    <div class="sub">iPhone · Free · No ads · No tracking</div>
+  </header>
+
+  <div class="wrap">
+    <div class="shots">
+      <img src="assets/01-menu.png" alt="GRID_BREAKER main menu">
+      <img src="assets/02-fever.png" alt="Fever mode gameplay">
+      <img src="assets/03-campaign.png" alt="Campaign cores">
+    </div>
+
+    <section>
+      <h2>// WHAT IT IS</h2>
+      <p class="pure">Jack into the grid, decode the daemons before they vanish, dodge the firewalls,
+      and chain clean hits into <b>Fever</b> as the pace climbs. One thumb. Pure reaction. No filler.</p>
+    </section>
+
+    <section>
+      <h2>// FOUR MODES</h2>
+      <div class="grid">
+        <div class="card"><h3>ENDLESS</h3><p>Survive as long as your reflexes hold and chase the high score.</p></div>
+        <div class="card"><h3>CAMPAIGN</h3><p>10 hand-tuned data cores, each teaching one new mechanic, ramping to a real finale.</p></div>
+        <div class="card"><h3>FLOW</h3><p>A calm, no-fail mode to just tap and unwind.</p></div>
+        <div class="card"><h3>DAILY HACK</h3><p>One shared board per day — everyone races the same seed.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>// PROGRESS &amp; STYLE</h2>
+      <div class="grid">
+        <div class="card"><h3>CYBERDECK</h3><p>Earn Credits every run and buy permanent upgrades — more RAM, faster decoding, a failsafe shield, longer Fever.</p></div>
+        <div class="card"><h3>COSMETICS</h3><p>Unlock neon palettes that recolor the whole game and tap-trail styles that follow your finger.</p></div>
+        <div class="card"><h3>GAME CENTER</h3><p>Global leaderboards and 13 achievements to chase.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>// BUILT RIGHT</h2>
+      <p class="pure"><b>100% on-device.</b> No accounts, no ads, no analytics, no tracking — nothing is collected.
+      Honors Reduce Motion. All sound is generated in code. Crack the grid — the Monolith is waiting.</p>
+    </section>
   </div>
+
+  <footer>
+    <a href="support.html">SUPPORT</a>
+    <a href="privacy.html">PRIVACY</a>
+    <div class="small">© 2026 Jimmy Rentmeester</div>
+  </footer>
 </body>
 </html>
