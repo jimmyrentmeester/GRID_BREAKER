@@ -289,6 +289,8 @@ private struct MenuTile: View {
 private struct BootSplash: View {
     let onDone: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var isPad: Bool { hSize == .regular }   // portrait-locked, so .regular ⇒ iPad
     @State private var split: CGFloat = 10     // RGB-split that converges (decrypt resolve)
     @State private var glow: CGFloat = 6
     @State private var subIn = false
@@ -300,7 +302,7 @@ private struct BootSplash: View {
     @State private var done = false
 
     private var title: some View {
-        Text("GRID_BREAKER").font(.system(size: 38, weight: .heavy, design: .monospaced))
+        Text("GRID_BREAKER").font(.system(size: isPad ? 66 : 38, weight: .heavy, design: .monospaced))
     }
 
     var body: some View {
@@ -326,7 +328,7 @@ private struct BootSplash: View {
                 }
                 .neonGlow(NeonTheme.cyan, radius: glow)
                 Text("// netrunner reflex hack")
-                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .font(.system(size: isPad ? 20 : 13, weight: .medium, design: .monospaced))
                     .foregroundStyle(NeonTheme.magenta)
                     .opacity(subIn ? 1 : 0)
                 Spacer()
@@ -340,11 +342,11 @@ private struct BootSplash: View {
                     }
                     .frame(height: 4)
                     Text(online ? "▸ SYSTEM ONLINE" : "▸ SYNCING GRID…")
-                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .font(.system(size: isPad ? 13 : 10, weight: .semibold, design: .monospaced))
                         .foregroundStyle(online ? NeonTheme.cyan : NeonTheme.textDim)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: 280)
+                .frame(maxWidth: isPad ? 420 : 280)
                 .padding(.bottom, 44)
             }
             .padding(.horizontal, 32)

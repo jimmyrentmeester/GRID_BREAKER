@@ -511,9 +511,12 @@ struct GameView: View {
                 }
                 .buttonStyle(TerminalButtonStyle())
                 .accessibilityLabel("Pause")
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .padding(.leading, 24)
                 .padding(.bottom, 28)
+                // Align to the play panel's bottom-leading (not the screen corner) on iPad;
+                // no-op on iPhone where 480 exceeds the screen width.
+                .frame(maxWidth: 480, maxHeight: .infinity, alignment: .bottomLeading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
 
             if model.isPaused && !showBriefing && countdownValue == nil {
