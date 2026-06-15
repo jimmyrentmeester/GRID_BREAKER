@@ -166,4 +166,14 @@ extension View {
         self.shadow(color: color.opacity(0.9), radius: radius)
             .shadow(color: color.opacity(0.5), radius: radius * 2)
     }
+
+    /// Caps content to a comfortable phone-width column and centers it horizontally.
+    /// On large screens (iPad) this keeps menus/shops/onboarding as a readable column
+    /// over the neon surround instead of stretching a phone layout edge-to-edge; on
+    /// iPhone the cap exceeds the screen width, so it's a no-op. The reusable fix for
+    /// every "chrome" screen (the in-session grid gets its own composition).
+    func playColumn(_ maxWidth: CGFloat = 480) -> some View {
+        frame(maxWidth: maxWidth)
+            .frame(maxWidth: .infinity, alignment: .center)
+    }
 }

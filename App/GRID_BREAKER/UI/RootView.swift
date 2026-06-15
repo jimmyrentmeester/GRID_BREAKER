@@ -33,7 +33,7 @@ struct RootView: View {
 
             switch screen {
             case .menu:
-                titleScreen.transition(.opacity)
+                titleScreen.playColumn().transition(.opacity)
             case .endless:
                 GameView(deck: store.cyberdeck,
                          bestScore: store.highScores.first?.score ?? 0,
@@ -62,6 +62,7 @@ struct RootView: View {
                 CampaignView(store: store,
                              onPlay: { core in activeCore = core; screen = .core },
                              onBack: { screen = .menu })
+                    .playColumn()
                     .transition(.opacity)
             case .core:
                 if let core = activeCore {
@@ -80,18 +81,18 @@ struct RootView: View {
                 CyberdeckView(store: store,
                               guided: guidedTour == .cyberdeck,
                               onGuidedDone: { guidedTour = .cosmetics; screen = .cosmetics },
-                              onBack: { guidedTour = .none; screen = .menu }).transition(.opacity)
+                              onBack: { guidedTour = .none; screen = .menu }).playColumn().transition(.opacity)
             case .cosmetics:
                 CosmeticsView(store: store,
                               guided: guidedTour == .cosmetics,
                               onGuidedDone: { guidedTour = .none; screen = .menu },
-                              onBack: { guidedTour = .none; screen = .menu }).transition(.opacity)
+                              onBack: { guidedTour = .none; screen = .menu }).playColumn().transition(.opacity)
             case .scores:
                 HighScoresView(scores: store.highScores,
                                dailyBest: store.dailyBest(forDay: Self.today().key),
                                campaignProgress: store.campaignProgress,
                                campaignTotal: Campaign.count,
-                               onBack: { screen = .menu }).transition(.opacity)
+                               onBack: { screen = .menu }).playColumn().transition(.opacity)
             case .tutorial:
                 OnboardingView(showPayday: onboardingPayday,
                                credits: store.cyberdeck.credits,
@@ -99,11 +100,12 @@ struct RootView: View {
                                onOpenCyberdeck: { store.markTutorialSeen(); tap(); guidedTour = .cyberdeck; screen = .cyberdeck },
                                onOpenCosmetics: { store.markTutorialSeen(); tap(); guidedTour = .cosmetics; screen = .cosmetics },
                                onDone: { store.markTutorialSeen(); screen = .menu })
+                    .playColumn()
                     .transition(.opacity)
             case .settings:
                 SettingsView(store: store,
                              onTutorial: { tap(); onboardingPayday = false; screen = .tutorial },
-                             onBack: { screen = .menu }).transition(.opacity)
+                             onBack: { screen = .menu }).playColumn().transition(.opacity)
             }
 
             // Animated neon boot splash on cold launch (covers the menu until done).
