@@ -418,6 +418,13 @@ struct GameView: View {
 
                 Spacer(minLength: 12).frame(maxHeight: 96)
             }
+            // iPad: cap the play-field to a phone-shaped panel so HUD / Data Core / grid
+            // stay one cohesive, hand-sized unit instead of floating apart on the big 4:3
+            // screen (the Data Core filler would otherwise stretch enormously). Centered
+            // over the atmosphere/backdrop. No-op on iPhone: 480/960 exceed every iPhone's
+            // width/height, so it never caps the phone layout.
+            .frame(maxWidth: 480, maxHeight: 960)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .modifier(ShakeEffect(animatableData: shakeAnim))
 
             // Score + RAM time framing the Dynamic Island / notch. Only on devices
