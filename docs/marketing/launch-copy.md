@@ -1,7 +1,7 @@
 # GRID_BREAKER — launch & announcement copy
 
-Paste-ready copy for launch day. Swap `APP_STORE_URL` for the real link once live
-(`https://apps.apple.com/app/id…`). Landing page: https://jimmyrentmeester.github.io/gridbreaker/
+Paste-ready launch copy — the live App Store link is filled in:
+**https://apps.apple.com/app/id6779888720** . Landing page: https://jimmyrentmeester.github.io/gridbreaker/
 
 ---
 
@@ -18,14 +18,14 @@ A fast neon reflex game — decode the grid before your RAM runs out, chain clea
 
 4 modes · 10-core campaign · no ads · no tracking · 100% on-device.
 
-APP_STORE_URL
+https://apps.apple.com/app/id6779888720
 ```
 
 ## X / Twitter (short / reply variant)
 ```
 Made a tiny cyberpunk reflex game. One thumb, pure reaction, zero tracking.
 Endless, a 10-core campaign, Flow, and a Daily Hack everyone races on the same seed.
-APP_STORE_URL
+https://apps.apple.com/app/id6779888720
 ```
 
 ## Product Hunt
@@ -67,7 +67,7 @@ and a Daily Hack where everyone races the same seed.
 It's free, 100% on-device — no accounts, no ads, no analytics, no tracking. All audio is
 synthesized in code. Game Center leaderboards + achievements.
 
-APP_STORE_URL — happy to answer anything about how it's built.
+https://apps.apple.com/app/id6779888720 — happy to answer anything about how it's built.
 ```
 
 ## Instagram — feed captions (wide / personal audience)
@@ -112,8 +112,8 @@ Jack in. Decode the neon grid before your RAM runs out, chain clean hits into Fe
 ---
 
 ## Launch-day checklist
-- [ ] App approved & live → grab the real App Store URL.
-- [ ] Swap `APP_STORE_URL` everywhere above + the link/text in the landing page (`docs/site/index.html`, the badge comment).
-- [ ] Deploy the updated landing page to the Pages site.
+- [x] App approved & live (`id6779888720`).
+- [x] Real App Store URL filled in everywhere above + the landing-page download button.
+- [x] Landing page deployed to the Pages site.
 - [ ] Post: X, Product Hunt (schedule 12:01am PT for a full day), Reddit.
 - [ ] Verify the OG card renders (paste the landing URL into the X composer / PH).
