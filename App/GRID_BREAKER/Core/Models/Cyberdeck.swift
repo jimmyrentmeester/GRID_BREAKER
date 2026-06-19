@@ -68,6 +68,27 @@ enum CyberdeckUpgrade: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// The total effect bought *so far* at `level` — the cumulative bonus this
+    /// upgrade currently contributes. Shown on the upgrade row so the player can
+    /// see what their purchases add up to (not just what one more level does).
+    /// Reads the real `GameConfig` values (like `detail`) so it can't drift from
+    /// what the engine actually applies.
+    func cumulativeEffect(at level: Int) -> String {
+        let c = GameConfig.default
+        switch self {
+        case .ram:
+            return "+\(Int(c.ramSecondsPerLevel) * level)s RAM buffer"
+        case .decodeSpeed:
+            return "+\(String(format: "%g", c.decodeBonusPerLevel * Double(level)))s per decode"
+        case .shield:
+            return level == 1 ? "1 mistake absorbed" : "\(level) mistakes absorbed"
+        case .feverCapacitor:
+            return "+\(String(format: "%g", c.feverBonusPerLevel * Double(level)))s Fever duration"
+        case .salvage:
+            return "+\(Int(c.salvageBonusPerLevel * 100) * level)% Credits per run"
+        }
+    }
+
     /// Highest level purchasable for this upgrade.
     var maxLevel: Int {
         switch self {

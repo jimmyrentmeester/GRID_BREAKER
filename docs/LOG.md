@@ -3,6 +3,20 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #84 — Cyberdeck shows cumulative upgrade values (2026-06-19)
+Post-launch feature request: the Cyberdeck didn't show what your bought upgrades add up to.
+- **`CyberdeckUpgrade.cumulativeEffect(at:)`** (`Core/Models/Cyberdeck.swift`): returns the
+  total bonus owned at a given level, formatted per upgrade (e.g. "+12s RAM buffer",
+  "+0.45s per decode", "3 mistakes absorbed", "+1.5s Fever duration", "+30% Credits per run").
+  Reads the real `GameConfig.default` constants (like `detail` does), so it can't drift from
+  what the engine applies. Shows the cumulative bonus the player *bought*, not the absolute
+  total (which is mode-dependent for RAM/refill) — unambiguous and mode-independent.
+- **`UpgradeRow`** (`UI/MenuViews.swift`): added a "▸ <cumulative>" line under the per-level
+  detail, in cyan when owned and dimmed at level 0 (so the empty state still reads). Folded the
+  value into the row's accessibility label too.
+- Values verified against GameConfig (level 1/3 spot-check); Debug build passes. Visual placement
+  to confirm on device. Branch `feature/cyberdeck-cumulative-values`.
+
 ## Run #83 — Post-launch fixes: Game Center diagnostics + pause restart (2026-06-19)
 Two more from the post-launch list (Game Center bug + restart-button request).
 - **Game Center leaderboards "not working" in production** (`Services/GameCenterService.swift`,

@@ -223,6 +223,12 @@ private struct UpgradeRow: View {
                     .font(.system(size: 11, weight: .regular, design: .monospaced))
                     .foregroundStyle(NeonTheme.textDim)
                     .fixedSize(horizontal: false, vertical: true)
+                // Cumulative effect bought so far (dimmed until you own a level, so
+                // the player sees what their purchases add up to at a glance).
+                Text("▸ \(upgrade.cumulativeEffect(at: level))")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(level > 0 ? NeonTheme.cyan : NeonTheme.textDim.opacity(0.6))
+                    .fixedSize(horizontal: false, vertical: true)
                 // Level pips.
                 HStack(spacing: 4) {
                     ForEach(0..<upgrade.maxLevel, id: \.self) { i in
@@ -235,7 +241,7 @@ private struct UpgradeRow: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(upgrade.title), level \(level) of \(upgrade.maxLevel). \(upgrade.detail)")
+            .accessibilityLabel("\(upgrade.title), level \(level) of \(upgrade.maxLevel). Currently \(upgrade.cumulativeEffect(at: level)). \(upgrade.detail)")
             Button(action: onBuy) {
                 Text(maxed ? "MAX" : "\(cost) CR")
                     .font(.system(size: 13, weight: .bold, design: .monospaced))
