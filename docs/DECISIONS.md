@@ -302,3 +302,25 @@ and its haptic is bumped soft→rigid, matching a mistap. All gated by `!chill` 
 stays pressure-free) and Reduce Motion (border shows a brief static tint, no animated
 pulse; the per-cell flash snaps off as before). Honors the request literally —
 "visual + rigid haptic on any negative condition" — while keeping rest-state calm.
+
+## D28 — Game Center: diagnostics + retroactive backlog, not a code rewrite
+**2026-06-19 (Run #83, community report).** A player reported leaderboards not working
+in the App Store build. Audit found the **code, entitlement and IDs are all correct**
+(`com.apple.developer.game-center` present; IDs match `appstoreconnect-walkthrough.md`
+D6 exactly; auth + `reportRunEnd` wired). So the likely cause is **App Store Connect
+config** — the boards weren't created, or aren't live yet under those exact IDs (the
+service fails silently by design, `try?`, so nothing surfaced). Two-sided fix:
+- **Code (this run):** (1) `gcLog` — Debug-only console trace so auth/submit/report
+  outcomes are visible instead of swallowed; (2) `verifyLeaderboards()` — after auth,
+  asks GC (`loadLeaderboards(IDs:)`) which of our board IDs actually exist in ASC and
+  logs any MISSING — turns the #1 cause into a one-line console answer; (3)
+  `submitBacklog(endlessBest:dailyBest:)` — re-submits the player's stored local bests
+  on auth so scores earned before GC was reachable / before the boards went live appear
+  retroactively (GC keeps only a player's highest, so re-submit is harmless; daily only
+  if `GameStore` still considers it today's). All Debug-gated logging is a no-op in
+  Release; shipping behavior (report-only, silent, optional) is unchanged.
+- **ASC (maintainer, out of code):** verify both leaderboards exist + are live under the
+  exact IDs, and that the recurring daily board is configured. The Debug run's
+  `verifyLeaderboards` log confirms which side the problem is on. Note GC sandbox
+  (Xcode/TestFlight) vs production (App Store) are separate score/player environments —
+  a freshly launched app's production boards can lag before they populate.

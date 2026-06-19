@@ -3,6 +3,23 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #83 — Post-launch fixes: Game Center diagnostics + pause restart (2026-06-19)
+Two more from the post-launch list (Game Center bug + restart-button request).
+- **Game Center leaderboards "not working" in production** (`Services/GameCenterService.swift`,
+  `UI/RootView.swift`): code/entitlement/IDs verified correct, so the likely cause is App
+  Store Connect config (boards not created/live under the exact IDs). Added: Debug-only
+  `gcLog` tracing; `verifyLeaderboards()` that logs which board IDs ASC actually recognizes
+  (surfaces the #1 cause); and `submitBacklog(endlessBest:dailyBest:)` — re-submits stored
+  local bests on auth so prior scores appear **retroactively**. Logging is a no-op in Release;
+  report-only behavior unchanged. Maintainer still needs to confirm the boards in ASC. (D28)
+- **Pause menu restart button** (`UI/GameView.swift`): `PauseOverlay` now offers RESUME /
+  RESTART / QUIT (was RESUME / QUIT). RESTART reuses the proven game-over "replay" flow
+  (`model.restart(seed:)` + countdown), restarting the same mode/core without a trip to the
+  menu. Switched the buttons to a full-width vertical stack so three actions stay legible on
+  the smallest screens.
+- Debug + Release builds verified. On branch `bugfix/post-launch-batch-1` (renamed from
+  `bugfix/fever-spawn-and-error-feedback`; now holds Runs #82–83).
+
 ## Run #82 — Post-launch community bug fixes (fever spawn + error feedback) (2026-06-19)
 First fixes from real player reports (GitHub issues #1, #2 by @brand0new), two days post-launch.
 - **Bug #1 — Fever slowed spawns in Campaign** (`Core/Engine/GridEngine.swift`): Fever used the
@@ -15,7 +32,7 @@ First fixes from real player reports (GitHub issues #1, #2 by @brand0new), two d
   flash for `.miss`/`.bomb`; a new `ErrorFlashBorder` red screen-edge pulse on every mistap/expiry;
   `nodeExpired` now gets the red cell flash + border + a rigid haptic (was soft). Gated by `!chill`
   + Reduce Motion. (D27)
-- Branch `bugfix/fever-spawn-and-error-feedback` off `main`. Debug build verified (simulator).
+- Branch `bugfix/post-launch-batch-1` off `main`. Debug build verified (simulator).
   Feel to be confirmed on device; ships in the next update.
 
 ## Run #81 — Launch & marketing prep (landing page, OG card, copy) (2026-06-14)

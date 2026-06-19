@@ -527,7 +527,10 @@ struct GameView: View {
             }
 
             if model.isPaused && !showBriefing && countdownValue == nil {
-                PauseOverlay(onResume: { model.unpause() }, onQuit: onExit)
+                PauseOverlay(onResume: { model.unpause() },
+                             onRestart: { outcome = nil; pbFired = false; showPB = false
+                                          model.restart(seed: fixedSeed ?? GameView.freshSeed()); startCountdown() },
+                             onQuit: onExit)
             }
 
             // In-theme "sync" countdown before the run starts (every mode).
@@ -1287,6 +1290,7 @@ private struct CoreBriefingOverlay: View {
 
 private struct PauseOverlay: View {
     let onResume: () -> Void
+    let onRestart: () -> Void
     let onQuit: () -> Void
 
     var body: some View {
@@ -1300,10 +1304,14 @@ private struct PauseOverlay: View {
                     .font(.system(size: 30, weight: .heavy, design: .monospaced))
                     .foregroundStyle(NeonTheme.cyan)
                     .neonGlow(NeonTheme.cyan, radius: 10)
-                HStack(spacing: 14) {
-                    TerminalButton(title: "RESUME", color: NeonTheme.cyan, action: onResume)
-                    TerminalButton(title: "QUIT", color: NeonTheme.magenta, action: onQuit)
+                // Vertical stack: three actions read cleanly as full-width buttons
+                // (RESUME / RESTART / QUIT) and stay legible on the smallest screens.
+                VStack(spacing: 12) {
+                    TerminalButton(title: "RESUME", color: NeonTheme.cyan, wide: true, action: onResume)
+                    TerminalButton(title: "RESTART", color: NeonTheme.gold, wide: true, action: onRestart)
+                    TerminalButton(title: "QUIT", color: NeonTheme.magenta, wide: true, action: onQuit)
                 }
+                .frame(maxWidth: 240)
                 .padding(.top, 8)
             }
             .padding(32)

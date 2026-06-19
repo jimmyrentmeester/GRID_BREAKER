@@ -41,6 +41,19 @@ enum GCRunMode {
     case endless, daily, campaign, flow
 }
 
+// MARK: - Diagnostics
+
+/// Lightweight console trace for Game Center wiring (Debug only). Game Center is
+/// report-only and fails silently by design in Release; this makes auth/submit
+/// outcomes visible while debugging "scores don't show up" — without changing any
+/// shipping behavior. View it in the Xcode console (or Console.app for a device run).
+@inline(__always)
+func gcLog(_ message: @autoclosure () -> String) {
+    #if DEBUG
+    print("🎮 [GameCenter] \(message())")
+    #endif
+}
+
 // MARK: - Service
 
 /// Report-only bridge to Game Center. The engine stays the sole authority
@@ -69,18 +82,49 @@ final class GameCenterService {
     /// sheet if needed; if the player declines (or the account is restricted),
     /// the game continues untouched and every report below becomes a no-op.
     func authenticate(onAuthenticated: (@MainActor () -> Void)? = nil) {
-        GKLocalPlayer.local.authenticateHandler = { viewController, _ in
+        GKLocalPlayer.local.authenticateHandler = { viewController, error in
             Task { @MainActor [weak self] in
                 guard let self else { return }
+                if let error { gcLog("Auth error: \(error.localizedDescription)") }
                 if let viewController {
                     Self.present(viewController)
                     return
                 }
                 self.isAuthenticated = GKLocalPlayer.local.isAuthenticated
+                gcLog(self.isAuthenticated
+                      ? "Authenticated as \(GKLocalPlayer.local.alias)"
+                      : "Not authenticated (player declined or account restricted) — reports are no-ops")
                 self.updateAccessPoint()
-                if self.isAuthenticated { onAuthenticated?() }
+                if self.isAuthenticated {
+                    self.verifyLeaderboards()   // surfaces missing/misnamed boards (Debug)
+                    onAuthenticated?()
+                }
             }
         }
+    }
+
+    /// Debug diagnostic: ask Game Center which of our leaderboard IDs actually exist
+    /// in App Store Connect. The #1 cause of "leaderboards don't work in production"
+    /// is the boards not being created — or not yet live — under the *exact* IDs the
+    /// code uses. This surfaces that in the console instead of failing silently.
+    /// No-op in Release (the body is Debug-only).
+    func verifyLeaderboards() {
+        #if DEBUG
+        let ids = [GCLeaderboard.endless.rawValue, GCLeaderboard.daily.rawValue]
+        Task {
+            do {
+                let boards = try await GKLeaderboard.loadLeaderboards(IDs: ids)
+                let found = Set(boards.map(\.baseLeaderboardID))
+                for id in ids {
+                    gcLog(found.contains(id)
+                          ? "Leaderboard OK: \(id)"
+                          : "Leaderboard MISSING in App Store Connect: \(id)")
+                }
+            } catch {
+                gcLog("Leaderboard lookup failed: \(error.localizedDescription)")
+            }
+        }
+        #endif
     }
 
     /// Present Apple's auth sheet over whatever is frontmost.
@@ -107,10 +151,27 @@ final class GameCenterService {
     func submit(score: Int, to board: GCLeaderboard) {
         guard isAuthenticated, score > 0 else { return }
         Task {
-            try? await GKLeaderboard.submitScore(score, context: 0,
-                                                 player: GKLocalPlayer.local,
-                                                 leaderboardIDs: [board.rawValue])
+            do {
+                try await GKLeaderboard.submitScore(score, context: 0,
+                                                    player: GKLocalPlayer.local,
+                                                    leaderboardIDs: [board.rawValue])
+                gcLog("Submitted \(score) → \(board.rawValue)")
+            } catch {
+                gcLog("Submit FAILED \(score) → \(board.rawValue): \(error.localizedDescription)")
+            }
         }
+    }
+
+    /// Re-submit the player's existing local bests right after auth, so scores earned
+    /// before Game Center was reachable (player declined earlier, was offline, or the
+    /// boards only just went live) show up retroactively. Game Center keeps only a
+    /// player's *highest* score per board, so re-submitting an already-present score is
+    /// harmless. `dailyBest` should already be 0 unless it belongs to today's recurring
+    /// period (GameStore filters it), so it's only pushed when still relevant.
+    func submitBacklog(endlessBest: Int, dailyBest: Int) {
+        guard isAuthenticated else { return }
+        if endlessBest > 0 { gcLog("Backlog endless best \(endlessBest)"); submit(score: endlessBest, to: .endless) }
+        if dailyBest > 0 { gcLog("Backlog daily best \(dailyBest)"); submit(score: dailyBest, to: .daily) }
     }
 
     /// Mark an achievement 100% complete (one banner, then permanently done).
@@ -120,7 +181,10 @@ final class GameCenterService {
         let a = GKAchievement(identifier: achievement.rawValue)
         a.percentComplete = 100
         a.showsCompletionBanner = true
-        Task { try? await GKAchievement.report([a]) }
+        Task {
+            do { try await GKAchievement.report([a]); gcLog("Reported achievement \(achievement.rawValue)") }
+            catch { gcLog("Achievement report FAILED \(achievement.rawValue): \(error.localizedDescription)") }
+        }
     }
 
     /// End-of-run funnel: called exactly once per finished session, right where

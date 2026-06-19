@@ -129,6 +129,11 @@ struct RootView: View {
                 guard let store else { return }
                 GameCenterService.shared.syncMeta(campaignProgress: store.campaignProgress,
                                                   deck: store.cyberdeck)
+                // Retroactively push already-earned scores onto the boards (covers runs
+                // played before GC was reachable / before the boards went live).
+                GameCenterService.shared.submitBacklog(
+                    endlessBest: store.highScores.first?.score ?? 0,
+                    dailyBest: store.dailyBest(forDay: Self.today().key))
             }
         }
         .onChange(of: screen) { _, new in
