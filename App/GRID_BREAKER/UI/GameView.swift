@@ -243,6 +243,7 @@ struct GameView: View {
     @State private var purgeTrigger = 0
     @State private var showGridExpanded = false
     @State private var showMilestone = false
+    @State private var showCodex = false            // rules reference, opened from pause
     @State private var streakPulse = false
     @State private var countdownValue: Int? = nil   // 3·2·1·0(GO); nil = not counting
     @State private var countdownTask: Task<Void, Never>?
@@ -526,11 +527,22 @@ struct GameView: View {
                 .padding(.bottom, 28)
             }
 
-            if model.isPaused && !showBriefing && countdownValue == nil {
+            if model.isPaused && !showBriefing && countdownValue == nil && !showCodex {
                 PauseOverlay(onResume: { model.unpause() },
                              onRestart: { outcome = nil; pbFired = false; showPB = false
                                           model.restart(seed: fixedSeed ?? GameView.freshSeed()); startCountdown() },
+                             onCodex: { showCodex = true },
                              onQuit: onExit)
+            }
+
+            // Rules reference over a paused run — opaque backdrop so it reads clearly;
+            // BACK returns to the pause menu (the run stays paused underneath).
+            if showCodex {
+                ZStack {
+                    NeonTheme.background.ignoresSafeArea()
+                    CodexView(onBack: { showCodex = false })
+                }
+                .transition(.opacity)
             }
 
             // In-theme "sync" countdown before the run starts (every mode).
@@ -1291,6 +1303,7 @@ private struct CoreBriefingOverlay: View {
 private struct PauseOverlay: View {
     let onResume: () -> Void
     let onRestart: () -> Void
+    var onCodex: () -> Void = {}
     let onQuit: () -> Void
 
     var body: some View {
@@ -1310,6 +1323,17 @@ private struct PauseOverlay: View {
                     TerminalButton(title: "RESUME", color: NeonTheme.cyan, wide: true, action: onResume)
                     TerminalButton(title: "RESTART", color: NeonTheme.gold, wide: true, action: onRestart)
                     TerminalButton(title: "QUIT", color: NeonTheme.magenta, wide: true, action: onQuit)
+                    // Secondary: re-read the rules without leaving the run.
+                    Button(action: onCodex) {
+                        Label("CODEX", systemImage: "book.closed.fill")
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(NeonTheme.textDim)
+                            .padding(.top, 4)
+                            .frame(maxWidth: .infinity, minHeight: 36)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(TerminalButtonStyle())
+                    .accessibilityLabel("Codex, rules and targets reference")
                 }
                 .frame(maxWidth: 240)
                 .padding(.top, 8)

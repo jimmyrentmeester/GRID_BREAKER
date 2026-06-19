@@ -3,6 +3,13 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #86 — Codex reachable from the pause menu (2026-06-19)
+Small follow-up to Run #85: re-read the rules mid-run without quitting.
+- `PauseOverlay` gained a subtle "CODEX" link under RESUME/RESTART/QUIT (`onCodex`).
+- `GameView` shows `CodexView` over an opaque backdrop while paused; BACK returns to the pause
+  menu and the run stays paused underneath. Reuses the existing CodexView (no duplication).
+- Debug build passes. Branch `feature/codex-in-pause`.
+
 ## Run #85 — Codex (rules reference) + soft-steer new players to Campaign (2026-06-19)
 Tutorial revision (post-launch feedback: too little explanation / no way to re-read the rules).
 Maintainer chose **soft-steer, no gating** (the live app keeps free mode access); the deeper
