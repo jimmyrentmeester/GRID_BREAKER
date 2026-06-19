@@ -275,3 +275,30 @@ targets are hand-tuned, so its "score" isn't comparable. Known trade-off: scores
 are client-reported and technically spoofable; with zero rewards attached this is
 acceptable at hobby scope. `GKAccessPoint` shows on the menu hub only — nothing
 may overlay the grid mid-run (Part 2.5 discipline applies to overlays too).
+
+## D26 — Fever never spawns slower/sparser than the current pace
+**2026-06-19 (Run #82, community bug #1).** Fever used the *fixed* `feverSpawnInterval`
+/ `feverActiveNodes` constants. That's fine in endless (where the score-scaled pace
+starts slow), but campaign cores carry a `difficultyBias`: their score-scaled cadence
+is already faster and the board fuller than the flat fever constants. So on a biased
+core, entering Fever *dropped* the spawn rate and emptied the board — a player-visible
+slowdown exactly when Fever should feel like a flood (a reporter caught this). Fix:
+during Fever take `min(feverSpawnInterval, scaledInterval)` and
+`max(feverActiveNodes, scaledTarget)` — Fever is the faster + fuller of the two, never
+the slower. No-op-or-better everywhere: endless early game keeps the old fever feel
+(0.34 s / 4 nodes), and late-game endless now also gets a denser, faster fever instead
+of a sparse 4 nodes once normal play already exceeds it.
+
+## D27 — Negative events get a clear, global signal (not just a cell flash)
+**2026-06-19 (Run #82, community bug #2).** Feedback was lopsided toward positive
+events; a miss only produced a per-cell flash that was *white* (same as a hit) and
+got lost on a busy board, and a daemon timing out had no visual at all + a soft
+haptic. A reporter noted you can't tell when a miss happens as the tile rate climbs.
+Fix, three parts: (1) the per-cell `.miss`/`.bomb` flash now renders **red**, not
+white, so an error reads as an error; (2) a new `ErrorFlashBorder` paints a brief red
+screen-edge pulse on every mistap/expiry — a global cue legible regardless of where
+the miss landed; (3) `nodeExpired` now also queues a red cell flash + the border pulse
+and its haptic is bumped soft→rigid, matching a mistap. All gated by `!chill` (Flow
+stays pressure-free) and Reduce Motion (border shows a brief static tint, no animated
+pulse; the per-cell flash snaps off as before). Honors the request literally —
+"visual + rigid haptic on any negative condition" — while keeping rest-state calm.

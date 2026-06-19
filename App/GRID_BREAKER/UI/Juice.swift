@@ -181,6 +181,12 @@ private struct EffectView: View {
     }
     private var showsBurst: Bool { !reduceMotion && (fx.style == .pop || fx.style == .bomb) }
     private var flashPeak: Double { fx.style == .pop ? 0.85 + fx.intensity * 0.15 : 0.85 }
+    /// A negative event (miss / bomb) flashes red so an error reads as an error;
+    /// positive events flash white. Previously every flash was white, so a miss
+    /// looked just like a hit when the board got busy (issue #2).
+    private var flashColor: Color {
+        (fx.style == .miss || fx.style == .bomb) ? NeonTheme.danger : .white
+    }
     private var popSize: CGFloat { 20 + CGFloat(fx.intensity) * 12 }
     private var popGlow: CGFloat { 4 + CGFloat(fx.intensity) * 6 }
 
@@ -188,7 +194,7 @@ private struct EffectView: View {
         ZStack {
             // Hit-flash — intense white, gone within ~2 frames worth of progress.
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(.white)
+                .fill(flashColor)
                 .frame(width: cellSize * 0.66, height: cellSize * 0.66)
                 .opacity(Double(max(0, flashPeak - Double(p) * 3.2)))
 
@@ -267,6 +273,39 @@ struct StreakPulseBorder: View {
                 guard !reduceMotion, new > 0 else { return }
                 glow = 1
                 withAnimation(.easeOut(duration: 0.5)) { glow = 0 }
+            }
+    }
+}
+
+/// A brief red screen-edge pulse on a negative event (mistap, daemon expiry) — a
+/// global "you missed" signal that stays legible even when the board is busy and a
+/// single-cell flash gets lost (issue #2). One-shot per `trigger` bump; snaps off
+/// under Reduce Motion. Kept subtle (low opacity, fast fade) per skill §4 restraint.
+struct ErrorFlashBorder: View {
+    let trigger: Int
+    let reduceMotion: Bool
+    @State private var glow: Double = 0
+
+    var body: some View {
+        Rectangle()
+            .stroke(NeonTheme.danger, lineWidth: 4)
+            .blur(radius: 8)
+            .opacity(glow * 0.6)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .onChange(of: trigger) { _, new in
+                guard new > 0 else { return }
+                if reduceMotion {
+                    // Reduced motion: a single brief static tint, no animated fade.
+                    glow = 0.5
+                    Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 140_000_000)
+                        glow = 0
+                    }
+                } else {
+                    glow = 1
+                    withAnimation(.easeOut(duration: 0.42)) { glow = 0 }
+                }
             }
     }
 }

@@ -23,6 +23,9 @@ final class GameViewModel {
     private(set) var gridExpandedSeq = 0
     /// Bumped at a mid-streak milestone (drives a brief border pulse before Fever).
     private(set) var streakPulseSeq = 0
+    /// Bumped on a negative event (mistap / daemon expiry) — drives a red screen-edge
+    /// flash so a miss stays visible when the board is busy (issue #2).
+    private(set) var errorFlashSeq = 0
     /// The just-reached score milestone + a bump counter (drives a landmark toast).
     private(set) var milestoneValue = 0
     private(set) var milestoneSeq = 0
@@ -164,11 +167,18 @@ final class GameViewModel {
                 guard !chill else { break }   // no punishing feedback in Flow
                 pendingEffects.append(.init(cell: cell, style: .miss, color: NeonTheme.danger, points: nil))
                 queued = true
+                errorFlashSeq += 1            // red screen-edge flash (issue #2)
                 haptics.impact(.rigid); audio.play(.miss)
-            case .nodeExpired:
+            case let .nodeExpired(_, cell):
                 decodeRun = 0                  // chain broken → arpeggio resets
                 guard !chill else { break }   // nodes just fade quietly in Flow
-                haptics.impact(.soft); audio.play(.miss)
+                // A daemon timing out is a miss too — give it the same clear signal
+                // as a mistap so a busy board doesn't hide it (issue #2): a red flash
+                // at the cell it expired in, the screen-edge pulse, and a firm haptic.
+                pendingEffects.append(.init(cell: cell, style: .miss, color: NeonTheme.danger, points: nil))
+                queued = true
+                errorFlashSeq += 1
+                haptics.impact(.rigid); audio.play(.miss)
             case let .missAbsorbed(cell):
                 pendingEffects.append(.init(cell: cell, style: .shield, color: NeonTheme.gold, points: nil))
                 queued = true
@@ -438,6 +448,13 @@ struct GameView: View {
             // Mid-streak momentum: a brief gold border pulse before Fever triggers.
             if !model.snapshot.isGameOver {
                 StreakPulseBorder(trigger: model.streakPulseSeq, reduceMotion: reduceMotion)
+                    .accessibilityHidden(true)
+            }
+
+            // Negative-event signal: a brief red screen-edge flash on a miss/expiry so
+            // an error stays legible on a busy board (issue #2). Above the streak pulse.
+            if !model.snapshot.isGameOver {
+                ErrorFlashBorder(trigger: model.errorFlashSeq, reduceMotion: reduceMotion)
                     .accessibilityHidden(true)
             }
 

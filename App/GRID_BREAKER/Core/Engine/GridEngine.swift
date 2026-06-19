@@ -274,11 +274,18 @@ struct GridEngine {
         }
 
         // 3. Spawn new nodes on cadence. Fever: faster + fuller, golden-only.
+        // Fever must never spawn *slower* or *sparser* than the current non-fever
+        // pace would. On difficulty-biased campaign cores the score-scaled cadence
+        // is already faster (and the board fuller) than the fixed fever constants,
+        // so taking the plain fever values made Fever read as a slowdown (issue #1).
+        // Take the faster interval and the fuller node ceiling of the two.
         timeSinceLastSpawn += deltaTime
-        let interval = feverActive ? config.feverSpawnInterval : config.spawnInterval(atScore: scaledScore)
+        let scaledInterval = config.spawnInterval(atScore: scaledScore)
+        let scaledTarget = config.targetActiveNodes(atScore: scaledScore, gridSize: gridSize)
+        let interval = feverActive ? min(config.feverSpawnInterval, scaledInterval) : scaledInterval
         let target = feverActive
-            ? min(gridSize.cellCount, config.feverActiveNodes(for: gridSize))
-            : config.targetActiveNodes(atScore: scaledScore, gridSize: gridSize)
+            ? min(gridSize.cellCount, max(config.feverActiveNodes(for: gridSize), scaledTarget))
+            : scaledTarget
         while timeSinceLastSpawn >= interval, nodes.count < target,
               let node = spawnNode() {
             nodes.append(node)

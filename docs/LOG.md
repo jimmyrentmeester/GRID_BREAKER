@@ -3,6 +3,21 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #82 — Post-launch community bug fixes (fever spawn + error feedback) (2026-06-19)
+First fixes from real player reports (GitHub issues #1, #2 by @brand0new), two days post-launch.
+- **Bug #1 — Fever slowed spawns in Campaign** (`Core/Engine/GridEngine.swift`): Fever used the
+  flat `feverSpawnInterval`/`feverActiveNodes`, which on difficulty-biased campaign cores were
+  *slower/sparser* than the score-scaled pace already in effect — so Fever read as a slowdown.
+  Now Fever takes the faster interval and fuller node ceiling of (fever constants, score-scaled),
+  never the slower. No-op-or-better in endless/flow. (D26)
+- **Bug #2 — No clear feedback on misses** (`UI/Juice.swift`, `UI/GameView.swift`): the per-cell
+  miss flash was white (looked like a hit) and daemon expiry had no visual. Added: red per-cell
+  flash for `.miss`/`.bomb`; a new `ErrorFlashBorder` red screen-edge pulse on every mistap/expiry;
+  `nodeExpired` now gets the red cell flash + border + a rigid haptic (was soft). Gated by `!chill`
+  + Reduce Motion. (D27)
+- Branch `bugfix/fever-spawn-and-error-feedback` off `main`. Debug build verified (simulator).
+  Feel to be confirmed on device; ships in the next update.
+
 ## Run #81 — Launch & marketing prep (landing page, OG card, copy) (2026-06-14)
 Built the launch kit while v1.0 sits in review.
 - **Marketing landing page** (`docs/site/index.html`, deploys to `/gridbreaker/`): neon
