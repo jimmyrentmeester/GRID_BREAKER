@@ -3,6 +3,25 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #85 — Codex (rules reference) + soft-steer new players to Campaign (2026-06-19)
+Tutorial revision (post-launch feedback: too little explanation / no way to re-read the rules).
+Maintainer chose **soft-steer, no gating** (the live app keeps free mode access); the deeper
+"campaign replaces the practice tutorial" idea is a separate, careful follow-up (it depends on
+the starter-credits payday currently living in the practice flow).
+- **CodexView** (`UI/MenuViews.swift`): a scannable, always-available manual — TARGETS (the five
+  node types, color-coded glyphs matching the real game), POWER-UPS, SYSTEMS (RAM clock, Fever,
+  clean streak, grid growth), CYBERDECK (reuses `CyberdeckUpgrade.detail` so it can't drift), and
+  MODES. Terminal styling, full accessibility labels. Reachable from the menu (new CODEX utility
+  button) and Settings ▸ Help.
+- **Soft-steer** (`UI/RootView.swift`): `MenuTile` gained a `highlight` mode (gold "START HERE"
+  badge + border + glow); enabled on Campaign only while `campaignProgress == 0`, so brand-new
+  players are drawn to the learn-by-doing route without anything being locked.
+- Verified both screens in the simulator (Codex + menu screenshots); Debug build passes. Branch
+  `feature/codex-and-soft-steering`.
+- Follow-ups still open: full onboarding rework (campaign-as-tutorial + relocate the payday),
+  optional Codex entry from the pause menu, and the gamemode redesign (Flow's future + DAEMON
+  SET / DMZ PURGE).
+
 ## Run #84 — Cyberdeck shows cumulative upgrade values (2026-06-19)
 Post-launch feature request: the Cyberdeck didn't show what your bought upgrades add up to.
 - **`CyberdeckUpgrade.cumulativeEffect(at:)`** (`Core/Models/Cyberdeck.swift`): returns the

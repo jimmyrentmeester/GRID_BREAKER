@@ -12,7 +12,7 @@ struct RootView: View {
     @State private var guidedTour: GuidedStep = .none   // meta-loop guided shop tour
     @State private var showBoot = true            // animated boot splash on cold launch
 
-    private enum Screen { case menu, endless, daily, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial, settings }
+    private enum Screen { case menu, endless, daily, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial, codex, settings }
     /// The guided onboarding tour through the shops (Phase C): buy → equip → done.
     private enum GuidedStep { case none, cyberdeck, cosmetics }
 
@@ -100,9 +100,12 @@ struct RootView: View {
                                onOpenCosmetics: { store.markTutorialSeen(); tap(); guidedTour = .cosmetics; screen = .cosmetics },
                                onDone: { store.markTutorialSeen(); screen = .menu })
                     .transition(.opacity)
+            case .codex:
+                CodexView(onBack: { screen = .menu }).transition(.opacity)
             case .settings:
                 SettingsView(store: store,
                              onTutorial: { tap(); onboardingPayday = false; screen = .tutorial },
+                             onCodex: { tap(); screen = .codex },
                              onBack: { screen = .menu }).transition(.opacity)
             }
 
@@ -189,7 +192,8 @@ struct RootView: View {
             VStack(spacing: 8) {
                 sectionLabel("MODES")
                 HStack(spacing: 10) {
-                    MenuTile(label: "CAMPAIGN", systemImage: "flag.fill", color: NeonTheme.cyan) { tap(); screen = .campaign }
+                    MenuTile(label: "CAMPAIGN", systemImage: "flag.fill", color: NeonTheme.cyan,
+                             highlight: store.campaignProgress == 0) { tap(); screen = .campaign }
                     MenuTile(label: "FLOW", systemImage: "infinity", color: NeonTheme.cyan) { tap(); screen = .flow }
                     MenuTile(label: "DAILY", systemImage: "calendar", color: NeonTheme.cyan) { tap(); screen = .daily }
                 }
@@ -205,8 +209,9 @@ struct RootView: View {
             }
 
             // Utility.
-            HStack(spacing: 32) {
+            HStack(spacing: 22) {
                 utilityButton("TOP RUNS", "trophy.fill") { tap(); screen = .scores }
+                utilityButton("CODEX", "book.closed.fill") { tap(); screen = .codex }
                 utilityButton("SETTINGS", "gearshape.fill") { tap(); screen = .settings }
             }
             .padding(.top, 2)
@@ -256,12 +261,18 @@ struct RootView: View {
     }
 }
 
-/// A play-mode / shop tile: icon over a short label, color-coded by group.
+/// A play-mode / shop tile: icon over a short label, color-coded by group. When
+/// `highlight` is set it wears a gold "START HERE" badge + stronger border — used to
+/// softly steer a brand-new player to Campaign (the learn-by-doing route) without
+/// locking anything else (maintainer choice: soft-steer, no gating).
 private struct MenuTile: View {
     let label: String
     let systemImage: String
     let color: Color
+    var highlight: Bool = false
     let action: () -> Void
+
+    private var stroke: Color { highlight ? NeonTheme.gold : color.opacity(0.7) }
 
     var body: some View {
         Button(action: action) {
@@ -276,12 +287,22 @@ private struct MenuTile: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
             .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(color.opacity(0.10))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(color.opacity(0.7), lineWidth: 1.5)))
-            .neonGlow(color, radius: 3)
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(stroke, lineWidth: highlight ? 2 : 1.5)))
+            .neonGlow(highlight ? NeonTheme.gold : color, radius: highlight ? 6 : 3)
+            .overlay(alignment: .top) {
+                if highlight {
+                    Text("START HERE")
+                        .font(.system(size: 8, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(Color.black)
+                        .padding(.horizontal, 7).padding(.vertical, 3)
+                        .background(Capsule().fill(NeonTheme.gold))
+                        .offset(y: -8)
+                }
+            }
         }
         .buttonStyle(TerminalButtonStyle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(label)
+        .accessibilityLabel(highlight ? "\(label). Start here — recommended for new players." : label)
         .accessibilityAddTraits(.isButton)
     }
 }

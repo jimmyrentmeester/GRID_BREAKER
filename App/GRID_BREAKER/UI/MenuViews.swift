@@ -269,6 +269,159 @@ private struct UpgradeRow: View {
     }
 }
 
+// MARK: - Codex (rules reference)
+
+/// A scannable, always-available reference for every mechanic — node types, the RAM
+/// clock, Fever, the streak multiplier, grid growth, Cyberdeck upgrades, and the modes.
+/// Reachable from the menu, Settings, and the pause menu, so a player can re-read what
+/// anything means at any time (the campaign teaches by doing; this is the manual).
+/// Cyberdeck rows reuse `CyberdeckUpgrade.detail` so the reference can't drift from the
+/// real numbers.
+struct CodexView: View {
+    let onBack: () -> Void
+
+    /// One reference row: a color-coded glyph, a name, and a one-line explanation.
+    private struct Entry: Identifiable {
+        let id = UUID()
+        let icon: String
+        let color: Color
+        let name: String
+        let text: String
+    }
+
+    private var targets: [Entry] {
+        [
+            Entry(icon: "circle.grid.cross.fill", color: NeonTheme.cyan, name: "DAEMON",
+                  text: "The basic target. One tap to decode — adds score and refills your RAM."),
+            Entry(icon: "lock.shield.fill", color: NeonTheme.magenta, name: "ARMORED DAEMON",
+                  text: "A security shell. First tap cracks it, second decodes it. Worth more."),
+            Entry(icon: "square.stack.3d.up.fill", color: NeonTheme.gold, name: "DATA CACHE",
+                  text: "Short-lived gold. One tap for a big score + RAM spike. Missing it is harmless."),
+            Entry(icon: "scribble.variable", color: NeonTheme.worm, name: "WORM",
+                  text: "Hops to a nearby cell on a timer. Tap it wherever it lands."),
+            Entry(icon: "exclamationmark.triangle.fill", color: NeonTheme.danger, name: "FIREWALL",
+                  text: "NEVER tap it — a tap ends the run. Left alone it expires safely."),
+        ]
+    }
+
+    private var powerUps: [Entry] {
+        [
+            Entry(icon: "snowflake", color: NeonTheme.cyan, name: "FREEZE",
+                  text: "Pauses the RAM clock and the whole grid for a few seconds — a safe window."),
+            Entry(icon: "bolt.fill", color: NeonTheme.gold, name: "OVERCLOCK",
+                  text: "Doubles your score for a few seconds (stacks with Fever)."),
+            Entry(icon: "wind", color: NeonTheme.magenta, name: "PURGE",
+                  text: "Instantly clears every firewall on the board."),
+        ]
+    }
+
+    private var systems: [Entry] {
+        [
+            Entry(icon: "memorychip.fill", color: NeonTheme.cyan, name: "RAM CLOCK",
+                  text: "Your time buffer. It drains constantly. Decoding refills it; mistaps and letting daemons expire drain it. Empty = disconnect."),
+            Entry(icon: "bolt.fill", color: NeonTheme.gold, name: "FEVER",
+                  text: "Chain 8 clean decodes to trigger Fever: ×2 score, golden nodes, and hazards clear."),
+            Entry(icon: "flame.fill", color: NeonTheme.magenta, name: "CLEAN STREAK",
+                  text: "Long clean chains raise a score multiplier (Endless). A single miss resets it."),
+            Entry(icon: "square.grid.4x3.fill", color: NeonTheme.cyan, name: "GRID EXPANSION",
+                  text: "As your score climbs the grid grows 3×3 → 4×4 — more targets, faster (Endless + later cores)."),
+        ]
+    }
+
+    private var modes: [Entry] {
+        [
+            Entry(icon: "play.fill", color: NeonTheme.cyan, name: "ENDLESS (JACK IN)",
+                  text: "Survive as long as your reflexes hold and chase the high score."),
+            Entry(icon: "flag.fill", color: NeonTheme.cyan, name: "CAMPAIGN",
+                  text: "10 hand-tuned cores, each introducing one mechanic — the best place to learn."),
+            Entry(icon: "infinity", color: NeonTheme.cyan, name: "FLOW",
+                  text: "Calm, no-fail mode. No clock, no hazards — just tap and unwind."),
+            Entry(icon: "calendar", color: NeonTheme.cyan, name: "DAILY HACK",
+                  text: "Endless rules on one shared seed per day — everyone races the same board."),
+        ]
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Text("CODEX")
+                    .font(.system(size: 24, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.cyan)
+                    .neonGlow(NeonTheme.cyan, radius: 8)
+                Spacer()
+                Image(systemName: "book.closed.fill")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(NeonTheme.textDim)
+            }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    Text("Decode daemons before they expire. Each decode refills your RAM clock; reach the target or survive as long as you can. Never tap a firewall.")
+                        .font(.system(size: 12, weight: .regular, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textDim)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    section("// TARGETS", targets)
+                    section("// POWER-UPS", powerUps)
+                    section("// SYSTEMS", systems)
+                    cyberdeckSection
+                    section("// MODES", modes)
+                }
+                .padding(.bottom, 8)
+            }
+
+            TerminalButton(title: "BACK", color: NeonTheme.magenta, action: onBack)
+        }
+        .padding(24)
+    }
+
+    private func section(_ title: String, _ entries: [Entry]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeader(title)
+            ForEach(entries) { row($0) }
+        }
+    }
+
+    /// The Cyberdeck section reuses the upgrade specs' own `detail` strings so the
+    /// reference always matches the real effects.
+    private var cyberdeckSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeader("// CYBERDECK")
+            ForEach(CyberdeckUpgrade.allCases) { u in
+                row(Entry(icon: "cpu.fill", color: NeonTheme.gold, name: u.title.uppercased(), text: u.detail))
+            }
+        }
+    }
+
+    private func sectionHeader(_ s: String) -> some View {
+        Text(s)
+            .font(.system(size: 11, weight: .bold, design: .monospaced))
+            .foregroundStyle(NeonTheme.gold).tracking(1.5)
+    }
+
+    private func row(_ e: Entry) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: e.icon)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(e.color)
+                .frame(width: 26, alignment: .center)
+                .padding(.top, 1)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(e.name)
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textPrimary)
+                Text(e.text)
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textDim)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(e.name). \(e.text)")
+    }
+}
+
 // MARK: - Cosmetics (palettes)
 
 struct CosmeticsView: View {
@@ -1253,6 +1406,7 @@ struct HighScoresView: View {
 struct SettingsView: View {
     @Bindable var store: GameStore
     let onTutorial: () -> Void
+    var onCodex: () -> Void = {}
     let onBack: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var confirmingReset = false
@@ -1310,6 +1464,8 @@ struct SettingsView: View {
                     section("HELP") {
                         SettingActionRow(label: "HOW TO PLAY", systemImage: "graduationcap",
                                          color: NeonTheme.cyan, action: onTutorial)
+                        SettingActionRow(label: "CODEX — RULES & TARGETS", systemImage: "book.closed.fill",
+                                         color: NeonTheme.cyan, action: onCodex)
                     }
 
                     section("DATA") {
