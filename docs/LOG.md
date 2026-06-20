@@ -3,6 +3,21 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #90 — Merge iPad support into main + bump to v1.1 (2026-06-19)
+(Runs #88–89 are the PROTOCOL work on branch `feature/protocol-mode`, not yet on main; this is
+the parallel iPad/release track, numbered #90 to avoid a clash when PROTOCOL lands.)
+- **Merged `ipad-support` → `main`**: universal iPhone + iPad target, max-width play column for the
+  chrome screens, cohesive phone-shaped play panel in GameView, adaptive launch storyboard,
+  pause-button alignment. One conflict (Settings route) resolved to keep both main's `onCodex` and
+  ipad's `.playColumn()`; the new Codex screen also got `.playColumn()` for iPad consistency.
+- **Verified**: iPhone + iPad (13") Debug builds both succeed; iPad menu renders correctly at
+  2064×2752 (play column centered over the neon backdrop; starter CR + START HERE badge present).
+- **Bumped to v1.1**: `MARKETING_VERSION` 1.0→1.1, `CURRENT_PROJECT_VERSION` 2→3 (both configs).
+- This v1.1 ships everything on main (the 8 post-launch fixes/features + iPad) but NOT PROTOCOL
+  (still on its branch — Flow remains in this release).
+- Still maintainer's to do: the polished 5-screen iPad screenshot set (Run #74 workflow: temp
+  autoplay/demo-save hooks + simulator Cmd+S), then archive/upload/submit v1.1 in App Store Connect.
+
 ## Run #87 — Onboarding rework: practice optional, starter CR at first launch (2026-06-19)
 Tutorial revision part 2 (maintainer choice: lean on Campaign as the learn route; practice optional).
 - **First-launch flow** (`UI/RootView.swift`): replaced the forced practice tutorial with an
