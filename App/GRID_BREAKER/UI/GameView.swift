@@ -433,7 +433,7 @@ struct GameView: View {
                                        : core != nil ? "DECRYPT" : "CHARGE",
                                  decodeToken: model.snapshot.score,
                                  reduceMotion: reduceMotion)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .frame(maxWidth: .infinity, maxHeight: 200)
                         .accessibilityHidden(true)   // decorative visualizer; state is in labels
                 }
                 .padding(.vertical, 8)
@@ -455,12 +455,11 @@ struct GameView: View {
 
                 Spacer(minLength: 12).frame(maxHeight: 96)
             }
-            // iPad: cap the play-field to a phone-shaped panel so HUD / Data Core / grid
-            // stay one cohesive, hand-sized unit instead of floating apart on the big 4:3
-            // screen (the Data Core filler would otherwise stretch enormously). Centered
-            // over the atmosphere/backdrop. No-op on iPhone: 480/960 exceed every iPhone's
-            // width/height, so it never caps the phone layout.
-            .frame(maxWidth: 480, maxHeight: 960)
+            // Cap width so the layout stays coherent; no height cap so the game uses the
+            // full screen. 760 pt exceeds every iPhone (max ~430 pt) so iPhone is unaffected;
+            // on iPad the grid fills most of the screen. DataCoreView is capped separately
+            // at 200 pt so it doesn't claim excessive vertical space when height is uncapped.
+            .frame(maxWidth: 760)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .modifier(ShakeEffect(animatableData: shakeAnim))
 
@@ -573,9 +572,7 @@ struct GameView: View {
                 .accessibilityLabel("Pause")
                 .padding(.leading, 24)
                 .padding(.bottom, 28)
-                // Align to the play panel's bottom-leading (not the screen corner) on iPad;
-                // no-op on iPhone where 480 exceeds the screen width.
-                .frame(maxWidth: 480, maxHeight: .infinity, alignment: .bottomLeading)
+                .frame(maxWidth: 760, maxHeight: .infinity, alignment: .bottomLeading)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
 
