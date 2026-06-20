@@ -187,6 +187,17 @@ final class GameStore {
         return earned
     }
 
+    /// Record a finished PROTOCOL run: pays Credits (shared economy) but does NOT touch
+    /// the Endless high-score list / leaderboard — PROTOCOL's score isn't comparable to
+    /// Endless, so it must not pollute that board.
+    @discardableResult
+    func recordProtocolRun(score: Int) -> Int {
+        let earned = salvaged(forScore: score)
+        save.cyberdeck.credits += earned
+        persist()
+        return earned
+    }
+
     // MARK: Daily challenge
 
     /// Today's best on the daily challenge (0 if the stored best is from another day).

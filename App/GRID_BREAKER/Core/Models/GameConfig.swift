@@ -256,6 +256,20 @@ struct GameConfig: Sendable {
         return c
     }
 
+    /// Config for **PROTOCOL** — the objective-driven mode that replaces Flow. A real
+    /// challenge (RAM clock + fail state), but its score/RAM come mostly from completing
+    /// hack objectives (DAEMON SET / DMZ PURGE), not endless landmarks. Built on the
+    /// tuned endless base; objective scheduling + the two mechanics layer on top
+    /// (see docs/PROTOCOL_MODE.md). This is the skeleton tuning — it diverges as the
+    /// objectives land.
+    static func protocolMode() -> GameConfig {
+        var c = GameConfig.endless()
+        c.milestoneScores = []           // objectives replace endless score landmarks
+        c.milestoneRAMBonus = 0
+        c.gridEscalationScore = nil      // PROTOCOL stays 3×3 (DMZ zones need a stable grid)
+        return c
+    }
+
     /// Deterministic effective RAM capacity for a given Cyberdeck.
     func ramCapacity(for deck: Cyberdeck) -> TimeInterval {
         baseRAMSeconds + ramSecondsPerLevel * TimeInterval(deck.ramLevel)

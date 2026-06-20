@@ -3,6 +3,21 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #88 — PROTOCOL mode skeleton (replaces Flow) (2026-06-19)
+Gamemode redesign phase 1 of 4 (see docs/PROTOCOL_MODE.md). Maintainer chose: replace Flow with a
+new objective-driven mode (alternating DAEMON SET + DMZ PURGE objectives). This run lays the skeleton.
+- **New PROTOCOL mode** replaces Flow's menu entry + routing: `GameConfig.protocolMode()` (challenge
+  base built on endless, no chill, no endless landmarks, fixed 3×3 for DMZ zones); `RootView` menu tile
+  FLOW→PROTOCOL ("scope" glyph) and `.flow`→`.protocolMode` routing; `GameView` gained a `protocolMode`
+  flag selecting the config.
+- **Economy**: `GameStore.recordProtocolRun(score:)` pays Credits but does NOT touch the Endless
+  high-score list / leaderboard (PROTOCOL's score isn't comparable).
+- **Game Center**: new `GCRunMode.protocolMode` — run achievements (fever/streak/grid) still earn, but
+  no score submit and no score landmarks.
+- Flow's `chill` implementation is left in place but now unreachable from the menu (removing its ~36
+  call sites is a separate cleanup). Debug build passes. Branch `feature/protocol-mode`.
+- Next phases: DAEMON SET mechanic, DMZ PURGE mechanic, objective alternation + balance.
+
 ## Run #87 — Onboarding rework: practice optional, starter CR at first launch (2026-06-19)
 Tutorial revision part 2 (maintainer choice: lean on Campaign as the learn route; practice optional).
 - **First-launch flow** (`UI/RootView.swift`): replaced the forced practice tutorial with an

@@ -257,6 +257,8 @@ struct GameView: View {
 
     /// Flow (chill) mode: no clock, no fail, calm pace + presentation.
     let chill: Bool
+    /// PROTOCOL mode: objective-driven challenge (replaces Flow). Real fail state.
+    let protocolMode: Bool
     /// Daily challenge: endless rules on a fixed, date-derived seed (everyone gets the
     /// same board). Replays reuse the seed so it stays "today's" board.
     let daily: Bool
@@ -275,6 +277,7 @@ struct GameView: View {
     init(core: DataCore? = nil,
          deck: Cyberdeck,
          chill: Bool = false,
+         protocolMode: Bool = false,
          seed: UInt64? = nil,
          daily: Bool = false,
          briefing: CoreFeature? = nil,
@@ -284,6 +287,7 @@ struct GameView: View {
          recordSession: @escaping (_ score: Int, _ won: Bool) -> SessionOutcome) {
         self.core = core
         self.chill = chill
+        self.protocolMode = protocolMode
         self.daily = daily
         self.fixedSeed = seed
         self.briefing = briefing
@@ -292,6 +296,8 @@ struct GameView: View {
         let model: GameViewModel
         if chill {
             model = GameViewModel(config: .chill(), deck: deck, seed: seed ?? GameView.freshSeed(), chill: true)
+        } else if protocolMode {
+            model = GameViewModel(config: .protocolMode(), deck: deck, seed: seed ?? GameView.freshSeed())
         } else if let core {
             model = GameViewModel(config: .campaign(for: core),
                                   deck: deck, seed: seed ?? GameView.freshSeed(),
@@ -598,7 +604,7 @@ struct GameView: View {
                 // snapshot the recap renders. Flow is skipped inside.
                 GameCenterService.shared.reportRunEnd(
                     model.snapshot,
-                    mode: core != nil ? .campaign : daily ? .daily : chill ? .flow : .endless)
+                    mode: core != nil ? .campaign : daily ? .daily : protocolMode ? .protocolMode : chill ? .flow : .endless)
             }
         }
         .onChange(of: model.shakeTrigger) { _, _ in
