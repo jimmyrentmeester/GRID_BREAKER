@@ -1,7 +1,10 @@
 # ONBOARDING PROPOSAL — GRID_BREAKER first-time experience
 
-Status: **IMPLEMENTED** (Runs #49–#51 — Phases A/B/C all done). Authored from FTUE best
-practices + the maintainer's brief. Decisions below are locked (maintainer-chosen).
+Status: **IMPLEMENTED** (Runs #49–#51 — Phases A/B/C all done), then **partially revised in
+Run #87** (see DECISIONS D29): the 3-level practice tutorial is no longer *forced* on first
+launch — starter Credits are granted up front and new players land on the menu with Campaign
+flagged START HERE; the practice stays available from Settings ▸ How to Play. Sections below
+reflect the original locked plan; D29 is the current source of truth where they differ.
 
 ## Goal
 Turn the cold start into a paced, hands-on first-time experience that teaches the

@@ -3,6 +3,19 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #87 — Onboarding rework: practice optional, starter CR at first launch (2026-06-19)
+Tutorial revision part 2 (maintainer choice: lean on Campaign as the learn route; practice optional).
+- **First-launch flow** (`UI/RootView.swift`): replaced the forced practice tutorial with an
+  up-front starter-CR grant. New players now land on the menu (Campaign = START HERE) with 150 CR;
+  the practice tutorial is no longer auto-launched — it stays in Settings ▸ How to Play. Keyed off
+  `starterCreditsGranted` (idempotent), so existing players are untouched and old-tutorial skippers
+  finally get their 150 CR. `onboardingPayday` default flipped to false (CR no longer paid in-tutorial).
+- **`GameStore.starterCreditsGranted`**: added a public accessor (mirrors `tutorialSeen`).
+- Verified on a fresh simulator save: credits=150, starterCreditsGranted=true, tutorialSeen=true,
+  campaignProgress=0 (so the START HERE badge shows). Debug build passes. (DECISIONS D29)
+- Branch `feature/onboarding-rework`. Deliberately NOT done: relocating the guided shop tour, and
+  reworking the practice scene content.
+
 ## Run #86 — Codex reachable from the pause menu (2026-06-19)
 Small follow-up to Run #85: re-read the rules mid-run without quitting.
 - `PauseOverlay` gained a subtle "CODEX" link under RESUME/RESTART/QUIT (`onCodex`).

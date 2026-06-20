@@ -53,6 +53,9 @@ final class GameStore {
     }
 
     var tutorialSeen: Bool { save.tutorialSeen }
+    /// Whether the one-time starter Credits have been granted — also the reliable
+    /// "this is a brand-new player" flag the launch flow keys off.
+    var starterCreditsGranted: Bool { save.starterCreditsGranted }
     func markTutorialSeen() {
         guard !save.tutorialSeen else { return }
         save.tutorialSeen = true

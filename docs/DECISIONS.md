@@ -324,3 +324,20 @@ service fails silently by design, `try?`, so nothing surfaced). Two-sided fix:
   `verifyLeaderboards` log confirms which side the problem is on. Note GC sandbox
   (Xcode/TestFlight) vs production (App Store) are separate score/player environments —
   a freshly launched app's production boards can lag before they populate.
+
+## D29 — Onboarding: practice tutorial is optional; Campaign is the learn route
+**2026-06-19 (Run #87, post-launch feedback).** Revises the locked ONBOARDING_PROPOSAL
+decision ("all up front — a forced 3-level practice tutorial before real play"). Player
+feedback: the separate practice felt thin on *explanation and practice*, and the campaign
+already teaches the same mechanics better by doing (per-core briefings + real, gentle
+play). Maintainer's call: lean on Campaign as the learn-by-doing route, keep the practice
+as an *optional* revisit. New first-launch flow: grant the 150 starter Credits up front
+(keyed off `starterCreditsGranted`, idempotent), leave the player on the menu with Campaign
+flagged **START HERE** (Run #85 soft-steer), and *don't* force the practice tutorial — it
+stays in Settings ▸ How to Play. The Codex (Run #85) covers "where do I re-read the rules".
+Trade-off acknowledged: new players no longer get the guided meta-loop tour (CR → Cyberdeck
+→ Cosmetics) automatically; the START HERE steer + the gold Cyberdeck tile + the Codex's
+Cyberdeck section carry that weight instead. Migration is safe + a small fix: players who
+skipped the old tutorial (so never got the payday) now receive their 150 CR on next launch.
+Not done here (deliberate, larger): relocating the *guided shop tour* itself, and any
+rework of the practice scenes' content.

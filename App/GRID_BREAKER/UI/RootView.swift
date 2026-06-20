@@ -8,7 +8,7 @@ struct RootView: View {
     @State private var screen: Screen = .menu
     @State private var activeCore: DataCore?
     @State private var pulse = false
-    @State private var onboardingPayday = true   // first-launch onboarding pays out CR
+    @State private var onboardingPayday = false  // starter CR is now granted at first launch, not in the tutorial; the practice tutorial (Settings ▸ How to Play) never re-pays
     @State private var guidedTour: GuidedStep = .none   // meta-loop guided shop tour
     @State private var showBoot = true            // animated boot splash on cold launch
 
@@ -124,7 +124,15 @@ struct RootView: View {
             AudioEngine.shared.sfxVolume = store.sfxVolume
             AudioEngine.shared.enabled = store.soundEnabled
             AudioEngine.shared.start()
-            if !store.tutorialSeen { onboardingPayday = true; screen = .tutorial }   // first-launch onboarding
+            // First launch: grant the starter Credits up front and leave the player on
+            // the menu (Campaign is flagged START HERE — the learn-by-doing route). The
+            // hands-on practice tutorial is no longer forced before real play; it stays
+            // available from Settings ▸ How to Play. `starterCreditsGranted` is the
+            // reliable "new player" flag (idempotent; existing players are untouched).
+            if !store.starterCreditsGranted {
+                _ = store.grantStarterCredits()
+                store.markTutorialSeen()   // never auto-launch the practice tutorial
+            }
             // Game Center (optional, report-only): auth once, then mirror any
             // already-earned meta progress (campaign clears, maxed deck tracks).
             GameCenterService.shared.menuVisible = (screen == .menu)
