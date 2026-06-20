@@ -317,6 +317,7 @@ struct GameConfig: Sendable {
         c.gridEscalationScore = nil      // PROTOCOL stays 3×3 (DMZ zones need a stable grid)
         c.daemonSetEnabled = true        // ordered-chain objective (issue #3)
         c.dmzEnabled = true              // zone-purge objective (issue #4) — alternates with sets
+        c.powerUpSpawnChance = 0         // no random relief valves — objectives are the pressure
         return c
     }
 
