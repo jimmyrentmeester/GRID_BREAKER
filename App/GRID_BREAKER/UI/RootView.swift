@@ -12,7 +12,7 @@ struct RootView: View {
     @State private var guidedTour: GuidedStep = .none   // meta-loop guided shop tour
     @State private var showBoot = true            // animated boot splash on cold launch
 
-    private enum Screen { case menu, endless, daily, flow, campaign, core, cyberdeck, cosmetics, scores, tutorial, codex, settings }
+    private enum Screen { case menu, endless, daily, protocolMode, campaign, core, cyberdeck, cosmetics, scores, tutorial, codex, settings }
     /// The guided onboarding tour through the shops (Phase C): buy → equip → done.
     private enum GuidedStep { case none, cyberdeck, cosmetics }
 
@@ -52,11 +52,15 @@ struct RootView: View {
                          onExit: { screen = .menu },
                          recordSession: { score, _ in store.recordDaily(score: score, day: today.key) })
                     .transition(.opacity)
-            case .flow:
-                // Chill mode — no clock, no fail, no economy; just play and leave.
-                GameView(deck: store.cyberdeck, chill: true,
+            case .protocolMode:
+                // PROTOCOL — objective-driven challenge mode (replaces Flow). Pays Credits
+                // but keeps its score off the Endless leaderboard (own character).
+                GameView(deck: store.cyberdeck, protocolMode: true,
                          onExit: { screen = .menu },
-                         recordSession: { _, _ in SessionOutcome(creditsEarned: 0, isHighScore: false) })
+                         recordSession: { score, _ in
+                             let earned = store.recordProtocolRun(score: score)
+                             return SessionOutcome(creditsEarned: earned, isHighScore: false)
+                         })
                     .transition(.opacity)
             case .campaign:
                 CampaignView(store: store,
@@ -204,7 +208,7 @@ struct RootView: View {
                 HStack(spacing: 10) {
                     MenuTile(label: "CAMPAIGN", systemImage: "flag.fill", color: NeonTheme.cyan,
                              highlight: store.campaignProgress == 0) { tap(); screen = .campaign }
-                    MenuTile(label: "FLOW", systemImage: "infinity", color: NeonTheme.cyan) { tap(); screen = .flow }
+                    MenuTile(label: "PROTOCOL", systemImage: "scope", color: NeonTheme.cyan) { tap(); screen = .protocolMode }
                     MenuTile(label: "DAILY", systemImage: "calendar", color: NeonTheme.cyan) { tap(); screen = .daily }
                 }
             }

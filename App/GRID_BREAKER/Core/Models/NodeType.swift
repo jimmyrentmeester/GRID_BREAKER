@@ -29,6 +29,11 @@ enum NodeType: String, Codable, CaseIterable, Sendable {
     /// no score). Harvestable; a missed one expires harmlessly.
     case powerUp
 
+    /// A hostile node in a DMZ PURGE objective (PROTOCOL): one tap to clear. Fills a
+    /// DMZ zone at spawn and creeps across the rest of the grid (overrun) while the
+    /// zone is active. Doesn't expire — it waits, and the grid filling up ends the run.
+    case intrusion
+
     /// How many taps are required to fully clear this node.
     var requiredTaps: Int {
         switch self {
@@ -38,6 +43,7 @@ enum NodeType: String, Codable, CaseIterable, Sendable {
         case .dataCache:      return 1
         case .wormDaemon:     return 1
         case .powerUp:        return 1
+        case .intrusion:      return 1
         }
     }
 

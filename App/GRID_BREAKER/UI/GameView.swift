@@ -29,6 +29,9 @@ final class GameViewModel {
     /// The just-reached score milestone + a bump counter (drives a landmark toast).
     private(set) var milestoneValue = 0
     private(set) var milestoneSeq = 0
+    /// DAEMON SET toast (PROTOCOL): a short message + bump counter (spawn / cracked).
+    private(set) var daemonSetMsg = ""
+    private(set) var daemonSetSeq = 0
     /// Set by the view from the environment; gates motion-heavy juice.
     var reduceMotion = false
     /// Paused → the sim (and its RAM clock) is frozen until unpaused.
@@ -40,7 +43,6 @@ final class GameViewModel {
     private let gridSize: GridSize
     private let targetScore: Int?
     private let difficultyBias: Int
-    let chill: Bool
     private var lastDate: Date?
     private var freezeRemaining: TimeInterval = 0   // hit-stop budget
     /// Decode-chain length for audio: walks the decode arpeggio up; reset when the
@@ -55,14 +57,12 @@ final class GameViewModel {
          gridSize: GridSize = .threeByThree,
          seed: UInt64,
          targetScore: Int? = nil,
-         difficultyBias: Int = 0,
-         chill: Bool = false) {
+         difficultyBias: Int = 0) {
         self.config = config
         self.deck = deck
         self.gridSize = gridSize
         self.targetScore = targetScore
         self.difficultyBias = difficultyBias
-        self.chill = chill
         let engine = GridEngine(config: config, deck: deck, gridSize: gridSize, seed: seed,
                                 targetScore: targetScore, difficultyBias: difficultyBias)
         self.engine = engine
@@ -163,18 +163,13 @@ final class GameViewModel {
                 queued = true
                 haptics.impact(.soft); audio.play(.breach)
             case let .emptyMiss(cell):
-                decodeRun = 0                  // chain broken → arpeggio resets
-                guard !chill else { break }   // no punishing feedback in Flow
+                decodeRun = 0
                 pendingEffects.append(.init(cell: cell, style: .miss, color: NeonTheme.danger, points: nil))
                 queued = true
-                errorFlashSeq += 1            // red screen-edge flash (issue #2)
+                errorFlashSeq += 1
                 haptics.impact(.rigid); audio.play(.miss)
             case let .nodeExpired(_, cell):
-                decodeRun = 0                  // chain broken → arpeggio resets
-                guard !chill else { break }   // nodes just fade quietly in Flow
-                // A daemon timing out is a miss too — give it the same clear signal
-                // as a mistap so a busy board doesn't hide it (issue #2): a red flash
-                // at the cell it expired in, the screen-edge pulse, and a firm haptic.
+                decodeRun = 0
                 pendingEffects.append(.init(cell: cell, style: .miss, color: NeonTheme.danger, points: nil))
                 queued = true
                 errorFlashSeq += 1
@@ -183,13 +178,13 @@ final class GameViewModel {
                 pendingEffects.append(.init(cell: cell, style: .shield, color: NeonTheme.gold, points: nil))
                 queued = true
                 haptics.impact(.soft); audio.play(.breach)
-                if !chill { GameCenterService.shared.report(.failsafe) }
+                GameCenterService.shared.report(.failsafe)
             case let .firewallDefused(cell):
                 // Shield saved you — a bright gold "blocked" pop, no game over.
                 pendingEffects.append(.init(cell: cell, style: .shield, color: NeonTheme.gold, points: nil))
                 queued = true
                 haptics.impact(.medium); audio.play(.decodeBig)
-                if !chill { GameCenterService.shared.report(.failsafe) }
+                GameCenterService.shared.report(.failsafe)
             case let .firewallExploded(cell):
                 decodeRun = 0                  // chain broken → arpeggio resets
                 pendingEffects.append(.init(cell: cell, style: .bomb, color: NeonTheme.danger, points: nil))
@@ -198,25 +193,68 @@ final class GameViewModel {
                 haptics.error(); audio.play(.bomb)
             case .feverStarted:
                 haptics.success(); audio.play(.fever)
-                if !chill { GameCenterService.shared.report(.firstFever) }
+                GameCenterService.shared.report(.firstFever)
             case .feverEnded:
                 haptics.impact(.soft)
             case .ramCritical:
-                guard !chill else { break }              // Flow stays pressure-free
                 haptics.impact(.rigid, intensity: 1.0)
                 audio.play(.ramLow)
             case .gridExpanded:
-                gridExpandedSeq += 1                     // drives the toast
-                haptics.success(); audio.play(.fever)   // a positive "grid grew" cue
-                if !chill { GameCenterService.shared.report(.gridExpanded) }
+                gridExpandedSeq += 1
+                haptics.success(); audio.play(.fever)
+                GameCenterService.shared.report(.gridExpanded)
             case let .powerUpCollected(kind):
                 powerUpFlashKind = kind
-                powerUpFlashSeq += 1                     // drives the effect-announcement flash
-                haptics.success(); audio.play(.fever)   // bright sting on pickup
-                if !chill { GameCenterService.shared.report(.toolbelt) }
+                powerUpFlashSeq += 1
+                haptics.success(); audio.play(.fever)
+                GameCenterService.shared.report(.toolbelt)
             case let .milestoneReached(value):
                 milestoneValue = value
                 milestoneSeq += 1                        // drives the landmark toast
+                haptics.success(); audio.play(.fever)
+            case let .daemonSetSpawned(size):
+                daemonSetMsg = "DAEMON SET ×\(size) — tap in order"
+                daemonSetSeq += 1
+                haptics.impact(.soft); audio.play(.breach)   // "new objective" cue
+            case .daemonSetAdvanced:
+                break                                    // the decode pop already covers it
+            case let .daemonSetCompleted(cell):
+                daemonSetMsg = "SET CRACKED — ×\(config.daemonSetReward) NEXT"
+                daemonSetSeq += 1
+                pendingEffects.append(.init(cell: cell, style: .pop, color: NeonTheme.gold, points: nil, intensity: 1))
+                queued = true
+                if !reduceMotion { freezeRemaining = 0.08 }   // hit-stop on the payoff
+                haptics.impact(.rigid, intensity: 1.0); audio.play(.decodeBig)
+            case let .daemonSetWrongOrder(cell):
+                decodeRun = 0                            // chain broken → arpeggio resets
+                pendingEffects.append(.init(cell: cell, style: .miss, color: NeonTheme.danger, points: nil))
+                queued = true
+                errorFlashSeq += 1
+                haptics.impact(.rigid); audio.play(.miss)
+            case let .dmzSpawned(cells):
+                // A hostile incursion: announce the objective + a red pop-in on each zone cell.
+                daemonSetMsg = "DMZ PURGE — clear the zone"
+                daemonSetSeq += 1
+                for cell in cells {
+                    pendingEffects.append(.init(cell: cell, style: .breach, color: NeonTheme.danger, points: nil))
+                }
+                queued = true
+                haptics.impact(.medium); audio.play(.breach)   // "new threat" cue
+            case let .intrusionCleared(cell):
+                // A defensive clear (outside the combo/fever system): a small red pop + light tick.
+                pendingEffects.append(.init(cell: cell, style: .pop, color: NeonTheme.danger, points: nil, intensity: 0.4))
+                queued = true
+                haptics.impact(.light); audio.play(.decode)
+            case let .dmzOverrunSpawned(cell):
+                // The creep grows — a subtle threat pulse (soft, so the 1.6s cadence never spams).
+                pendingEffects.append(.init(cell: cell, style: .breach, color: NeonTheme.danger, points: nil))
+                queued = true
+                haptics.impact(.soft); audio.play(.breach)
+            case .dmzPurged:
+                // The payoff: relief. Bright sting + a hit-stop on the moment.
+                daemonSetMsg = "DMZ PURGED"
+                daemonSetSeq += 1
+                if !reduceMotion { freezeRemaining = 0.08 }
                 haptics.success(); audio.play(.fever)
             case .gameOver:
                 audio.play(.gameOver)
@@ -243,6 +281,7 @@ struct GameView: View {
     @State private var purgeTrigger = 0
     @State private var showGridExpanded = false
     @State private var showMilestone = false
+    @State private var showDaemonSet = false
     @State private var showCodex = false            // rules reference, opened from pause
     @State private var streakPulse = false
     @State private var countdownValue: Int? = nil   // 3·2·1·0(GO); nil = not counting
@@ -255,8 +294,8 @@ struct GameView: View {
     /// Persist the finished session exactly once; returns what it yielded.
     let recordSession: (_ score: Int, _ won: Bool) -> SessionOutcome
 
-    /// Flow (chill) mode: no clock, no fail, calm pace + presentation.
-    let chill: Bool
+    /// PROTOCOL mode: objective-driven challenge (replaces Flow). Real fail state.
+    let protocolMode: Bool
     /// Daily challenge: endless rules on a fixed, date-derived seed (everyone gets the
     /// same board). Replays reuse the seed so it stays "today's" board.
     let daily: Bool
@@ -274,7 +313,7 @@ struct GameView: View {
 
     init(core: DataCore? = nil,
          deck: Cyberdeck,
-         chill: Bool = false,
+         protocolMode: Bool = false,
          seed: UInt64? = nil,
          daily: Bool = false,
          briefing: CoreFeature? = nil,
@@ -283,15 +322,15 @@ struct GameView: View {
          onNext: (() -> Void)? = nil,
          recordSession: @escaping (_ score: Int, _ won: Bool) -> SessionOutcome) {
         self.core = core
-        self.chill = chill
+        self.protocolMode = protocolMode
         self.daily = daily
         self.fixedSeed = seed
         self.briefing = briefing
         self.bestScore = bestScore
         self.onNext = onNext
         let model: GameViewModel
-        if chill {
-            model = GameViewModel(config: .chill(), deck: deck, seed: seed ?? GameView.freshSeed(), chill: true)
+        if protocolMode {
+            model = GameViewModel(config: .protocolMode(), deck: deck, seed: seed ?? GameView.freshSeed())
         } else if let core {
             model = GameViewModel(config: .campaign(for: core),
                                   deck: deck, seed: seed ?? GameView.freshSeed(),
@@ -328,17 +367,10 @@ struct GameView: View {
         #endif
     }
 
-    /// What the Data Core arc tracks. During Fever it drains with the burst timer
-    /// (the core IS the Fever readout); otherwise campaign → target, endless →
-    /// Fever charge, Flow → a repeating "combo ring" (fills every comboThreshold
-    /// decodes, then resets) so the centerpiece reacts to play even without a goal.
     private var coreProgress: Double {
         let s = model.snapshot
         if s.feverActive { return s.feverFraction }
-        guard chill else { return core != nil ? s.targetProgress : s.comboProgress }
-        let t = max(1, s.comboThreshold)
-        let cyc = s.combo % t
-        return (s.combo > 0 && cyc == 0) ? 1 : Double(cyc) / Double(t)
+        return core != nil ? s.targetProgress : s.comboProgress
     }
 
     /// Run the pre-game "sync" countdown (every mode): hold the engine paused through
@@ -369,21 +401,16 @@ struct GameView: View {
     var body: some View {
         ZStack {
             NeonTheme.background.ignoresSafeArea()
-            if chill {
-                ChillAtmosphere().ignoresSafeArea().accessibilityHidden(true)
-            }
             FeverAtmosphere(active: model.snapshot.feverActive && !model.snapshot.isGameOver)
                 .ignoresSafeArea().accessibilityHidden(true)
-            // Longevity buildup: the arena warms as your score climbs (endless/daily;
-            // dampened during Fever so its gold owns the screen).
-            if !chill && !model.snapshot.isGameOver {
+            if !model.snapshot.isGameOver {
                 HeatVignette(level: min(1, Double(model.snapshot.score) / 100),
                              dampened: model.snapshot.feverActive)
                     .ignoresSafeArea().accessibilityHidden(true)
             }
 
             VStack(spacing: 0) {
-                HUDView(snapshot: model.snapshot, coreName: core?.name, chill: chill)
+                HUDView(snapshot: model.snapshot, coreName: core?.name)
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
 
@@ -393,7 +420,7 @@ struct GameView: View {
                 VStack(spacing: 6) {
                     BigScoreView(snapshot: model.snapshot)
                     // Endless clean-streak base multiplier — rewards long, clean survival.
-                    if core == nil && !chill && model.snapshot.streakMultiplier > 1
+                    if core == nil && model.snapshot.streakMultiplier > 1
                         && !model.snapshot.isGameOver {
                         StreakBadge(multiplier: model.snapshot.streakMultiplier, pulse: streakPulse)
                             .transition(.scale(scale: 0.6).combined(with: .opacity))
@@ -402,7 +429,6 @@ struct GameView: View {
                                  feverActive: model.snapshot.feverActive,
                                  label: model.snapshot.freezeActive ? "FREEZE"
                                        : model.snapshot.overclockActive ? "OVERCLOCK"
-                                       : chill ? "FLOW"
                                        : model.snapshot.feverActive ? "FEVER"
                                        : core != nil ? "DECRYPT" : "CHARGE",
                                  decodeToken: model.snapshot.score,
@@ -441,7 +467,7 @@ struct GameView: View {
             // Score + RAM time framing the Dynamic Island / notch. Only on devices
             // that have one — flat-top devices keep score/RAM inline in the HUD.
             if hasIslandOrNotch && !model.snapshot.isGameOver {
-                IslandFrameRow(snapshot: model.snapshot, chill: chill)
+                IslandFrameRow(snapshot: model.snapshot)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                     .padding(.top, 16)
                     .ignoresSafeArea(.container, edges: .top)
@@ -515,6 +541,22 @@ struct GameView: View {
                     .offset(y: -130)
                     .allowsHitTesting(false)
                     .transition(.scale(scale: 0.7).combined(with: .opacity))
+                    .accessibilityHidden(true)
+            }
+
+            // DAEMON SET objective toast (PROTOCOL): "set spawned" / "cracked ×4".
+            if showDaemonSet && !model.snapshot.isGameOver {
+                Text(model.daemonSetMsg)
+                    .font(.system(size: 15, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.cyan)
+                    .neonGlow(NeonTheme.cyan, radius: 8)
+                    .padding(.horizontal, 16).padding(.vertical, 8)
+                    .background(Capsule().fill(NeonTheme.background.opacity(0.85))
+                        .overlay(Capsule().stroke(NeonTheme.cyan.opacity(0.6), lineWidth: 1)))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .offset(y: -130)
+                    .allowsHitTesting(false)
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
                     .accessibilityHidden(true)
             }
 
@@ -608,7 +650,7 @@ struct GameView: View {
                 // snapshot the recap renders. Flow is skipped inside.
                 GameCenterService.shared.reportRunEnd(
                     model.snapshot,
-                    mode: core != nil ? .campaign : daily ? .daily : chill ? .flow : .endless)
+                    mode: core != nil ? .campaign : daily ? .daily : protocolMode ? .protocolMode : .endless)
             }
         }
         .onChange(of: model.shakeTrigger) { _, _ in
@@ -641,11 +683,21 @@ struct GameView: View {
                 }
             }
         }
+        .onChange(of: model.daemonSetSeq) { _, _ in
+            withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.6)) { showDaemonSet = true }
+            let seq = model.daemonSetSeq
+            Task {
+                try? await Task.sleep(nanoseconds: 1_400_000_000)
+                if model.daemonSetSeq == seq {
+                    withAnimation(.easeOut(duration: 0.3)) { showDaemonSet = false }
+                }
+            }
+        }
         .onChange(of: model.snapshot.score) { _, score in
             // Crossing your own record is a *moment* (ground truth 1.4): celebrate it
             // once per run, live — not just on the game-over screen.
             let toBeat = max(bestScore, sessionBest)
-            guard !pbFired, toBeat > 0, score > toBeat, core == nil, !chill else { return }
+            guard !pbFired, toBeat > 0, score > toBeat, core == nil else { return }
             pbFired = true
             AudioEngine.shared.play(.fever)
             Haptics().success()
@@ -683,7 +735,6 @@ struct GameView: View {
 /// device gets a worse layout.
 private struct IslandFrameRow: View {
     let snapshot: SessionSnapshot
-    var chill: Bool = false
 
     private var ramColor: Color {
         snapshot.ramFraction > 0.5 ? NeonTheme.cyan
@@ -693,29 +744,16 @@ private struct IslandFrameRow: View {
 
     var body: some View {
         HStack(alignment: .center) {
-            Spacer(minLength: 100)   // score now lives above the core; keep RAM by the Island
-            if chill {
-                // No clock in Flow — a calm marker instead of RAM time.
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text("MODE")
-                        .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(NeonTheme.textDim)
-                    Text("⌁ FLOW")
-                        .font(.system(size: 16, weight: .heavy, design: .monospaced))
-                        .foregroundStyle(NeonTheme.magenta)
-                        .neonGlow(NeonTheme.magenta, radius: 5)
-                }
-            } else {
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text("RAM")
-                        .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(NeonTheme.textDim)
-                    Text("\(Int(ceil(max(0, snapshot.ramRemaining))))s")
-                        .font(.system(size: 20, weight: .heavy, design: .monospaced))
-                        .foregroundStyle(ramColor)
-                        .neonGlow(ramColor, radius: 6)
-                        .monospacedDigit()
-                }
+            Spacer(minLength: 100)
+            VStack(alignment: .trailing, spacing: 0) {
+                Text("RAM")
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textDim)
+                Text("\(Int(ceil(max(0, snapshot.ramRemaining))))s")
+                    .font(.system(size: 20, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(ramColor)
+                    .neonGlow(ramColor, radius: 6)
+                    .monospacedDigit()
             }
         }
         .padding(.horizontal, 22)
@@ -800,7 +838,7 @@ private struct TrailLayer: View {
 /// dashed rings give the ambient "scanner is alive" feel. Sizes to its slot, so it
 /// shrinks gracefully on small screens. Purely presentational.
 private struct DataCoreView: View {
-    let progress: Double        // 0…1 (fever charge / target / Flow combo ring)
+    let progress: Double        // 0…1 (fever charge or campaign target progress)
     let feverActive: Bool
     let label: String
     let decodeToken: Int        // changes per decode → pulse
@@ -944,8 +982,6 @@ private struct StreakBadge: View {
 private struct HUDView: View {
     let snapshot: SessionSnapshot
     var coreName: String? = nil
-    /// Flow mode hides the pressure HUD (RAM bar + combo meter).
-    var chill: Bool = false
 
     var body: some View {
         VStack(spacing: 8) {
@@ -976,11 +1012,7 @@ private struct HUDView: View {
                 .accessibilityLabel(coreName ?? "Data core")
                 .accessibilityValue("\(snapshot.score) of \(target)")
             }
-            // SCORE/RAM live in the IslandFrameRow up top; Fever charge now lives in
-            // the Data Core. Here we keep just the RAM bar (hidden in Flow).
-            if !chill {
-                RAMBar(fraction: snapshot.ramFraction)
-            }
+            RAMBar(fraction: snapshot.ramFraction)
         }
     }
 }
@@ -1051,7 +1083,8 @@ private struct GridBoard: View {
                             ForEach(0..<cols, id: \.self) { col in
                                 let index = row * cols + col
                                 CellView(node: nodesByCell[index], size: cell,
-                                         feverActive: snapshot.feverActive)
+                                         feverActive: snapshot.feverActive,
+                                         isZone: snapshot.dmzZone.contains(index))
                                     // Whole cell is tappable → hitbox is generously
                                     // larger than the sprite (brief §10.7 tolerance).
                                     .contentShape(Rectangle())
@@ -1079,6 +1112,9 @@ private struct CellView: View {
     let node: GridNode?
     let size: CGFloat
     let feverActive: Bool
+    /// True when this cell is part of an active DMZ PURGE zone — draw a hostile outline
+    /// (kept even after the cell is cleared, so the zone shows purge progress).
+    var isZone: Bool = false
 
     var body: some View {
         ZStack {
@@ -1089,6 +1125,14 @@ private struct CellView: View {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(Color.white.opacity(0.02))
                 )
+            // DMZ zone marker: a glowing red containment outline + faint wash.
+            if isZone {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(NeonTheme.danger.opacity(0.10))
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(NeonTheme.danger.opacity(0.85), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                    .neonGlow(NeonTheme.danger, radius: 6)
+            }
             if let node {
                 NodeSprite(node: node, feverActive: feverActive)
                     .padding(size * 0.16)   // sprite smaller than the tap cell
@@ -1106,6 +1150,7 @@ private struct CellView: View {
     /// the live game is a visual reflex challenge, but the board stays perceivable).
     private static func label(for node: GridNode?, feverActive: Bool) -> String {
         guard let node else { return "Empty cell" }
+        if let order = node.setOrder, let n = node.setSize { return "Daemon set, tap position \(order) of \(n)" }
         if feverActive && node.type != .firewallBomb { return "Bonus node" }
         switch node.type {
         case .standardDaemon: return "Daemon"
@@ -1114,6 +1159,7 @@ private struct CellView: View {
         case .dataCache:      return "Data cache, bonus"
         case .wormDaemon:     return "Worm daemon"
         case .powerUp:        return "Power-up pickup"
+        case .intrusion:      return "Intrusion — tap to clear"
         }
     }
 }
@@ -1125,7 +1171,12 @@ private struct NodeSprite: View {
     let feverActive: Bool
 
     var body: some View {
-        if feverActive && node.type != .firewallBomb {
+        if let order = node.setOrder, let n = node.setSize {
+            // DAEMON SET node: ordered chain — show its position (number + filled pips)
+            // so the player knows the tap order. Rendered before the fever-gold path so
+            // an objective never hides behind the bonus look.
+            setSprite(order: order, of: n)
+        } else if feverActive && node.type != .firewallBomb {
             // Golden bonus node during Fever Mode.
             sprite(color: NeonTheme.gold, symbol: "bolt.fill", ringed: true)
         } else {
@@ -1147,6 +1198,10 @@ private struct NodeSprite: View {
             case .powerUp:
                 // White "special pickup" — kind shown by its glyph.
                 sprite(color: NeonTheme.textPrimary, symbol: Self.powerSymbol(node.powerKind), ringed: true)
+            case .intrusion:
+                // A hostile DMZ infestation — a solid red hex to scrub away. Distinct from the
+                // firewall's warning triangle (and bombs never share the board with a DMZ).
+                sprite(color: NeonTheme.danger, symbol: "hexagon.fill", ringed: true)
             }
         }
     }
@@ -1171,6 +1226,32 @@ private struct NodeSprite: View {
                 .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(color)
                 .neonGlow(color, radius: 4)
+        }
+    }
+
+    /// A DAEMON SET node: its order number over a row of pips (first `order` of `n`
+    /// filled) so the tap sequence reads at a glance. Colors resolve through the palette.
+    private func setSprite(order: Int, of n: Int) -> some View {
+        let color = NeonTheme.cyan
+        return ZStack {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(color.opacity(0.18))
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(color, lineWidth: 2.5)
+                .neonGlow(color, radius: 8)
+            VStack(spacing: 3) {
+                Text("\(order)")
+                    .font(.system(size: 19, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(color)
+                    .neonGlow(color, radius: 4)
+                HStack(spacing: 3) {
+                    ForEach(0..<n, id: \.self) { i in
+                        Circle()
+                            .fill(i < order ? color : color.opacity(0.25))
+                            .frame(width: 4.5, height: 4.5)
+                    }
+                }
+            }
         }
     }
 }
@@ -1427,6 +1508,7 @@ private struct GameOverOverlay: View {
         switch snapshot.gameOverReason {
         case .firewallHit: return "FIREWALL TRIGGERED"
         case .ramDepleted: return "RAM DEPLETED"
+        case .dmzOverrun:  return "DMZ OVERRUN"
         default:           return "CONNECTION LOST"
         }
     }

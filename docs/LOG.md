@@ -3,6 +3,72 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #95 — Flow/chill dead code cleanup (2026-06-20)
+Removed all 37 unreachable `chill`/Flow references before merging PROTOCOL to main.
+- **`GameView.swift`** (`GameViewModel` + `GameView`): removed `chill` field + init param from
+  `GameViewModel`; removed `chill` field, init param, `self.chill = chill`, and `if chill { ... }`
+  config branch from `GameView`; simplified `coreProgress` (dropped Flow combo-ring path); removed
+  `ChillAtmosphere` usage + `if chill` body blocks; removed `chill:` from `HUDView` and
+  `IslandFrameRow` call-sites; cleaned up the 8 `guard !chill` / `if !chill` conditionals in
+  `process()` (all now fire unconditionally — chill's no-feedback overrides no longer exist).
+- **`Juice.swift`**: removed `ChillAtmosphere` struct (Flow atmosphere, ~20 lines).
+- **`GameCenterService.swift`**: removed `GCRunMode.flow`, its early-return guard, and the `.flow`
+  case from the submit switch. `GameConfig.chill()` kept as a pure value-type archive (no callers).
+- BUILD SUCCEEDED.
+
+## Run #94 — PROTOCOL phase 4: difficulty ramp (2026-06-20)
+Score-scaled objective difficulty: four new `GameConfig` accessors mirroring the existing
+`spawnInterval`/`nodeLifespan` exponential pattern. `GridEngine` wired to all four call-sites.
+- `objectiveGap(atScore:)` — objective gap shrinks from 5.5 s (base) to 2.5 s (floor) with
+  compression 0.010. At score 30 ≈ 4.1 s, score 60 ≈ 3.0 s, score 100 ≈ 2.5 s (floored).
+  Engine scheduler now calls `objectiveGap(atScore: scaledScore)` instead of the static field.
+- `dmzOverrunPace(atScore:)` — overrun cadence shrinks from 1.6 s to 0.75 s (compression 0.008):
+  score 50 ≈ 1.07 s, score 100 ≈ 0.75 s. Engine now calls `dmzOverrunPace(atScore: scaledScore)`.
+- `daemonSetSizeRange(atScore:)` — starts 2…2 (score 0), steps to 2…3 (score 15), 2…4 (score 30).
+  `spawnDaemonSet` now passes the score-derived range to the RNG draw.
+- `dmzSizeRange(atScore:)` — starts 2…2, steps to 2…3 (score 20), 2…4 (score 40).
+  `spawnDMZ` now passes the score-derived range.
+- Also fixed a latent bug in `scripts/enginecheck/dmz.swift` check 2: `before` was capturing total
+  node count but being compared against intrusion count (only correct when all nodes happened to be
+  intrusions). Now correctly captures `intrusionsBefore`.
+- **Verified:** 48/48 checks (15 daemonset + 18 dmz + 15 new ramp), `run.sh` default now covers all
+  three. Debug BUILD SUCCEEDED (iPhone SE sim). Committed `413c0ca`, pushed to `feature/protocol-mode`.
+
+## Run #93 — PROTOCOL phase 3: DMZ PURGE mechanic (2026-06-20)
+The second objective (issue #4): a hostile zone you race to scrub before the overrun fills the grid.
+- **Engine** (`NodeType`, `GridNode`, `GameConfig`, `GridEngine`): new `NodeType.intrusion` (one-tap,
+  persistent — `GridNode.isPersistent` now also covers it, so the expiry sweep skips it). A zone model
+  `dmzZone` (a contiguous free block — `candidateZones` enumerates 1×N / N×1 / 2×2 — spawned full of
+  intrusion via `spawnDMZ`). An **overrun** creep in `tick` (`dmzOverrunInterval`: fills a random cell
+  *outside* the zone; if none is free → `endGame(.dmzOverrun)`). `clearIntrusion` resolves taps: flat
+  `scoreIntrusion` + small `dmzClearRefill`, deliberately **outside** the combo/fever system (DMZ is
+  defense); clearing the last in-zone cell purges → sweeps the overrun + `dmzPurgeBonus` RAM relief.
+  The normal daemon stream pauses while a DMZ is active. A minimal **objective scheduler**
+  (`objectiveCursor` over enabled objectives, shared `objectiveInterval`) now alternates DAEMON SET ↔
+  DMZ — replacing the set-only `daemonSetInterval`/`timeSinceLastSet`. New `GameEvent`s:
+  `dmzSpawned`/`intrusionCleared`/`dmzOverrunSpawned`/`dmzPurged`; new `GameOverReason.dmzOverrun`;
+  snapshot exposes `dmzZone`.
+- **UI** (`GameView`): hostile red `hexagon.fill` intrusion sprite (distinct from the never-tap
+  firewall — and bombs never share a DMZ board); a dashed red containment outline per zone cell
+  (`CellView.isZone`, kept after a cell is cleared → shows purge progress); juice — red pop-in on
+  spawn, light tick on clear, soft pulse on each overrun creep, success sting + hit-stop on purge,
+  a "DMZ PURGE" / "DMZ PURGED" toast; `DMZ OVERRUN` game-over headline; VoiceOver label.
+- **Verified:** 18/18 deterministic checks (`scripts/enginecheck/dmz.swift`: spawn structure, overrun
+  lands outside the zone, defensive clear keeps the DMZ, full purge sweeps + relief, unchecked overrun
+  → `.dmzOverrun`, and set↔DMZ alternation). 15/15 DAEMON SET checks still pass after the scheduler
+  refactor. Added `scripts/enginecheck/run.sh` (checks need a `main.swift` filename to compile).
+  `xcodebuild` Debug BUILD SUCCEEDED (iPhone 16 sim). Branch `feature/protocol-mode`.
+
+## Run #92 — Verify DAEMON SET tap resolution (deterministic) (2026-06-19)
+(On branch `feature/protocol-mode`. #90–91 are the parallel iPad/release track on main.)
+- Wrote `scripts/enginecheck/daemonset.swift` — a standalone harness that compiles the Core
+  engine/model files (pure value types, no SwiftUI) and asserts the DAEMON SET logic without a
+  simulator (the deterministic-core QA pattern). 15/15 checks pass:
+  spawn (2–4 nodes, orders 1…N, setSize); out-of-order tap → wrongOrder (node stays, no score,
+  RAM penalty); in-order taps advance then complete and clear the board; completion arms a ×4
+  next decode (one-shot, back to ×1 after); a completion that crosses the Fever threshold makes
+  Fever last ×4 (feverFraction 4.00). Confirms phase 2 is correct before building phase 3.
+
 ## Run #91 — iPad 13" App Store screenshot set (2026-06-19)
 The polished 5-screen iPad set for the v1.1 listing (the piece left open in Run #90).
 - **5 screenshots at 2064×2752** (App Store 13" iPad) in `docs/screenshots/ipad-13/`: 01-menu,
@@ -26,10 +92,34 @@ the parallel iPad/release track, numbered #90 to avoid a clash when PROTOCOL lan
 - **Verified**: iPhone + iPad (13") Debug builds both succeed; iPad menu renders correctly at
   2064×2752 (play column centered over the neon backdrop; starter CR + START HERE badge present).
 - **Bumped to v1.1**: `MARKETING_VERSION` 1.0→1.1, `CURRENT_PROJECT_VERSION` 2→3 (both configs).
-- This v1.1 ships everything on main (the 8 post-launch fixes/features + iPad) but NOT PROTOCOL
-  (still on its branch — Flow remains in this release).
-- Still maintainer's to do: the polished 5-screen iPad screenshot set (Run #74 workflow: temp
-  autoplay/demo-save hooks + simulator Cmd+S), then archive/upload/submit v1.1 in App Store Connect.
+- This v1.1 shipped everything on main (iPad + post-launch fixes) but NOT PROTOCOL (still on branch).
+
+## Run #89 — PROTOCOL phase 2: DAEMON SET mechanic (2026-06-19)
+The first objective (issue #3): an ordered daemon chain you tap in sequence for a big reward.
+- **Engine** (`GridNode`, `GameConfig`, `GridEngine`): `GridNode.setOrder/setSize`; a seeded set
+  spawner on a gap timer (`daemonSetInterval`, size 2–4) that fires only when no set is active and
+  not mid-Fever; ordered tap resolution (`handleSetTap` — only the lowest remaining order is valid;
+  wrong order = a miss, set unchanged); completion arms a one-shot ×4 on the next decode and, if it
+  triggers Fever, a ×4 Fever duration. Set nodes don't expire (the RAM clock is the pressure). All
+  deterministic (seeded RNG). New `GameEvent`s: spawned/advanced/completed/wrongOrder.
+- **UI** (`GameView`): numbered set sprite with order pips (1→N filled), rendered before the
+  fever-gold path; completion hit-stop + gold pop + rigid haptic; wrong-order red flash + error
+  border; a "DAEMON SET ×N" / "SET CRACKED — ×4 NEXT" toast; VoiceOver label.
+- Verified in the simulator: sets spawn and render correctly (numbered 1/2/3 with pips). Tap
+  resolution + ×4 reward to confirm on device. Debug build passes. Branch `feature/protocol-mode`.
+
+## Run #88 — PROTOCOL mode skeleton (replaces Flow) (2026-06-19)
+Gamemode redesign phase 1 of 4 (see docs/PROTOCOL_MODE.md). Maintainer chose: replace Flow with a
+new objective-driven mode (alternating DAEMON SET + DMZ PURGE objectives). This run lays the skeleton.
+- **New PROTOCOL mode** replaces Flow's menu entry + routing: `GameConfig.protocolMode()` (challenge
+  base built on endless, no chill, no endless landmarks, fixed 3×3 for DMZ zones); `RootView` menu tile
+  FLOW→PROTOCOL ("scope" glyph) and `.flow`→`.protocolMode` routing; `GameView` gained a `protocolMode`
+  flag selecting the config.
+- **Economy**: `GameStore.recordProtocolRun(score:)` pays Credits but does NOT touch the Endless
+  high-score list / leaderboard (PROTOCOL's score isn't comparable).
+- **Game Center**: new `GCRunMode.protocolMode` — run achievements (fever/streak/grid) still earn, but
+  no score submit and no score landmarks.
+- Debug build passes. Branch `feature/protocol-mode`.
 
 ## Run #87 — Onboarding rework: practice optional, starter CR at first launch (2026-06-19)
 Tutorial revision part 2 (maintainer choice: lean on Campaign as the learn route; practice optional).
