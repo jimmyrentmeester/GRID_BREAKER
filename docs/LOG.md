@@ -3,6 +3,25 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #94 — PROTOCOL phase 4: difficulty ramp (2026-06-20)
+Score-scaled objective difficulty: four new `GameConfig` accessors mirroring the existing
+`spawnInterval`/`nodeLifespan` exponential pattern. `GridEngine` wired to all four call-sites.
+- `objectiveGap(atScore:)` — objective gap shrinks from 5.5 s (base) to 2.5 s (floor) with
+  compression 0.010. At score 30 ≈ 4.1 s, score 60 ≈ 3.0 s, score 100 ≈ 2.5 s (floored).
+  Engine scheduler now calls `objectiveGap(atScore: scaledScore)` instead of the static field.
+- `dmzOverrunPace(atScore:)` — overrun cadence shrinks from 1.6 s to 0.75 s (compression 0.008):
+  score 50 ≈ 1.07 s, score 100 ≈ 0.75 s. Engine now calls `dmzOverrunPace(atScore: scaledScore)`.
+- `daemonSetSizeRange(atScore:)` — starts 2…2 (score 0), steps to 2…3 (score 15), 2…4 (score 30).
+  `spawnDaemonSet` now passes the score-derived range to the RNG draw.
+- `dmzSizeRange(atScore:)` — starts 2…2, steps to 2…3 (score 20), 2…4 (score 40).
+  `spawnDMZ` now passes the score-derived range.
+- Also fixed a latent bug in `scripts/enginecheck/dmz.swift` check 2: `before` was capturing total
+  node count but being compared against intrusion count (only correct when all nodes happened to be
+  intrusions). Now correctly captures `intrusionsBefore`.
+- **Verified:** 48/48 checks (15 daemonset + 18 dmz + 15 new ramp), `run.sh` default now covers all
+  three. Debug BUILD SUCCEEDED (iPhone SE sim). Committed `413c0ca`, pushed to `feature/protocol-mode`.
+- Next: on-device feel pass of phase 3 juice + phase 4 balance tuning; then merge → main.
+
 ## Run #93 — PROTOCOL phase 3: DMZ PURGE mechanic (2026-06-20)
 The second objective (issue #4): a hostile zone you race to scrub before the overrun fills the grid.
 - **Engine** (`NodeType`, `GridNode`, `GameConfig`, `GridEngine`): new `NodeType.intrusion` (one-tap,

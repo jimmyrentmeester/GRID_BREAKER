@@ -3,22 +3,27 @@
 Milestones end with a running, watchable artifact (ground-truth Part 4.5). One
 scoped slice per session.
 
-## ⏳ PROTOCOL mode — phase 4: difficulty ramp + balance (ACTIVE, top task)
-Branch `feature/protocol-mode`. Phases 1–3 done (skeleton, DAEMON SET #3, DMZ PURGE #4 —
-both deterministically verified). See `docs/PROTOCOL_MODE.md`. Phase 4 makes PROTOCOL
-*ramp* and *feel right*, then it can merge to main. The mechanics work; this is tuning.
+## ⏳ PROTOCOL mode — phase 4: balance + feel + merge (ACTIVE, top task)
+Branch `feature/protocol-mode`. Phases 1–4 engine work is done and verified (48/48 checks,
+BUILD SUCCEEDED). See `docs/PROTOCOL_MODE.md`. What remains: play-feel balance and the merge.
 
-- **Engine — scale the objective difficulty with score** (deterministic, in `GameConfig`/
-  `GridEngine`, mirror the endless `…(atScore:)` pattern): objective gap (`objectiveInterval`)
-  shrinks as score climbs; DAEMON SET size and DMZ zone size / `dmzOverrunInterval` (creep
-  pace) ramp so late-run objectives bite harder. Add the score-scaled accessors + a small
-  deterministic check in `scripts/enginecheck/` (extend the runner). Keep a fairness floor.
-- **Balance + feel pass** — build/install/launch on the sim (per `scripts/next_task.md` step 4),
-  play a PROTOCOL run, screenshot the set / DMZ states; tune numbers so the alternation reads
-  clearly and neither objective dominates. On-device feel pass of the phase-3 juice (tap
-  response, zone outline, overrun pulse, purge sting) belongs here too.
-- **Then**: clean up the now-unreachable Flow/`chill` dead code (~36 refs), and merge
-  `feature/protocol-mode` → main. (Likely 2 runs: engine ramp+verify, then balance/feel+merge.)
+**Ramp numbers already in (Run #94) — tune if play reveals issues:**
+- Objective gap: 5.5 s → 2.5 s floor (compression 0.010). At score 30 ≈ 4.1 s, 60 ≈ 3.0 s.
+- Overrun cadence: 1.6 s → 0.75 s floor (compression 0.008). At score 50 ≈ 1.07 s.
+- DAEMON SET size: always 2 at score 0; 2–3 at score 15; 2–4 at score 30.
+- DMZ zone size: always 2 at score 0; 2–3 at score 20; 2–4 at score 40.
+
+**Next run: balance + feel + merge**
+- Build + install on the **sim** (or device). Play 2–3 PROTOCOL runs from scratch.
+- Verify the alternation reads clearly (set → gap → DMZ → gap → set → …) and neither
+  objective dominates. If the gap feels too long early or too short late, adjust
+  `objectiveInterval` (base) or `objectiveIntervalCompression` in `protocolMode()`.
+- If the overrun is too punishing early, raise `dmzOverrunInterval` (base); if it never
+  feels tense late, lower `minDmzOverrunInterval`. Tune in `GameConfig.protocolMode()`.
+- On-device feel pass of phase-3 juice: tap response, zone outline render, overrun pulse
+  cadence, purge sting. All events are wired — this is a physical feel check only.
+- **Then**: clean up the now-unreachable Flow/`chill` dead code (~36 refs in GameView.swift),
+  merge `feature/protocol-mode` → main, submit v1.1 archive from main.
 
 ## ✅ M0 — Scaffold + docs (done)
 - New repo, hand-authored Xcode project (iOS 17, portrait, dark).

@@ -54,8 +54,10 @@ gap and objective difficulty ramp with score (like the other modes' difficulty b
    dashed red zone outline (stays after a cell is cleared → shows purge progress), spawn/clear/
    overrun/purge juice (toast + haptics + audio), `DMZ OVERRUN` game-over headline. Verified:
    18/18 deterministic checks (`scripts/enginecheck/dmz.swift`) + Debug build succeeds.
-4. **Alternation + balance** — the scheduler exists (phase 3); this phase is the **difficulty ramp
-   + tuning**: objective gap/size/overrun-pace scaling with score, and a play-feel balance pass.
+4. **Difficulty ramp** ✅ (Run #94) — four score-scaled `GameConfig` accessors (`objectiveGap`,
+   `dmzOverrunPace`, `daemonSetSizeRange`, `dmzSizeRange`), each with exponential compression toward
+   a fairness floor. Engine call-sites wired. Verified: 48/48 deterministic checks (15 daemonset +
+   18 dmz + 15 ramp) + DEBUG BUILD SUCCEEDED. **Remaining: on-device balance/feel pass + merge.**
 
 ## Notes / decisions
 - Flow's `chill` implementation is left in place but unreachable from the menu (removing its
