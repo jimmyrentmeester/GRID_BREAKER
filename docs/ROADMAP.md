@@ -3,6 +3,23 @@
 Milestones end with a running, watchable artifact (ground-truth Part 4.5). One
 scoped slice per session.
 
+## ⏳ PROTOCOL mode — phase 4: difficulty ramp + balance (ACTIVE, top task)
+Branch `feature/protocol-mode`. Phases 1–3 done (skeleton, DAEMON SET #3, DMZ PURGE #4 —
+both deterministically verified). See `docs/PROTOCOL_MODE.md`. Phase 4 makes PROTOCOL
+*ramp* and *feel right*, then it can merge to main. The mechanics work; this is tuning.
+
+- **Engine — scale the objective difficulty with score** (deterministic, in `GameConfig`/
+  `GridEngine`, mirror the endless `…(atScore:)` pattern): objective gap (`objectiveInterval`)
+  shrinks as score climbs; DAEMON SET size and DMZ zone size / `dmzOverrunInterval` (creep
+  pace) ramp so late-run objectives bite harder. Add the score-scaled accessors + a small
+  deterministic check in `scripts/enginecheck/` (extend the runner). Keep a fairness floor.
+- **Balance + feel pass** — build/install/launch on the sim (per `scripts/next_task.md` step 4),
+  play a PROTOCOL run, screenshot the set / DMZ states; tune numbers so the alternation reads
+  clearly and neither objective dominates. On-device feel pass of the phase-3 juice (tap
+  response, zone outline, overrun pulse, purge sting) belongs here too.
+- **Then**: clean up the now-unreachable Flow/`chill` dead code (~36 refs), and merge
+  `feature/protocol-mode` → main. (Likely 2 runs: engine ramp+verify, then balance/feel+merge.)
+
 ## ✅ M0 — Scaffold + docs (done)
 - New repo, hand-authored Xcode project (iOS 17, portrait, dark).
 - Core value types: `NodeType`, `GridNode`, `Cyberdeck`/`CyberdeckUpgrade`,
