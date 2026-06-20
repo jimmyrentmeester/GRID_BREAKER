@@ -325,28 +325,6 @@ struct ShakeEffect: GeometryEffect {
     }
 }
 
-// MARK: - Flow (chill) atmosphere
-
-/// A slow, low-opacity cyan/purple "breath" behind the grid in Flow mode — a calm
-/// living backdrop that reinforces the meditative vibe (skill: the world feels
-/// alive; diegetic calm). Static under Reduce Motion.
-struct ChillAtmosphere: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var breathe = false
-
-    var body: some View {
-        RadialGradient(
-            colors: [NeonTheme.gridLineDim.opacity(0.20), NeonTheme.cyan.opacity(0.06), .clear],
-            center: .center, startRadius: 40, endRadius: 540
-        )
-        .opacity((breathe && !reduceMotion) ? 0.9 : 0.55)
-        .scaleEffect((breathe && !reduceMotion) ? 1.05 : 1.0)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 5).repeatForever(autoreverses: true), value: breathe)
-        .onAppear { breathe = true }
-        .allowsHitTesting(false)
-    }
-}
-
 // MARK: - Fever Mode presentation
 
 /// A mood-tinted atmosphere layer that cross-fades in during Fever Mode

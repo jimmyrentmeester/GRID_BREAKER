@@ -38,7 +38,7 @@ enum GCAchievement: String, CaseIterable {
 
 /// Which ruleset a finished run was played under (for routing reports).
 enum GCRunMode {
-    case endless, daily, campaign, flow, protocolMode
+    case endless, daily, campaign, protocolMode
 }
 
 // MARK: - Diagnostics
@@ -191,11 +191,10 @@ final class GameCenterService {
     /// the score is persisted (GameView's game-over hook), with the engine's
     /// final snapshot — the same verified data the recap screen renders.
     func reportRunEnd(_ s: SessionSnapshot, mode: GCRunMode) {
-        guard mode != .flow else { return }            // Flow is stake-free by design
         switch mode {
         case .endless: submit(score: s.score, to: .endless)
         case .daily:   submit(score: s.score, to: .daily)
-        case .campaign, .flow, .protocolMode: break    // campaign/PROTOCOL rank ≠ comparable score
+        case .campaign, .protocolMode: break    // campaign/PROTOCOL rank ≠ comparable score
         }
         // Run achievements still earn in PROTOCOL (it's a real challenge run).
         if s.feversTriggered >= 1 { report(.firstFever) }
