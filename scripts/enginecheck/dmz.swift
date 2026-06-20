@@ -56,14 +56,15 @@ do {
     let c = dmzConfig()
     var engine = GridEngine(config: c, deck: .starter, seed: 7)
     let zone = spawnDMZ(&engine)
-    let before = engine.snapshot.nodes.count
+    let intrusionsBefore = engine.snapshot.nodes.filter { $0.type == .intrusion }.count
     var sawOverrun = false
     for _ in 0..<Int(c.dmzOverrunInterval / 0.05) + 2 {
         if isOverrun(engine.tick(deltaTime: 0.05)) { sawOverrun = true; break }
     }
     check(sawOverrun, "an overrun creep fires after dmzOverrunInterval")
     let intrusions = engine.snapshot.nodes.filter { $0.type == .intrusion }
-    check(intrusions.count == before + 1, "the creep added exactly one intrusion (\(before) → \(intrusions.count))")
+    check(intrusions.count == intrusionsBefore + 1,
+          "the creep added exactly one intrusion (\(intrusionsBefore) → \(intrusions.count))")
     check(intrusions.contains { !zone.contains($0.cellIndex) }, "the creep landed outside the zone")
 }
 

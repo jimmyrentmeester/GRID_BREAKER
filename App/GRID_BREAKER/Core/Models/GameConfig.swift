@@ -149,12 +149,21 @@ struct GameConfig: Sendable {
     /// Seconds of gap between objectives (timer only runs while no objective is
     /// on the board). Enabled objectives alternate (DAEMON SET ↔ DMZ PURGE).
     var objectiveInterval: TimeInterval = 5.5
+    /// Exponential compression applied to the objective gap as score climbs
+    /// (mirrors spawnCompression). 0 = no ramp (stable gap).
+    var objectiveIntervalCompression: Double = 0.010
+    /// Minimum objective gap regardless of score (fairness floor).
+    var minObjectiveInterval: TimeInterval = 2.5
 
     // MARK: DAEMON SET objective (PROTOCOL mode, issue #3)
     /// Whether ordered DAEMON SET chains spawn (off everywhere except PROTOCOL).
     var daemonSetEnabled: Bool = false
     var daemonSetMinSize: Int = 2
     var daemonSetMaxSize: Int = 4
+    /// Score delta at which the effective max set size grows by 1 (starting from
+    /// daemonSetMinSize at score 0, reaching daemonSetMaxSize when score ≥
+    /// (maxSize − minSize) × this value). 0 = no ramp (max is always daemonSetMaxSize).
+    var daemonSetSizeRampScore: Int = 15
     /// Completing a set grants ×N on the *next* decode; if the completion triggers
     /// Fever, that Fever lasts ×N as long.
     var daemonSetReward: Int = 4
@@ -165,10 +174,18 @@ struct GameConfig: Sendable {
     /// Zone size range (contiguous cells spawned full of intrusion to clear).
     var dmzMinSize: Int = 2
     var dmzMaxSize: Int = 4
+    /// Score delta at which the effective max DMZ zone size grows by 1 (same pattern as
+    /// daemonSetSizeRampScore — starts small, reaches max at score ≥ (max−min)×this).
+    var dmzSizeRampScore: Int = 20
     /// Seconds between overrun creeps: while a DMZ is active, an intrusion node fills
     /// a random free cell *outside* the zone on this cadence. If none is free when it
     /// fires, the system is overrun → game over. Tapping creeps buys time.
     var dmzOverrunInterval: TimeInterval = 1.6
+    /// Exponential compression applied to the overrun cadence as score climbs
+    /// (faster creep = harder zone; mirrors objectiveIntervalCompression).
+    var dmzOverrunCompression: Double = 0.008
+    /// Minimum overrun cadence regardless of score (fairness floor).
+    var minDmzOverrunInterval: TimeInterval = 0.75
     /// Flat score per intrusion cleared (no combo/fever interaction — DMZ is defense).
     var scoreIntrusion: Int = 1
     /// Small RAM granted per intrusion cleared (defensive value of keeping the creep down).
@@ -333,6 +350,37 @@ struct GameConfig: Sendable {
     func spawnInterval(atScore score: Int) -> TimeInterval {
         let scaled = baseSpawnInterval * exp(-spawnCompression * Double(score))
         return max(minSpawnInterval, scaled)
+    }
+
+    /// Effective gap between PROTOCOL objectives at the given score (shrinks as the
+    /// run heats up, same exponential shape as spawnInterval/nodeLifespan).
+    func objectiveGap(atScore score: Int) -> TimeInterval {
+        guard objectiveIntervalCompression > 0 else { return objectiveInterval }
+        let scaled = objectiveInterval * exp(-objectiveIntervalCompression * Double(score))
+        return max(minObjectiveInterval, scaled)
+    }
+
+    /// Effective DAEMON SET size range at the given score: min stays fixed, max
+    /// steps up by 1 for every daemonSetSizeRampScore points, capped at daemonSetMaxSize.
+    /// Early runs are always 2-node sets; late runs can be 2–4.
+    func daemonSetSizeRange(atScore score: Int) -> ClosedRange<Int> {
+        let step = daemonSetSizeRampScore > 0 ? score / daemonSetSizeRampScore : daemonSetMaxSize - daemonSetMinSize
+        let rampedMax = min(daemonSetMaxSize, daemonSetMinSize + step)
+        return daemonSetMinSize...max(daemonSetMinSize, rampedMax)
+    }
+
+    /// Effective DMZ zone size range at the given score (same stepping pattern as sets).
+    func dmzSizeRange(atScore score: Int) -> ClosedRange<Int> {
+        let step = dmzSizeRampScore > 0 ? score / dmzSizeRampScore : dmzMaxSize - dmzMinSize
+        let rampedMax = min(dmzMaxSize, dmzMinSize + step)
+        return dmzMinSize...max(dmzMinSize, rampedMax)
+    }
+
+    /// Effective DMZ overrun cadence at the given score (creep accelerates as score climbs).
+    func dmzOverrunPace(atScore score: Int) -> TimeInterval {
+        guard dmzOverrunCompression > 0 else { return dmzOverrunInterval }
+        let scaled = dmzOverrunInterval * exp(-dmzOverrunCompression * Double(score))
+        return max(minDmzOverrunInterval, scaled)
     }
 
     /// Fever's active-node ceiling for a given grid (denser on 4×4 so the gold

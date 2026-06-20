@@ -345,7 +345,7 @@ struct GridEngine {
                 timeSinceLastObjective = 0
             } else {
                 timeSinceLastObjective += deltaTime
-                if timeSinceLastObjective >= config.objectiveInterval {
+                if timeSinceLastObjective >= config.objectiveGap(atScore: scaledScore) {
                     let next = enabledObjectives[objectiveCursor % enabledObjectives.count]
                     let spawned = (next == .daemonSet) ? spawnDaemonSet() : spawnDMZ()
                     if !spawned.isEmpty {                 // retry next tick if no room
@@ -362,7 +362,7 @@ struct GridEngine {
         // room left outside the zone when it fires, the system is overrun → game over.
         if !dmzZone.isEmpty && !frozen {
             timeSinceLastOverrun += deltaTime
-            if timeSinceLastOverrun >= config.dmzOverrunInterval {
+            if timeSinceLastOverrun >= config.dmzOverrunPace(atScore: scaledScore) {
                 timeSinceLastOverrun = 0
                 let occupied = Set(nodes.map(\.cellIndex))
                 let freeOutside = (0..<gridSize.cellCount)
@@ -514,7 +514,7 @@ struct GridEngine {
     /// Spawn an ordered DAEMON SET chain of N (config range) on random free cells, orders
     /// 1…N. Returns no event (and spawns nothing) if the board lacks N free cells.
     private mutating func spawnDaemonSet() -> [GameEvent] {
-        let n = Int.random(in: config.daemonSetMinSize...config.daemonSetMaxSize, using: &rng)
+        let n = Int.random(in: config.daemonSetSizeRange(atScore: scaledScore), using: &rng)
         let occupied = Set(nodes.map(\.cellIndex))
         var free = (0..<gridSize.cellCount).filter { !occupied.contains($0) }
         guard free.count >= n else { return [] }   // not enough room now; retry next tick
@@ -534,7 +534,7 @@ struct GridEngine {
     /// the overrun creep (§3.6 in tick) fills the rest of the grid. Returns no event (and
     /// spawns nothing) if no contiguous free block of the rolled size exists right now.
     private mutating func spawnDMZ() -> [GameEvent] {
-        let size = Int.random(in: config.dmzMinSize...config.dmzMaxSize, using: &rng)
+        let size = Int.random(in: config.dmzSizeRange(atScore: scaledScore), using: &rng)
         let occupied = Set(nodes.map(\.cellIndex))
         let candidates = candidateZones(size: size).filter { zone in
             zone.allSatisfy { !occupied.contains($0) }
