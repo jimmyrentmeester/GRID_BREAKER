@@ -429,6 +429,13 @@ struct GameView: View {
 
                 Spacer(minLength: 12).frame(maxHeight: 96)
             }
+            // iPad: cap the play-field to a phone-shaped panel so HUD / Data Core / grid
+            // stay one cohesive, hand-sized unit instead of floating apart on the big 4:3
+            // screen (the Data Core filler would otherwise stretch enormously). Centered
+            // over the atmosphere/backdrop. No-op on iPhone: 480/960 exceed every iPhone's
+            // width/height, so it never caps the phone layout.
+            .frame(maxWidth: 480, maxHeight: 960)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .modifier(ShakeEffect(animatableData: shakeAnim))
 
             // Score + RAM time framing the Dynamic Island / notch. Only on devices
@@ -522,9 +529,12 @@ struct GameView: View {
                 }
                 .buttonStyle(TerminalButtonStyle())
                 .accessibilityLabel("Pause")
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .padding(.leading, 24)
                 .padding(.bottom, 28)
+                // Align to the play panel's bottom-leading (not the screen corner) on iPad;
+                // no-op on iPhone where 480 exceeds the screen width.
+                .frame(maxWidth: 480, maxHeight: .infinity, alignment: .bottomLeading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
 
             if model.isPaused && !showBriefing && countdownValue == nil && !showCodex {

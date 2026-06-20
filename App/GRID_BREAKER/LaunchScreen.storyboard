@@ -23,12 +23,18 @@
                                         <fontDescription key="fontDescription" name="Menlo-Bold" family="Menlo" pointSize="24"/>
                                         <color key="textColor" red="0.20" green="0.95" blue="1.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
                                         <nil key="highlightedColor"/>
+                                        <variation key="widthClass=regular">
+                                            <fontDescription key="fontDescription" name="Menlo-Bold" family="Menlo" pointSize="56"/>
+                                        </variation>
                                     </label>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="// netrunner reflex hack" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="GBL-lb-002">
                                         <rect key="frame" x="33" y="183" width="134" height="13"/>
                                         <fontDescription key="fontDescription" name="Menlo-Regular" family="Menlo" pointSize="12"/>
                                         <color key="textColor" red="1.0" green="0.20" blue="0.80" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
                                         <nil key="highlightedColor"/>
+                                        <variation key="widthClass=regular">
+                                            <fontDescription key="fontDescription" name="Menlo-Regular" family="Menlo" pointSize="22"/>
+                                        </variation>
                                     </label>
                                 </subviews>
                             </stackView>
