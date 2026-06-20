@@ -3,6 +3,19 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #91 — iPad 13" App Store screenshot set (2026-06-19)
+The polished 5-screen iPad set for the v1.1 listing (the piece left open in Run #90).
+- **5 screenshots at 2064×2752** (App Store 13" iPad) in `docs/screenshots/ipad-13/`: 01-menu,
+  02-fever (×10, STREAK ×5, 4×4, Fever), 03-campaign (6/10), 04-cyberdeck (with cumulative
+  values), 05-cosmetics. All show the universal iPad layout (centered play/chrome columns).
+- **Workflow**: a demo save injected into the simulator's UserDefaults (lived-in shops/campaign:
+  BEST 1287, 2480 CR, 6 cores cleared, owned palettes/trails) + temporary in-code hooks —
+  launch-arg screen routing (`-shot -screen <name>`), a perfect-play autoplay bot + a fast-fever
+  demo config (`-autoplay`), boot/Game-Center skips. All hooks reverted before commit (verified
+  clean: no TEMP residue; Debug build passes). See `docs/screenshots/ipad-13/README.md`.
+- Maintainer still does: drag the 5 PNGs into the iPad 13" slot in App Store Connect, then
+  archive/upload/submit v1.1.
+
 ## Run #90 — Merge iPad support into main + bump to v1.1 (2026-06-19)
 (Runs #88–89 are the PROTOCOL work on branch `feature/protocol-mode`, not yet on main; this is
 the parallel iPad/release track, numbered #90 to avoid a clash when PROTOCOL lands.)
