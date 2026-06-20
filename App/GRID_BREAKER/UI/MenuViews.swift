@@ -320,24 +320,35 @@ struct CodexView: View {
             Entry(icon: "memorychip.fill", color: NeonTheme.cyan, name: "RAM CLOCK",
                   text: "Your time buffer. It drains constantly. Decoding refills it; mistaps and letting daemons expire drain it. Empty = disconnect."),
             Entry(icon: "bolt.fill", color: NeonTheme.gold, name: "FEVER",
-                  text: "Chain 8 clean decodes to trigger Fever: ×2 score, golden nodes, and hazards clear."),
+                  text: "Chain 8 clean decodes to trigger Fever: ×2 score, golden nodes, and hazards clear. In PROTOCOL, completing a DAEMON SET can extend Fever ×4."),
             Entry(icon: "flame.fill", color: NeonTheme.magenta, name: "CLEAN STREAK",
-                  text: "Long clean chains raise a score multiplier (Endless). A single miss resets it."),
+                  text: "Long clean chains raise a score multiplier. A single miss resets it. Endless only."),
             Entry(icon: "square.grid.4x3.fill", color: NeonTheme.cyan, name: "GRID EXPANSION",
-                  text: "As your score climbs the grid grows 3×3 → 4×4 — more targets, faster (Endless + later cores)."),
+                  text: "As your score climbs the grid grows 3×3 → 4×4. Endless + later campaign cores. PROTOCOL stays 3×3."),
+        ]
+    }
+
+    private var protocolObjectives: [Entry] {
+        [
+            Entry(icon: "list.number", color: NeonTheme.gold, name: "DAEMON SET",
+                  text: "N daemons numbered 1→N appear on the grid. Tap them in order — wrong tap is a miss (the set stays). Completing it gives ×4 on your next decode, or extends Fever ×4 if it triggers one."),
+            Entry(icon: "hexagon.fill", color: NeonTheme.danger, name: "INTRUSION NODE",
+                  text: "Hostile node — one tap to clear it. Spawns inside the zone when a DMZ activates; can also creep outside the zone as an overrun. No combo credit — DMZ is defense, not offense."),
+            Entry(icon: "square.dashed", color: NeonTheme.danger, name: "DMZ PURGE",
+                  text: "A hostile zone spawns full of intrusion nodes. Clear every cell in the zone to purge it. While a DMZ is active, intrusions creep outside the zone on a timer — if they fill the board, the run ends."),
         ]
     }
 
     private var modes: [Entry] {
         [
             Entry(icon: "play.fill", color: NeonTheme.cyan, name: "ENDLESS (JACK IN)",
-                  text: "Survive as long as your reflexes hold and chase the high score."),
+                  text: "Survive as long as your reflexes hold and chase the high score. Power-ups, grid expansion, clean streak multiplier."),
             Entry(icon: "flag.fill", color: NeonTheme.cyan, name: "CAMPAIGN",
                   text: "10 hand-tuned cores, each introducing one mechanic — the best place to learn."),
-            Entry(icon: "infinity", color: NeonTheme.cyan, name: "FLOW",
-                  text: "Calm, no-fail mode. No clock, no hazards — just tap and unwind."),
+            Entry(icon: "scope", color: NeonTheme.magenta, name: "PROTOCOL",
+                  text: "Objective-driven challenge. DAEMON SETs and DMZ PURGE objectives alternate — crack them or the grid fills. No power-ups. Real fail state."),
             Entry(icon: "calendar", color: NeonTheme.cyan, name: "DAILY HACK",
-                  text: "Endless rules on one shared seed per day — everyone races the same board."),
+                  text: "Endless rules on one shared seed per day — everyone races the same board. Power-ups active."),
         ]
     }
 
@@ -362,8 +373,9 @@ struct CodexView: View {
                         .fixedSize(horizontal: false, vertical: true)
 
                     section("// TARGETS", targets)
-                    section("// POWER-UPS", powerUps)
+                    section("// POWER-UPS  ·  Endless + Daily", powerUps)
                     section("// SYSTEMS", systems)
+                    section("// PROTOCOL OBJECTIVES", protocolObjectives)
                     cyberdeckSection
                     section("// MODES", modes)
                 }
