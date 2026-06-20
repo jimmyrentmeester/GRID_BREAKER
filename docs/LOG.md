@@ -3,6 +3,16 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #92 — Verify DAEMON SET tap resolution (deterministic) (2026-06-19)
+(On branch `feature/protocol-mode`. #90–91 are the parallel iPad/release track on main.)
+- Wrote `scripts/enginecheck/daemonset.swift` — a standalone harness that compiles the Core
+  engine/model files (pure value types, no SwiftUI) and asserts the DAEMON SET logic without a
+  simulator (the deterministic-core QA pattern). 15/15 checks pass:
+  spawn (2–4 nodes, orders 1…N, setSize); out-of-order tap → wrongOrder (node stays, no score,
+  RAM penalty); in-order taps advance then complete and clear the board; completion arms a ×4
+  next decode (one-shot, back to ×1 after); a completion that crosses the Fever threshold makes
+  Fever last ×4 (feverFraction 4.00). Confirms phase 2 is correct before building phase 3.
+
 ## Run #89 — PROTOCOL phase 2: DAEMON SET mechanic (2026-06-19)
 The first objective (issue #3): an ordered daemon chain you tap in sequence for a big reward.
 - **Engine** (`GridNode`, `GameConfig`, `GridEngine`): `GridNode.setOrder/setSize`; a seeded set
