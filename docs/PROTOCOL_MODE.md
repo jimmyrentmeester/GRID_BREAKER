@@ -36,10 +36,14 @@ A PROTOCOL run cycles: light daemon stream → DAEMON SET → daemon stream → 
 gap and objective difficulty ramp with score (like the other modes' difficulty bias).
 
 ## Build phases (each its own commit, verified)
-1. **Skeleton** — PROTOCOL exists, replaces Flow in the menu + routing, runs a challenging
-   non-chill ruleset (RAM clock + fail). New `GameConfig.protocolMode()`, `RootView` routing,
-   menu tile FLOW→PROTOCOL, Game Center mode handling. (Run #88)
-2. **DAEMON SET** — engine model + resolution + the ×4 reward; UI pips + completion juice.
+1. **Skeleton** ✅ (Run #88) — PROTOCOL exists, replaces Flow in the menu + routing, runs a
+   challenging non-chill ruleset (RAM clock + fail). `GameConfig.protocolMode()`, `RootView`
+   routing, menu tile FLOW→PROTOCOL, Game Center mode handling.
+2. **DAEMON SET** ✅ (Run #89) — engine model (`GridNode.setOrder/setSize`, seeded set spawner on a
+   gap timer, ordered tap resolution, ×4-next-decode + ×4-Fever-duration reward), UI (numbered
+   set sprite with order pips), completion/wrong-order juice + toast. Set nodes don't expire; no
+   new sets spawn mid-Fever. Verified in the simulator (sets spawn + render). Tap resolution +
+   ×4 reward still to confirm on device.
 3. **DMZ PURGE** — `intrusion` node, zone model, overrun timer, game-over-on-full; UI + juice.
 4. **Alternation + balance** — the objective scheduler, difficulty ramp, tuning.
 

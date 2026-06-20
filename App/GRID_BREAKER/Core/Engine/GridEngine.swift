@@ -43,6 +43,10 @@ enum GameEvent: Sendable, Equatable {
     case gridExpanded                       // grid grew 3×3 → 4×4 (endless escalation)
     case powerUpCollected(PowerUpKind)      // a power-up pickup was tapped
     case milestoneReached(Int)              // score crossed a landmark (endless)
+    case daemonSetSpawned(size: Int)        // an ordered DAEMON SET chain appeared (PROTOCOL)
+    case daemonSetAdvanced(cell: Int)       // correct next node in the set was decoded
+    case daemonSetCompleted(cell: Int)      // whole set cleared → ×N reward armed
+    case daemonSetWrongOrder(cell: Int)     // tapped a set node out of order (a miss)
     case gameOver(GameOverReason)
 }
 
@@ -115,6 +119,12 @@ struct GridEngine {
     private var rng: SeededRNG
     private var clock: TimeInterval = 0          // accumulated session seconds
     private var timeSinceLastSpawn: TimeInterval = 0
+    /// PROTOCOL: gap timer between DAEMON SET chains (runs only while no set is active).
+    private var timeSinceLastSet: TimeInterval = 0
+    /// PROTOCOL: ×N multiplier armed for the *next* decode after a set completes (1 = none).
+    private var nextDecodeBonus: Int = 1
+    /// PROTOCOL: if the next Fever is triggered by a set completion, it lasts ×daemonSetReward.
+    private var pendingFeverBonus = false
 
     private(set) var score: Int = 0
     private(set) var ramRemaining: TimeInterval
@@ -261,7 +271,7 @@ struct GridEngine {
         if !frozen { ramRemaining -= config.ramDrainPerSecond * drainMultiplier * deltaTime }
 
         // 2. Expire timed-out nodes. Daemons penalize + break combo; bombs vanish safely.
-        let expired = nodes.filter { clock >= $0.expiresAt }
+        let expired = nodes.filter { $0.setOrder == nil && clock >= $0.expiresAt }   // set nodes wait for the player
         for node in expired where node.type.penalizesOnExpiry {
             ramRemaining -= config.penaltyExpiredDaemon
             combo = 0
@@ -295,6 +305,23 @@ struct GridEngine {
         // freeing cells after a saturated stretch dumps a burst of simultaneous
         // spawns in one tick (audit C1).
         timeSinceLastSpawn = min(timeSinceLastSpawn, interval)
+
+        // 3.4 DAEMON SET objective (PROTOCOL): on a gap timer, drop an ordered chain when
+        // none is on the board. The timer only advances while no set is active and not
+        // frozen, so the gap is "time since the last set cleared".
+        if config.daemonSetEnabled && !frozen && !feverActive {   // no new sets mid-Fever
+            let setActive = nodes.contains { $0.setOrder != nil }
+            if setActive {
+                timeSinceLastSet = 0
+            } else {
+                timeSinceLastSet += deltaTime
+                if timeSinceLastSet >= config.daemonSetInterval {
+                    let spawned = spawnDaemonSet()
+                    events += spawned
+                    if !spawned.isEmpty { timeSinceLastSet = 0 }   // retry next tick if no room
+                }
+            }
+        }
 
         // 3.5 Worms scuttle to an adjacent free cell on their hop timer.
         for i in nodes.indices where nodes[i].type == .wormDaemon {
@@ -363,6 +390,9 @@ struct GridEngine {
             return events
         }
 
+        // DAEMON SET nodes (PROTOCOL) enforce tap order before normal resolution.
+        if nodes[idx].isSetMember { return handleSetTap(at: idx) }
+
         switch nodes[idx].type {
         case .firewallBomb:
             let cell = nodes[idx].cellIndex
@@ -390,6 +420,55 @@ struct GridEngine {
                 return [decode(at: idx)] + checkFever() + checkTarget() + checkGridEscalation() + checkMilestone()
             }
         }
+    }
+
+    /// Resolve a tap on a DAEMON SET node (PROTOCOL). Only the lowest remaining order is
+    /// the valid next target. Correct → decode + advance; completing the chain arms a ×N
+    /// bonus for the *next* decode (and a ×N-duration Fever if the completion triggers it).
+    /// Out of order → a miss (RAM penalty + combo break); the set is unchanged, not failed.
+    private mutating func handleSetTap(at idx: Int) -> [GameEvent] {
+        let order = nodes[idx].setOrder ?? 1
+        let required = nodes.compactMap(\.setOrder).min() ?? order
+        guard order == required else {
+            let cell = nodes[idx].cellIndex
+            combo = 0
+            cleanStreak = 0
+            ramRemaining -= config.penaltyMiss
+            var events: [GameEvent] = [.daemonSetWrongOrder(cell: cell)]
+            events += checkRAMWarning()
+            if ramRemaining <= 0 { ramRemaining = 0; events.append(endGame(.ramDepleted)) }
+            return events
+        }
+        // Correct next node → decode it (normal multiplier; the ×N reward is for AFTER the set).
+        let cell = nodes[idx].cellIndex
+        var events: [GameEvent] = [decode(at: idx)]
+        let setComplete = !nodes.contains { $0.setOrder != nil }
+        if setComplete {
+            nextDecodeBonus = config.daemonSetReward    // ×N on the next decode
+            pendingFeverBonus = true                    // ×N Fever if this completion triggers it
+            events.append(.daemonSetCompleted(cell: cell))
+        } else {
+            events.append(.daemonSetAdvanced(cell: cell))
+        }
+        return events + checkFever() + checkTarget() + checkGridEscalation() + checkMilestone()
+    }
+
+    /// Spawn an ordered DAEMON SET chain of N (config range) on random free cells, orders
+    /// 1…N. Returns no event (and spawns nothing) if the board lacks N free cells.
+    private mutating func spawnDaemonSet() -> [GameEvent] {
+        let n = Int.random(in: config.daemonSetMinSize...config.daemonSetMaxSize, using: &rng)
+        let occupied = Set(nodes.map(\.cellIndex))
+        var free = (0..<gridSize.cellCount).filter { !occupied.contains($0) }
+        guard free.count >= n else { return [] }   // not enough room now; retry next tick
+        free.shuffle(using: &rng)
+        let life = config.nodeLifespan(atScore: scaledScore)   // expiry is skipped for set nodes
+        for order in 1...n {
+            let cell = free.removeLast()
+            nodes.append(GridNode(cellIndex: cell, type: .standardDaemon,
+                                  lifespan: life, spawnedAt: clock,
+                                  setOrder: order, setSize: n))
+        }
+        return [.daemonSetSpawned(size: n)]
     }
 
     /// Endless: award score milestones (a small RAM top-up + a celebration event) as the
@@ -441,9 +520,15 @@ struct GridEngine {
     /// On trigger: hazards vanish (bombs removed safely), window resets, and the
     /// next threshold rises (D23) so fever stays a *moment*, not a steady state.
     private mutating func checkFever() -> [GameEvent] {
-        guard config.feverEnabled, !feverActive, combo >= feverThresholdEff else { return [] }
+        guard config.feverEnabled, !feverActive, combo >= feverThresholdEff else {
+            pendingFeverBonus = false   // a DAEMON SET completion only boosts the Fever it triggers
+            return []
+        }
         feverActive = true
-        feverRemaining = feverDurationEff
+        // A set completion that triggers this Fever makes it last ×daemonSetReward (issue #3).
+        let durationMult = pendingFeverBonus ? Double(config.daemonSetReward) : 1
+        pendingFeverBonus = false
+        feverRemaining = feverDurationEff * durationMult
         combo = 0
         feversTriggered += 1
         nodes.removeAll { $0.type == .firewallBomb }
@@ -460,7 +545,9 @@ struct GridEngine {
         combo += 1
         cleanStreak += 1
         bestCleanStreak = max(bestCleanStreak, cleanStreak)
-        let multiplier = effectiveMultiplier
+        // A completed DAEMON SET arms a one-shot ×N bonus for this next decode (issue #3).
+        let multiplier = effectiveMultiplier * nextDecodeBonus
+        if nextDecodeBonus > 1 { nextDecodeBonus = 1 }   // consumed
         let refill = refillFactor
         switch node.type {
         case .standardDaemon:

@@ -145,6 +145,17 @@ struct GameConfig: Sendable {
     var overclockDuration: TimeInterval = 4.0   // bonus-multiplier window
     var overclockMultiplier: Int = 2            // ×N during overclock (stacks w/ fever)
 
+    // MARK: DAEMON SET objective (PROTOCOL mode, issue #3)
+    /// Whether ordered DAEMON SET chains spawn (off everywhere except PROTOCOL).
+    var daemonSetEnabled: Bool = false
+    /// Seconds of gap between sets (timer only runs while no set is on the board).
+    var daemonSetInterval: TimeInterval = 5.5
+    var daemonSetMinSize: Int = 2
+    var daemonSetMaxSize: Int = 4
+    /// Completing a set grants ×N on the *next* decode; if the completion triggers
+    /// Fever, that Fever lasts ×N as long.
+    var daemonSetReward: Int = 4
+
     static let `default` = GameConfig()
 
     /// Config for a campaign core: a **time attack**. RAM is a true countdown of
@@ -267,6 +278,7 @@ struct GameConfig: Sendable {
         c.milestoneScores = []           // objectives replace endless score landmarks
         c.milestoneRAMBonus = 0
         c.gridEscalationScore = nil      // PROTOCOL stays 3×3 (DMZ zones need a stable grid)
+        c.daemonSetEnabled = true        // ordered-chain objective (issue #3)
         return c
     }
 

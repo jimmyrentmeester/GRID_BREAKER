@@ -3,6 +3,21 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #89 — PROTOCOL phase 2: DAEMON SET mechanic (2026-06-19)
+The first objective (issue #3): an ordered daemon chain you tap in sequence for a big reward.
+- **Engine** (`GridNode`, `GameConfig`, `GridEngine`): `GridNode.setOrder/setSize`; a seeded set
+  spawner on a gap timer (`daemonSetInterval`, size 2–4) that fires only when no set is active and
+  not mid-Fever; ordered tap resolution (`handleSetTap` — only the lowest remaining order is valid;
+  wrong order = a miss, set unchanged); completion arms a one-shot ×4 on the next decode and, if it
+  triggers Fever, a ×4 Fever duration. Set nodes don't expire (the RAM clock is the pressure). All
+  deterministic (seeded RNG). New `GameEvent`s: spawned/advanced/completed/wrongOrder.
+- **UI** (`GameView`): numbered set sprite with order pips (1→N filled), rendered before the
+  fever-gold path; completion hit-stop + gold pop + rigid haptic; wrong-order red flash + error
+  border; a "DAEMON SET ×N" / "SET CRACKED — ×4 NEXT" toast; VoiceOver label.
+- Verified in the simulator: sets spawn and render correctly (numbered 1/2/3 with pips). Tap
+  resolution + ×4 reward to confirm on device. Debug build passes. Branch `feature/protocol-mode`.
+- Next: DMZ PURGE (phase 3), then objective alternation + balance (phase 4). See docs/PROTOCOL_MODE.md.
+
 ## Run #88 — PROTOCOL mode skeleton (replaces Flow) (2026-06-19)
 Gamemode redesign phase 1 of 4 (see docs/PROTOCOL_MODE.md). Maintainer chose: replace Flow with a
 new objective-driven mode (alternating DAEMON SET + DMZ PURGE objectives). This run lays the skeleton.

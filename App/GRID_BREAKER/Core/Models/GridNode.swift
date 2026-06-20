@@ -23,13 +23,21 @@ struct GridNode: Identifiable, Codable, Sendable, Equatable {
     /// For a `.powerUp`: which effect it grants when tapped.
     let powerKind: PowerUpKind?
 
+    /// DAEMON SET (PROTOCOL): 1-based position in an ordered chain that must be tapped
+    /// in sequence (nil = not part of a set). `setSize` is the chain length, for the
+    /// order pips the renderer draws. Set nodes don't expire — they wait for the player.
+    let setOrder: Int?
+    let setSize: Int?
+
     init(id: UUID = UUID(),
          cellIndex: Int,
          type: NodeType,
          lifespan: TimeInterval,
          spawnedAt: TimeInterval,
          nextHopAt: TimeInterval? = nil,
-         powerKind: PowerUpKind? = nil) {
+         powerKind: PowerUpKind? = nil,
+         setOrder: Int? = nil,
+         setSize: Int? = nil) {
         self.id = id
         self.cellIndex = cellIndex
         self.type = type
@@ -38,7 +46,12 @@ struct GridNode: Identifiable, Codable, Sendable, Equatable {
         self.spawnedAt = spawnedAt
         self.nextHopAt = nextHopAt
         self.powerKind = powerKind
+        self.setOrder = setOrder
+        self.setSize = setSize
     }
+
+    /// True if this node is part of an ordered DAEMON SET chain.
+    var isSetMember: Bool { setOrder != nil }
 
     /// True once an armored daemon's shell has been breached (1 hit taken).
     var isBreached: Bool { type == .armoredDaemon && hitsRemaining == 1 }

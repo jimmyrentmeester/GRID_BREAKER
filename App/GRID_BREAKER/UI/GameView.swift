@@ -29,6 +29,9 @@ final class GameViewModel {
     /// The just-reached score milestone + a bump counter (drives a landmark toast).
     private(set) var milestoneValue = 0
     private(set) var milestoneSeq = 0
+    /// DAEMON SET toast (PROTOCOL): a short message + bump counter (spawn / cracked).
+    private(set) var daemonSetMsg = ""
+    private(set) var daemonSetSeq = 0
     /// Set by the view from the environment; gates motion-heavy juice.
     var reduceMotion = false
     /// Paused → the sim (and its RAM clock) is frozen until unpaused.
@@ -218,6 +221,25 @@ final class GameViewModel {
                 milestoneValue = value
                 milestoneSeq += 1                        // drives the landmark toast
                 haptics.success(); audio.play(.fever)
+            case let .daemonSetSpawned(size):
+                daemonSetMsg = "DAEMON SET ×\(size) — tap in order"
+                daemonSetSeq += 1
+                haptics.impact(.soft); audio.play(.breach)   // "new objective" cue
+            case .daemonSetAdvanced:
+                break                                    // the decode pop already covers it
+            case let .daemonSetCompleted(cell):
+                daemonSetMsg = "SET CRACKED — ×\(config.daemonSetReward) NEXT"
+                daemonSetSeq += 1
+                pendingEffects.append(.init(cell: cell, style: .pop, color: NeonTheme.gold, points: nil, intensity: 1))
+                queued = true
+                if !reduceMotion { freezeRemaining = 0.08 }   // hit-stop on the payoff
+                haptics.impact(.rigid, intensity: 1.0); audio.play(.decodeBig)
+            case let .daemonSetWrongOrder(cell):
+                decodeRun = 0                            // chain broken → arpeggio resets
+                pendingEffects.append(.init(cell: cell, style: .miss, color: NeonTheme.danger, points: nil))
+                queued = true
+                errorFlashSeq += 1
+                haptics.impact(.rigid); audio.play(.miss)
             case .gameOver:
                 audio.play(.gameOver)
             }
@@ -243,6 +265,7 @@ struct GameView: View {
     @State private var purgeTrigger = 0
     @State private var showGridExpanded = false
     @State private var showMilestone = false
+    @State private var showDaemonSet = false
     @State private var showCodex = false            // rules reference, opened from pause
     @State private var streakPulse = false
     @State private var countdownValue: Int? = nil   // 3·2·1·0(GO); nil = not counting
@@ -517,6 +540,22 @@ struct GameView: View {
                     .accessibilityHidden(true)
             }
 
+            // DAEMON SET objective toast (PROTOCOL): "set spawned" / "cracked ×4".
+            if showDaemonSet && !model.snapshot.isGameOver {
+                Text(model.daemonSetMsg)
+                    .font(.system(size: 15, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.cyan)
+                    .neonGlow(NeonTheme.cyan, radius: 8)
+                    .padding(.horizontal, 16).padding(.vertical, 8)
+                    .background(Capsule().fill(NeonTheme.background.opacity(0.85))
+                        .overlay(Capsule().stroke(NeonTheme.cyan.opacity(0.6), lineWidth: 1)))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .offset(y: -130)
+                    .allowsHitTesting(false)
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+                    .accessibilityHidden(true)
+            }
+
             // Pause button (bottom-leading, out of the way of the grid).
             if !model.snapshot.isGameOver && !model.isPaused {
                 Button { model.pause() } label: {
@@ -634,6 +673,16 @@ struct GameView: View {
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
                 if model.milestoneSeq == seq {
                     withAnimation(.easeOut(duration: 0.3)) { showMilestone = false }
+                }
+            }
+        }
+        .onChange(of: model.daemonSetSeq) { _, _ in
+            withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.6)) { showDaemonSet = true }
+            let seq = model.daemonSetSeq
+            Task {
+                try? await Task.sleep(nanoseconds: 1_400_000_000)
+                if model.daemonSetSeq == seq {
+                    withAnimation(.easeOut(duration: 0.3)) { showDaemonSet = false }
                 }
             }
         }
@@ -1102,6 +1151,7 @@ private struct CellView: View {
     /// the live game is a visual reflex challenge, but the board stays perceivable).
     private static func label(for node: GridNode?, feverActive: Bool) -> String {
         guard let node else { return "Empty cell" }
+        if let order = node.setOrder, let n = node.setSize { return "Daemon set, tap position \(order) of \(n)" }
         if feverActive && node.type != .firewallBomb { return "Bonus node" }
         switch node.type {
         case .standardDaemon: return "Daemon"
@@ -1121,7 +1171,12 @@ private struct NodeSprite: View {
     let feverActive: Bool
 
     var body: some View {
-        if feverActive && node.type != .firewallBomb {
+        if let order = node.setOrder, let n = node.setSize {
+            // DAEMON SET node: ordered chain — show its position (number + filled pips)
+            // so the player knows the tap order. Rendered before the fever-gold path so
+            // an objective never hides behind the bonus look.
+            setSprite(order: order, of: n)
+        } else if feverActive && node.type != .firewallBomb {
             // Golden bonus node during Fever Mode.
             sprite(color: NeonTheme.gold, symbol: "bolt.fill", ringed: true)
         } else {
@@ -1167,6 +1222,32 @@ private struct NodeSprite: View {
                 .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(color)
                 .neonGlow(color, radius: 4)
+        }
+    }
+
+    /// A DAEMON SET node: its order number over a row of pips (first `order` of `n`
+    /// filled) so the tap sequence reads at a glance. Colors resolve through the palette.
+    private func setSprite(order: Int, of n: Int) -> some View {
+        let color = NeonTheme.cyan
+        return ZStack {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(color.opacity(0.18))
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(color, lineWidth: 2.5)
+                .neonGlow(color, radius: 8)
+            VStack(spacing: 3) {
+                Text("\(order)")
+                    .font(.system(size: 19, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(color)
+                    .neonGlow(color, radius: 4)
+                HStack(spacing: 3) {
+                    ForEach(0..<n, id: \.self) { i in
+                        Circle()
+                            .fill(i < order ? color : color.opacity(0.25))
+                            .frame(width: 4.5, height: 4.5)
+                    }
+                }
+            }
         }
     }
 }
