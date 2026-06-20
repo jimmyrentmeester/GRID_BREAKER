@@ -118,6 +118,16 @@ auth, endless + daily leaderboards (replaces the out-of-scope web backend),
 **Pending (Q8):** Xcode build, App Store Connect Game Center config (IDs in the
 service file), on-device pass (auth sheet, access-point placement, banners).
 
+## 🔶 Backlog — iPad layout doesn't use the screen (blocks v1.1-with-iPad)
+The universal build works on iPad, but the `playColumn` approach just **centers a
+phone-width column (360–480pt)** on the big screen, leaving lots of black space — the
+chrome screens and the play field both read as "empty" on a 13" iPad. The App Store
+screenshots (`docs/screenshots/ipad-13/`) show this. **Must be fixed before submitting a
+v1.1 with iPad enabled** (ASC requires iPad screenshots for a universal build, and these
+aren't good enough). Options to explore: scale content up on the regular size-class, a
+richer/2-column iPad layout, or a larger play field — not just a centered phone column. No
+live impact until a universal build + iPad screenshots are actually submitted (v1.0 stays live).
+
 ## Monetization (planned — see docs/MONETIZATION.md)
 Free, **no ads**, no pay-to-win ever. Phase 0: ship free. Phase 1: in-fiction tip
 jar (consumable IAPs; Small Business Program first). Phase 2: cosmetic theme packs
