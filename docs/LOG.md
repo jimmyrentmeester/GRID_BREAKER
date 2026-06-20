@@ -3,6 +3,34 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #93 — PROTOCOL phase 3: DMZ PURGE mechanic (2026-06-20)
+The second objective (issue #4): a hostile zone you race to scrub before the overrun fills the grid.
+- **Engine** (`NodeType`, `GridNode`, `GameConfig`, `GridEngine`): new `NodeType.intrusion` (one-tap,
+  persistent — `GridNode.isPersistent` now also covers it, so the expiry sweep skips it). A zone model
+  `dmzZone` (a contiguous free block — `candidateZones` enumerates 1×N / N×1 / 2×2 — spawned full of
+  intrusion via `spawnDMZ`). An **overrun** creep in `tick` (`dmzOverrunInterval`: fills a random cell
+  *outside* the zone; if none is free → `endGame(.dmzOverrun)`). `clearIntrusion` resolves taps: flat
+  `scoreIntrusion` + small `dmzClearRefill`, deliberately **outside** the combo/fever system (DMZ is
+  defense); clearing the last in-zone cell purges → sweeps the overrun + `dmzPurgeBonus` RAM relief.
+  The normal daemon stream pauses while a DMZ is active. A minimal **objective scheduler**
+  (`objectiveCursor` over enabled objectives, shared `objectiveInterval`) now alternates DAEMON SET ↔
+  DMZ — replacing the set-only `daemonSetInterval`/`timeSinceLastSet`. New `GameEvent`s:
+  `dmzSpawned`/`intrusionCleared`/`dmzOverrunSpawned`/`dmzPurged`; new `GameOverReason.dmzOverrun`;
+  snapshot exposes `dmzZone`.
+- **UI** (`GameView`): hostile red `hexagon.fill` intrusion sprite (distinct from the never-tap
+  firewall — and bombs never share a DMZ board); a dashed red containment outline per zone cell
+  (`CellView.isZone`, kept after a cell is cleared → shows purge progress); juice — red pop-in on
+  spawn, light tick on clear, soft pulse on each overrun creep, success sting + hit-stop on purge,
+  a "DMZ PURGE" / "DMZ PURGED" toast; `DMZ OVERRUN` game-over headline; VoiceOver label.
+- **Verified:** 18/18 deterministic checks (`scripts/enginecheck/dmz.swift`: spawn structure, overrun
+  lands outside the zone, defensive clear keeps the DMZ, full purge sweeps + relief, unchecked overrun
+  → `.dmzOverrun`, and set↔DMZ alternation). 15/15 DAEMON SET checks still pass after the scheduler
+  refactor. Added `scripts/enginecheck/run.sh` (checks need a `main.swift` filename to compile).
+  `xcodebuild` Debug BUILD SUCCEEDED (iPhone 16 sim). Branch `feature/protocol-mode`.
+- On-device feel pass (tap response, zone outline, overrun pulse, purge sting) still to confirm.
+- Next: phase 4 — difficulty ramp + balance tuning (objective gap/size/overrun-pace scaling with
+  score), then merge PROTOCOL to main. See docs/PROTOCOL_MODE.md.
+
 ## Run #92 — Verify DAEMON SET tap resolution (deterministic) (2026-06-19)
 (On branch `feature/protocol-mode`. #90–91 are the parallel iPad/release track on main.)
 - Wrote `scripts/enginecheck/daemonset.swift` — a standalone harness that compiles the Core

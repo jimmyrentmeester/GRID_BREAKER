@@ -1,6 +1,6 @@
 # PROTOCOL — new game mode (replaces Flow)
 
-Status: **IN PROGRESS** (Run #88+). Maintainer-chosen design (post-launch): Flow (chill,
+Status: **IN PROGRESS** (Run #88+, both mechanics built — phase 4 balance left). Maintainer-chosen design (post-launch): Flow (chill,
 no-fail) is replaced by an *objective-driven* mode that gives the two community-requested
 mechanics a home. Community issues: DAEMON SET (#3), DMZ PURGE (#4).
 
@@ -44,8 +44,18 @@ gap and objective difficulty ramp with score (like the other modes' difficulty b
    set sprite with order pips), completion/wrong-order juice + toast. Set nodes don't expire; no
    new sets spawn mid-Fever. Verified in the simulator (sets spawn + render). Tap resolution +
    ×4 reward still to confirm on device.
-3. **DMZ PURGE** — `intrusion` node, zone model, overrun timer, game-over-on-full; UI + juice.
-4. **Alternation + balance** — the objective scheduler, difficulty ramp, tuning.
+3. **DMZ PURGE** ✅ (Run #93) — engine: `NodeType.intrusion` (persistent, one-tap), a zone model
+   (`dmzZone` = a contiguous block of free cells spawned full of intrusion), an overrun creep timer
+   (`dmzOverrunInterval` — fills a random cell *outside* the zone; no room left → game over
+   `.dmzOverrun`), defensive clears (`clearIntrusion`, flat score + small RAM, kept out of the
+   combo/fever system), and a full purge that sweeps the overrun + grants RAM relief. The normal
+   daemon stream pauses while a DMZ is active. A minimal objective **scheduler** (`objectiveCursor`
+   over the enabled objectives) now alternates DAEMON SET ↔ DMZ. UI: hostile red intrusion sprite,
+   dashed red zone outline (stays after a cell is cleared → shows purge progress), spawn/clear/
+   overrun/purge juice (toast + haptics + audio), `DMZ OVERRUN` game-over headline. Verified:
+   18/18 deterministic checks (`scripts/enginecheck/dmz.swift`) + Debug build succeeds.
+4. **Alternation + balance** — the scheduler exists (phase 3); this phase is the **difficulty ramp
+   + tuning**: objective gap/size/overrun-pace scaling with score, and a play-feel balance pass.
 
 ## Notes / decisions
 - Flow's `chill` implementation is left in place but unreachable from the menu (removing its

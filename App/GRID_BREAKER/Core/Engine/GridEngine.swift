@@ -25,6 +25,7 @@ enum GameOverReason: String, Sendable {
     case ramDepleted   // the RAM time buffer ran out
     case firewallHit   // the player tapped an active firewall bomb
     case coreCracked   // campaign: reached the target score (a WIN)
+    case dmzOverrun    // PROTOCOL: a DMZ PURGE creep filled the grid before the purge
 }
 
 /// Things that happened during a tick/tap. The shell turns these into juice
@@ -47,6 +48,10 @@ enum GameEvent: Sendable, Equatable {
     case daemonSetAdvanced(cell: Int)       // correct next node in the set was decoded
     case daemonSetCompleted(cell: Int)      // whole set cleared → ×N reward armed
     case daemonSetWrongOrder(cell: Int)     // tapped a set node out of order (a miss)
+    case dmzSpawned(cells: [Int])           // a DMZ PURGE zone appeared, full of intrusion
+    case intrusionCleared(cell: Int)        // an intrusion node was tapped away
+    case dmzOverrunSpawned(cell: Int)       // the creep added an intrusion outside the zone
+    case dmzPurged                          // the whole zone was cleared → DMZ dismissed
     case gameOver(GameOverReason)
 }
 
@@ -77,6 +82,7 @@ struct SessionSnapshot: Sendable {
     var bestCleanStreak: Int           // longest clean chain this run (run recap)
     var feversTriggered: Int           // fevers this run (run recap)
     var nextMilestone: Int?            // next score landmark (nil = none/disabled)
+    var dmzZone: Set<Int>              // PROTOCOL: cells outlined as the active DMZ (empty = none)
 
     /// Campaign win.
     var didWin: Bool { gameOverReason == .coreCracked }
@@ -119,12 +125,18 @@ struct GridEngine {
     private var rng: SeededRNG
     private var clock: TimeInterval = 0          // accumulated session seconds
     private var timeSinceLastSpawn: TimeInterval = 0
-    /// PROTOCOL: gap timer between DAEMON SET chains (runs only while no set is active).
-    private var timeSinceLastSet: TimeInterval = 0
+    /// PROTOCOL: gap timer between objectives (runs only while no objective is active).
+    private var timeSinceLastObjective: TimeInterval = 0
+    /// PROTOCOL: rotates through the enabled objectives so they alternate (set ↔ DMZ).
+    private var objectiveCursor: Int = 0
     /// PROTOCOL: ×N multiplier armed for the *next* decode after a set completes (1 = none).
     private var nextDecodeBonus: Int = 1
     /// PROTOCOL: if the next Fever is triggered by a set completion, it lasts ×daemonSetReward.
     private var pendingFeverBonus = false
+    /// PROTOCOL (DMZ PURGE): the cells of the active zone (empty = no DMZ active).
+    private var dmzZone: Set<Int> = []
+    /// PROTOCOL (DMZ PURGE): overrun creep timer (runs only while a DMZ is active).
+    private var timeSinceLastOverrun: TimeInterval = 0
 
     private(set) var score: Int = 0
     private(set) var ramRemaining: TimeInterval
@@ -198,8 +210,22 @@ struct GridEngine {
             bestCleanStreak: bestCleanStreak,
             feversTriggered: feversTriggered,
             nextMilestone: nextMilestoneIndex < config.milestoneScores.count
-                ? config.milestoneScores[nextMilestoneIndex] : nil
+                ? config.milestoneScores[nextMilestoneIndex] : nil,
+            dmzZone: dmzZone
         )
+    }
+
+    /// PROTOCOL: the objectives enabled for this run, in alternation order.
+    private enum Objective { case daemonSet, dmz }
+    private var enabledObjectives: [Objective] {
+        var out: [Objective] = []
+        if config.daemonSetEnabled { out.append(.daemonSet) }
+        if config.dmzEnabled { out.append(.dmz) }
+        return out
+    }
+    /// PROTOCOL: true while any objective occupies the board (a set chain or a DMZ).
+    private var objectiveActive: Bool {
+        dmzZone.isEmpty == false || nodes.contains { $0.isSetMember }
     }
 
     /// Base multiplier from the clean-decode streak (×1, then +1 per tier crossed).
@@ -271,7 +297,7 @@ struct GridEngine {
         if !frozen { ramRemaining -= config.ramDrainPerSecond * drainMultiplier * deltaTime }
 
         // 2. Expire timed-out nodes. Daemons penalize + break combo; bombs vanish safely.
-        let expired = nodes.filter { $0.setOrder == nil && clock >= $0.expiresAt }   // set nodes wait for the player
+        let expired = nodes.filter { !$0.isPersistent && clock >= $0.expiresAt }   // set + intrusion nodes wait for the player
         for node in expired where node.type.penalizesOnExpiry {
             ramRemaining -= config.penaltyExpiredDaemon
             combo = 0
@@ -289,6 +315,8 @@ struct GridEngine {
         // is already faster (and the board fuller) than the fixed fever constants,
         // so taking the plain fever values made Fever read as a slowdown (issue #1).
         // Take the faster interval and the fuller node ceiling of the two.
+        // The normal daemon stream pauses while a DMZ PURGE is active — the board
+        // belongs entirely to the zone + its overrun creep then (§3.6).
         timeSinceLastSpawn += deltaTime
         let scaledInterval = config.spawnInterval(atScore: scaledScore)
         let scaledTarget = config.targetActiveNodes(atScore: scaledScore, gridSize: gridSize)
@@ -296,29 +324,55 @@ struct GridEngine {
         let target = feverActive
             ? min(gridSize.cellCount, max(config.feverActiveNodes(for: gridSize), scaledTarget))
             : scaledTarget
-        while timeSinceLastSpawn >= interval, nodes.count < target,
-              let node = spawnNode() {
-            nodes.append(node)
-            timeSinceLastSpawn -= interval
+        if dmzZone.isEmpty {
+            while timeSinceLastSpawn >= interval, nodes.count < target,
+                  let node = spawnNode() {
+                nodes.append(node)
+                timeSinceLastSpawn -= interval
+            }
         }
         // Don't bank spawn debt while the board is at its ceiling — otherwise
         // freeing cells after a saturated stretch dumps a burst of simultaneous
         // spawns in one tick (audit C1).
         timeSinceLastSpawn = min(timeSinceLastSpawn, interval)
 
-        // 3.4 DAEMON SET objective (PROTOCOL): on a gap timer, drop an ordered chain when
-        // none is on the board. The timer only advances while no set is active and not
-        // frozen, so the gap is "time since the last set cleared".
-        if config.daemonSetEnabled && !frozen && !feverActive {   // no new sets mid-Fever
-            let setActive = nodes.contains { $0.setOrder != nil }
-            if setActive {
-                timeSinceLastSet = 0
+        // 3.4 PROTOCOL objective scheduler: on a gap timer, drop the next objective when
+        // none is on the board. Enabled objectives alternate (DAEMON SET ↔ DMZ PURGE).
+        // The timer only advances while no objective is active and not frozen, so the gap
+        // is "time since the last objective cleared". No new objective starts mid-Fever.
+        if !enabledObjectives.isEmpty && !frozen && !feverActive {
+            if objectiveActive {
+                timeSinceLastObjective = 0
             } else {
-                timeSinceLastSet += deltaTime
-                if timeSinceLastSet >= config.daemonSetInterval {
-                    let spawned = spawnDaemonSet()
-                    events += spawned
-                    if !spawned.isEmpty { timeSinceLastSet = 0 }   // retry next tick if no room
+                timeSinceLastObjective += deltaTime
+                if timeSinceLastObjective >= config.objectiveInterval {
+                    let next = enabledObjectives[objectiveCursor % enabledObjectives.count]
+                    let spawned = (next == .daemonSet) ? spawnDaemonSet() : spawnDMZ()
+                    if !spawned.isEmpty {                 // retry next tick if no room
+                        events += spawned
+                        timeSinceLastObjective = 0
+                        objectiveCursor += 1
+                    }
+                }
+            }
+        }
+
+        // 3.6 DMZ PURGE overrun (PROTOCOL): while a zone is active, an intrusion node
+        // creeps into a random free cell *outside* the zone on a cadence. If there's no
+        // room left outside the zone when it fires, the system is overrun → game over.
+        if !dmzZone.isEmpty && !frozen {
+            timeSinceLastOverrun += deltaTime
+            if timeSinceLastOverrun >= config.dmzOverrunInterval {
+                timeSinceLastOverrun = 0
+                let occupied = Set(nodes.map(\.cellIndex))
+                let freeOutside = (0..<gridSize.cellCount)
+                    .filter { !dmzZone.contains($0) && !occupied.contains($0) }
+                if let cell = freeOutside.randomElement(using: &rng) {
+                    nodes.append(GridNode(cellIndex: cell, type: .intrusion,
+                                          lifespan: .infinity, spawnedAt: clock))
+                    events.append(.dmzOverrunSpawned(cell: cell))
+                } else {
+                    events.append(endGame(.dmzOverrun))
                 }
             }
         }
@@ -394,6 +448,10 @@ struct GridEngine {
         if nodes[idx].isSetMember { return handleSetTap(at: idx) }
 
         switch nodes[idx].type {
+        case .intrusion:
+            // DMZ PURGE node (PROTOCOL): a defensive clear, outside the combo/fever system.
+            return clearIntrusion(at: idx)
+
         case .firewallBomb:
             let cell = nodes[idx].cellIndex
             nodes.remove(at: idx)
@@ -469,6 +527,77 @@ struct GridEngine {
                                   setOrder: order, setSize: n))
         }
         return [.daemonSetSpawned(size: n)]
+    }
+
+    /// Spawn a DMZ PURGE zone (PROTOCOL, issue #4): a contiguous block of free cells,
+    /// filled with `intrusion` nodes. The player must clear every cell in the zone before
+    /// the overrun creep (§3.6 in tick) fills the rest of the grid. Returns no event (and
+    /// spawns nothing) if no contiguous free block of the rolled size exists right now.
+    private mutating func spawnDMZ() -> [GameEvent] {
+        let size = Int.random(in: config.dmzMinSize...config.dmzMaxSize, using: &rng)
+        let occupied = Set(nodes.map(\.cellIndex))
+        let candidates = candidateZones(size: size).filter { zone in
+            zone.allSatisfy { !occupied.contains($0) }
+        }
+        guard let zone = candidates.randomElement(using: &rng) else { return [] }
+        dmzZone = Set(zone)
+        timeSinceLastOverrun = 0
+        for cell in zone {
+            nodes.append(GridNode(cellIndex: cell, type: .intrusion,
+                                  lifespan: .infinity, spawnedAt: clock))
+        }
+        return [.dmzSpawned(cells: zone)]
+    }
+
+    /// Resolve a tap on a DMZ PURGE `intrusion` node (PROTOCOL): clear it for a flat score +
+    /// a little RAM (kept out of the combo/fever system — DMZ is defense, not a combo). When
+    /// the last *in-zone* intrusion is cleared the zone is purged: the overrun is swept, the
+    /// zone dismissed, and a RAM relief granted → back to the daemon stream.
+    private mutating func clearIntrusion(at idx: Int) -> [GameEvent] {
+        let cell = nodes[idx].cellIndex
+        let inZone = dmzZone.contains(cell)
+        score += config.scoreIntrusion
+        ramRemaining = min(ramCapacity, ramRemaining + config.dmzClearRefill)
+        nodes.remove(at: idx)
+        var events: [GameEvent] = [.intrusionCleared(cell: cell)]
+        if inZone {
+            let zoneStillHeld = nodes.contains { $0.type == .intrusion && dmzZone.contains($0.cellIndex) }
+            if !zoneStillHeld {
+                nodes.removeAll { $0.type == .intrusion }   // sweep the overrun creep
+                dmzZone = []
+                ramRemaining = min(ramCapacity, ramRemaining + config.dmzPurgeBonus)
+                events.append(.dmzPurged)
+            }
+        }
+        return events
+    }
+
+    /// All axis-aligned rectangular cell blocks of `size` on the current grid (the shapes a
+    /// DMZ zone can take): size 2 → 1×2 / 2×1, size 3 → 1×3 / 3×1, size 4 → 2×2 (plus 1×4 /
+    /// 4×1 once the grid is wide enough). Deterministic enumeration; the caller filters to
+    /// fully-free blocks and picks one with the seeded RNG.
+    private func candidateZones(size: Int) -> [[Int]] {
+        let cols = gridSize.columns, rows = gridSize.rows
+        func cell(_ r: Int, _ c: Int) -> Int { r * cols + c }
+        var out: [[Int]] = []
+        // Horizontal 1×size and vertical size×1 runs.
+        if size <= cols {
+            for r in 0..<rows { for c in 0...(cols - size) {
+                out.append((0..<size).map { cell(r, c + $0) })
+            } }
+        }
+        if size <= rows {
+            for c in 0..<cols { for r in 0...(rows - size) {
+                out.append((0..<size).map { cell(r + $0, c) })
+            } }
+        }
+        // Square 2×2 (size 4).
+        if size == 4 {
+            for r in 0...(rows - 2) { for c in 0...(cols - 2) {
+                out.append([cell(r, c), cell(r, c + 1), cell(r + 1, c), cell(r + 1, c + 1)])
+            } }
+        }
+        return out
     }
 
     /// Endless: award score milestones (a small RAM top-up + a celebration event) as the
@@ -562,8 +691,8 @@ struct GridEngine {
         case .wormDaemon:
             score += config.scoreWorm * multiplier
             ramRemaining = min(ramCapacity, ramRemaining + config.bonusStandardDecode * refill + decodeTimeBonus)
-        case .firewallBomb, .powerUp:
-            break // never decoded (power-ups go through applyPowerUp)
+        case .firewallBomb, .powerUp, .intrusion:
+            break // never decoded (power-ups → applyPowerUp, intrusion → clearIntrusion)
         }
         nodes.remove(at: idx)
         return .nodeDecoded(node.type, cell: node.cellIndex)
@@ -636,6 +765,7 @@ struct GridEngine {
         // returns early once the game is over and never clears it).
         feverActive = false
         feverRemaining = 0
+        dmzZone = []           // drop the zone outline so it doesn't stick on game-over
         return .gameOver(reason)
     }
 }

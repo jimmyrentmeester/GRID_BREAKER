@@ -240,6 +240,31 @@ final class GameViewModel {
                 queued = true
                 errorFlashSeq += 1
                 haptics.impact(.rigid); audio.play(.miss)
+            case let .dmzSpawned(cells):
+                // A hostile incursion: announce the objective + a red pop-in on each zone cell.
+                daemonSetMsg = "DMZ PURGE — clear the zone"
+                daemonSetSeq += 1
+                for cell in cells {
+                    pendingEffects.append(.init(cell: cell, style: .breach, color: NeonTheme.danger, points: nil))
+                }
+                queued = true
+                haptics.impact(.medium); audio.play(.breach)   // "new threat" cue
+            case let .intrusionCleared(cell):
+                // A defensive clear (outside the combo/fever system): a small red pop + light tick.
+                pendingEffects.append(.init(cell: cell, style: .pop, color: NeonTheme.danger, points: nil, intensity: 0.4))
+                queued = true
+                haptics.impact(.light); audio.play(.decode)
+            case let .dmzOverrunSpawned(cell):
+                // The creep grows — a subtle threat pulse (soft, so the 1.6s cadence never spams).
+                pendingEffects.append(.init(cell: cell, style: .breach, color: NeonTheme.danger, points: nil))
+                queued = true
+                haptics.impact(.soft); audio.play(.breach)
+            case .dmzPurged:
+                // The payoff: relief. Bright sting + a hit-stop on the moment.
+                daemonSetMsg = "DMZ PURGED"
+                daemonSetSeq += 1
+                if !reduceMotion { freezeRemaining = 0.08 }
+                haptics.success(); audio.play(.fever)
             case .gameOver:
                 audio.play(.gameOver)
             }
@@ -1096,7 +1121,8 @@ private struct GridBoard: View {
                             ForEach(0..<cols, id: \.self) { col in
                                 let index = row * cols + col
                                 CellView(node: nodesByCell[index], size: cell,
-                                         feverActive: snapshot.feverActive)
+                                         feverActive: snapshot.feverActive,
+                                         isZone: snapshot.dmzZone.contains(index))
                                     // Whole cell is tappable → hitbox is generously
                                     // larger than the sprite (brief §10.7 tolerance).
                                     .contentShape(Rectangle())
@@ -1124,6 +1150,9 @@ private struct CellView: View {
     let node: GridNode?
     let size: CGFloat
     let feverActive: Bool
+    /// True when this cell is part of an active DMZ PURGE zone — draw a hostile outline
+    /// (kept even after the cell is cleared, so the zone shows purge progress).
+    var isZone: Bool = false
 
     var body: some View {
         ZStack {
@@ -1134,6 +1163,14 @@ private struct CellView: View {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(Color.white.opacity(0.02))
                 )
+            // DMZ zone marker: a glowing red containment outline + faint wash.
+            if isZone {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(NeonTheme.danger.opacity(0.10))
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(NeonTheme.danger.opacity(0.85), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                    .neonGlow(NeonTheme.danger, radius: 6)
+            }
             if let node {
                 NodeSprite(node: node, feverActive: feverActive)
                     .padding(size * 0.16)   // sprite smaller than the tap cell
@@ -1160,6 +1197,7 @@ private struct CellView: View {
         case .dataCache:      return "Data cache, bonus"
         case .wormDaemon:     return "Worm daemon"
         case .powerUp:        return "Power-up pickup"
+        case .intrusion:      return "Intrusion — tap to clear"
         }
     }
 }
@@ -1198,6 +1236,10 @@ private struct NodeSprite: View {
             case .powerUp:
                 // White "special pickup" — kind shown by its glyph.
                 sprite(color: NeonTheme.textPrimary, symbol: Self.powerSymbol(node.powerKind), ringed: true)
+            case .intrusion:
+                // A hostile DMZ infestation — a solid red hex to scrub away. Distinct from the
+                // firewall's warning triangle (and bombs never share the board with a DMZ).
+                sprite(color: NeonTheme.danger, symbol: "hexagon.fill", ringed: true)
             }
         }
     }
@@ -1504,6 +1546,7 @@ private struct GameOverOverlay: View {
         switch snapshot.gameOverReason {
         case .firewallHit: return "FIREWALL TRIGGERED"
         case .ramDepleted: return "RAM DEPLETED"
+        case .dmzOverrun:  return "DMZ OVERRUN"
         default:           return "CONNECTION LOST"
         }
     }

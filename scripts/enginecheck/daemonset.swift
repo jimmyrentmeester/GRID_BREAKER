@@ -4,15 +4,8 @@ import Foundation
 // Compiled together with the Core engine/model files (pure value types, no SwiftUI) —
 // the deterministic-core QA pattern from VERIFICATION_NOTES (no simulator needed).
 //
-// Run from the repo root:
-//   swiftc -O \
-//     App/GRID_BREAKER/Core/Engine/GridEngine.swift \
-//     App/GRID_BREAKER/Core/Models/GameConfig.swift \
-//     App/GRID_BREAKER/Core/Models/GridNode.swift \
-//     App/GRID_BREAKER/Core/Models/NodeType.swift \
-//     App/GRID_BREAKER/Core/Models/Cyberdeck.swift \
-//     App/GRID_BREAKER/Core/Models/Campaign.swift \
-//     scripts/enginecheck/daemonset.swift -o /tmp/dstest && /tmp/dstest
+// Run from the repo root:  scripts/enginecheck/run.sh daemonset
+// (top-level code compiles only as main.swift, so the runner copies it into one)
 
 var failures = 0
 func check(_ cond: Bool, _ msg: String) {
@@ -35,7 +28,8 @@ func spawnSet(_ engine: inout GridEngine) -> [GridNode] {
 // MARK: 1 — spawn + structure
 do {
     var c = GameConfig.protocolMode()
-    c.daemonSetInterval = 0.1
+    c.objectiveInterval = 0.1
+    c.dmzEnabled = false        // isolate DAEMON SET (protocolMode also enables DMZ)
     c.firewallSpawnChance = 0
     var engine = GridEngine(config: c, deck: .starter, seed: 42)
     let set = spawnSet(&engine)
@@ -48,7 +42,8 @@ do {
 // MARK: 2 — out-of-order tap is a miss, set unchanged
 do {
     var c = GameConfig.protocolMode()
-    c.daemonSetInterval = 0.1
+    c.objectiveInterval = 0.1
+    c.dmzEnabled = false        // isolate DAEMON SET (protocolMode also enables DMZ)
     c.firewallSpawnChance = 0
     var engine = GridEngine(config: c, deck: .starter, seed: 7)
     let set = spawnSet(&engine)
@@ -67,7 +62,8 @@ do {
 // MARK: 3 — in-order taps advance then complete; board clears
 do {
     var c = GameConfig.protocolMode()
-    c.daemonSetInterval = 0.1
+    c.objectiveInterval = 0.1
+    c.dmzEnabled = false        // isolate DAEMON SET (protocolMode also enables DMZ)
     c.firewallSpawnChance = 0
     var engine = GridEngine(config: c, deck: .starter, seed: 99)
     let set = spawnSet(&engine)
@@ -87,7 +83,8 @@ do {
 // MARK: 4 — completion arms a ×4 next decode (isolate: no streak/fever, standard-only mix)
 do {
     var c = GameConfig.protocolMode()
-    c.daemonSetInterval = 0.1
+    c.objectiveInterval = 0.1
+    c.dmzEnabled = false        // isolate DAEMON SET (protocolMode also enables DMZ)
     c.firewallSpawnChance = 0; c.armoredSpawnChance = 0; c.cacheSpawnChance = 0
     c.wormSpawnChance = 0; c.powerUpSpawnChance = 0     // every spawn is a 1-tap standard daemon
     c.feverEnabled = false
@@ -126,7 +123,8 @@ do {
 // MARK: 5 — completion that triggers Fever makes it last ×4
 do {
     var c = GameConfig.protocolMode()
-    c.daemonSetInterval = 0.1
+    c.objectiveInterval = 0.1
+    c.dmzEnabled = false        // isolate DAEMON SET (protocolMode also enables DMZ)
     c.firewallSpawnChance = 0
     c.feverEnabled = true
     c.feverComboThreshold = 2

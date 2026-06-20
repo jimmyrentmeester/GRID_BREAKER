@@ -145,16 +145,36 @@ struct GameConfig: Sendable {
     var overclockDuration: TimeInterval = 4.0   // bonus-multiplier window
     var overclockMultiplier: Int = 2            // ×N during overclock (stacks w/ fever)
 
+    // MARK: PROTOCOL objectives — shared scheduler
+    /// Seconds of gap between objectives (timer only runs while no objective is
+    /// on the board). Enabled objectives alternate (DAEMON SET ↔ DMZ PURGE).
+    var objectiveInterval: TimeInterval = 5.5
+
     // MARK: DAEMON SET objective (PROTOCOL mode, issue #3)
     /// Whether ordered DAEMON SET chains spawn (off everywhere except PROTOCOL).
     var daemonSetEnabled: Bool = false
-    /// Seconds of gap between sets (timer only runs while no set is on the board).
-    var daemonSetInterval: TimeInterval = 5.5
     var daemonSetMinSize: Int = 2
     var daemonSetMaxSize: Int = 4
     /// Completing a set grants ×N on the *next* decode; if the completion triggers
     /// Fever, that Fever lasts ×N as long.
     var daemonSetReward: Int = 4
+
+    // MARK: DMZ PURGE objective (PROTOCOL mode, issue #4)
+    /// Whether DMZ PURGE zones spawn (off everywhere except PROTOCOL).
+    var dmzEnabled: Bool = false
+    /// Zone size range (contiguous cells spawned full of intrusion to clear).
+    var dmzMinSize: Int = 2
+    var dmzMaxSize: Int = 4
+    /// Seconds between overrun creeps: while a DMZ is active, an intrusion node fills
+    /// a random free cell *outside* the zone on this cadence. If none is free when it
+    /// fires, the system is overrun → game over. Tapping creeps buys time.
+    var dmzOverrunInterval: TimeInterval = 1.6
+    /// Flat score per intrusion cleared (no combo/fever interaction — DMZ is defense).
+    var scoreIntrusion: Int = 1
+    /// Small RAM granted per intrusion cleared (defensive value of keeping the creep down).
+    var dmzClearRefill: TimeInterval = 0.35
+    /// RAM relief granted when the whole zone is purged (the payoff).
+    var dmzPurgeBonus: TimeInterval = 4.0
 
     static let `default` = GameConfig()
 
@@ -279,6 +299,7 @@ struct GameConfig: Sendable {
         c.milestoneRAMBonus = 0
         c.gridEscalationScore = nil      // PROTOCOL stays 3×3 (DMZ zones need a stable grid)
         c.daemonSetEnabled = true        // ordered-chain objective (issue #3)
+        c.dmzEnabled = true              // zone-purge objective (issue #4) — alternates with sets
         return c
     }
 
