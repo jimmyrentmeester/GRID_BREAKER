@@ -101,7 +101,7 @@ struct RootView: View {
 
             Button { tap(); screen = .endless } label: {
                 HStack(spacing: 12) {
-                    Image(systemName: "play.fill").font(.system(size: 17, weight: .bold))
+                    Image(systemName: sfSym("play.fill")).font(.system(size: 17, weight: .bold))
                     Text("JACK IN").font(.system(size: 20, weight: .heavy, design: .monospaced))
                     Spacer()
                     Text("ENDLESS").font(.system(size: 11, weight: .semibold, design: .monospaced)).opacity(0.65)
@@ -168,7 +168,7 @@ struct RootView: View {
     private func utilityButton(_ label: String, _ symbol: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 4) {
-                Image(systemName: symbol).font(.system(size: 18, weight: .bold))
+                Image(systemName: sfSym(symbol)).font(.system(size: 18, weight: .bold))
                 Text(label).font(.system(size: 10, weight: .semibold, design: .monospaced))
             }
             .foregroundStyle(NeonTheme.textDim)
@@ -209,7 +209,7 @@ private struct MenuTile: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 7) {
-                Image(systemName: systemImage).font(.system(size: 20, weight: .bold))
+                Image(systemName: sfSym(systemImage)).font(.system(size: 20, weight: .bold))
                     .frame(height: 24)
                 Text(label).font(.system(size: 11, weight: .bold, design: .monospaced))
             }

@@ -25,8 +25,40 @@ transpiled)** — SwiftUI → Jetpack Compose, Swift → Kotlin.
 | **M2 — Speelbare grid** | ✅ | Skip-native `GameView`: 3×3 grid uit snapshot, getypte glow-sprites (circle/diamond/hex/square via Shape), HUD (score/RAM-bar/combo/fever/streak), real-dt loop, tap→decode→score live bevestigd, game-over + RECONNECT. Neon-look intact. |
 | **Release-AAB (M6-kern)** | ✅ vroeg geverifieerd | `skip export --release` → `GridBreaker-release.aab` **12,4 MB** + APK 14,5 MB (R8/ProGuard, van 24 MB debug). Geïnstalleerd + draait identiek — minificatie strip niets fataals. De-riskt de Play-Store-build. |
 | **M5 — Leaderboards** | ✅ by construction | `GameCenterService` (GameKit) is bewust **niet** mee-geport naar de Skip-target → er zijn op Android geen leaderboard-calls. Lokale high-scores werken al via `GameStore` (M1). Play Games Services = los later traject. |
+| **M4 — Menu's & meta** | 🟡 deels | Echte iOS-views geport (parity): volledige `NeonTheme` (palette-systeem), menu-hub + router, **TOP RUNS** + **CYBERDECK** wired. Menu live-geverifieerd (getrouwe match met iOS). Resterend: Cosmetics/Codex/Settings/Campaign-select (placeholders), GameView-visuals (SF-Symbol-sprites + DataCore) gelijktrekken. |
 | M3 — Audio + haptics | ⏳ | de zwaarste shim (zie §3) — `AVAudioEngine`+PCM → Android `AudioTrack`. Aparte focus-sessie. |
-| M4 — Menu's & meta | ⏳ | RootView-router + MenuViews (Cyberdeck/Codex/HighScores/Campaign-select), ~2100 regels SwiftUI. |
+
+### Pitfalls uit M4 (menu's)
+
+61. **`ButtonStyle` is in SkipUI een concrete `RawRepresentable`-type, geen protocol** —
+    een custom `struct X: ButtonStyle { makeBody(configuration:) }` compileert niet
+    ("Configuration/isPressed/label unresolved"). Gebruik `.buttonStyle(.plain)` (plain
+    label, geen Material-chrome); de press-dip vervalt.
+62. **Mutable `static var` globals** (themakleuren, equipped skin) → Swift-6 strict
+    concurrency weigert ze. Markeer `nonisolated(unsafe) static var` (single-writer op de
+    main thread).
+63. **`Animation`-shorthands niet inferbaar in een ButtonStyle/los-modifier-context** —
+    `.spring(...)`/`.easeOut(...)` → "owning type"-fout; schrijf `Animation.easeOut(...)`
+    voltuit, of vermijd `.spring` (niet ondersteund) → `.easeOut`.
+64. **SF Symbols: alleen ~66 namen mappen naar Material-icons** (skip-ui
+    `Components/Image.swift`); de rest rendert als waarschuwingsdriehoek. Een `sfSym(_:)`-
+    mapper (`IconCompat.swift`) vertaalt de gebruikte namen naar ondersteunde, semantisch-
+    nabije Material-icons (flag→location, cpu→wrench, scope→plus.circle, paintpalette→star,
+    trophy→list.bullet, book→info.circle, bitcoinsign→plus.circle). Pixel-exacte icon-
+    pariteit zou gebundelde custom-assets vereisen (latere polish). De in-game node-sprites
+    gebruiken Shapes (geen SF Symbols) → ongemoeid.
+65. **`.onTapGesture(perform:)`** matcht niet — gebruik de closure-vorm `.onTapGesture { … }`.
+66. **`ForEach(collection.indices, id: \.self)`** faalt — gebruik de kale
+    `ForEach(0..<count) { i in }` (Skip's Range-overload neemt geen `id:`, #40).
+
+### Omgevings-blocker (deze sessie)
+
+> **Schijfruimte.** De Mac liep tijdens het emulator-testen naar **~0,7 GB vrij (95% vol)**.
+> De AVD boot wel maar zijn groeiende image vreet de ruimte → de emulator gaat na ~1 min
+> offline. Daardoor moet live-verificatie in één snelle boot→screenshot→kill-cyclus.
+> Veilig opgeruimd (regenereerbaar): Xcode DerivedData, Homebrew/SwiftPM-caches. **Voor vlot
+> doorwerken** (en de iOS-archivering) is meer vrije ruimte nodig — `~/.gradle` (6,6 GB,
+> regenereert vanzelf) is de grootste veilige kandidaat.
 
 ### M2a render-spike — uitslag (2026-06-21): **GO**
 

@@ -17,7 +17,7 @@ struct CyberdeckView: View {
                         .foregroundStyle(NeonTheme.cyan)
                         .neonGlow(NeonTheme.cyan, radius: 8)
                     Spacer()
-                    Label("\(store.cyberdeck.credits) CR", systemImage: "bitcoinsign.circle.fill")
+                    Label("\(store.cyberdeck.credits) CR", systemImage: sfSym("bitcoinsign.circle.fill"))
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                         .foregroundStyle(NeonTheme.gold)
                 }

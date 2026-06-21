@@ -59,7 +59,7 @@ struct PurchaseFlash: View {
     let name: String
     var body: some View {
         VStack(spacing: 10) {
-            Image(systemName: "checkmark.seal.fill")
+            Image(systemName: sfSym("checkmark.seal.fill"))
                 .font(.system(size: 46, weight: .bold))
                 .foregroundStyle(NeonTheme.gold).neonGlow(NeonTheme.gold, radius: 16)
             Text("ACQUIRED")
