@@ -1,11 +1,11 @@
 import SwiftUI
 
-// MARK: - Playable grid (M2)
+// MARK: - Playable session (M2 + visual parity)
 //
-// A Skip-native rendering of a GRID_BREAKER session. The iOS GameView relies on
-// Canvas + TimelineView (both absent in SkipUI), so this is rebuilt from the proven
-// portable stack: a Task.sleep game-loop with real dt, the engine as the authority,
-// and SwiftUI Shapes + neonGlow for the neon look.
+// Skip-native rendering of a GRID_BREAKER session, mirroring the iOS GameView layout
+// (HUD → big score → DataCore charge ring → grid) as closely as Skip allows. The iOS
+// version uses Canvas + TimelineView (both absent in SkipUI), so the loop is a
+// Task.sleep clock with real dt, and Canvas effects are rebuilt with Shapes.
 
 struct GameView: View {
     let config: GameConfig
@@ -19,7 +19,6 @@ struct GameView: View {
     @State private var snap: SessionSnapshot
     @State private var lastTickAt: Double = 0
     @State private var flashCell: Int = -1
-    @State private var flashSeq: Int = 0
 
     init(config: GameConfig, seed: UInt64, targetScore: Int? = nil, difficultyBias: Int = 0,
          modeLabel: String = "ENDLESS", onExit: @escaping () -> Void = {}) {
@@ -39,76 +38,48 @@ struct GameView: View {
         ZStack {
             NeonTheme.background.ignoresSafeArea()
 
-            VStack(spacing: 14) {
-                hud
-                Spacer(minLength: 8)
-                grid
-                Spacer(minLength: 8)
-                footer
-            }
-            .padding(20)
-            // No fixed `.frame(maxWidth: 560)`: on Skip a fixed maxWidth renders as a
-            // FIXED width (#47), overflowing a phone. Full width + padding instead.
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack(spacing: 0) {
+                HUDView(snapshot: snap)
+                    .padding(.horizontal, 20).padding(.top, 8)
 
-            if snap.isGameOver {
-                gameOverOverlay
+                VStack(spacing: 6) {
+                    BigScoreView(snapshot: snap)
+                    if snap.targetScore == nil && snap.streakMultiplier > 1 && !snap.isGameOver {
+                        StreakBadge(multiplier: snap.streakMultiplier)
+                    }
+                    DataCoreView(progress: coreProgress,
+                                 feverActive: snap.feverActive,
+                                 label: snap.freezeActive ? "FREEZE"
+                                       : snap.overclockActive ? "OVERCLOCK"
+                                       : snap.feverActive ? "FEVER"
+                                       : snap.targetScore != nil ? "DECRYPT" : "CHARGE",
+                                 decodeToken: snap.score)
+                        .frame(maxWidth: .infinity, maxHeight: 200)
+                }
+                .padding(.vertical, 8)
+
+                grid.padding(.horizontal, 16)
+
+                Spacer(minLength: 12).frame(maxHeight: 96)
+
+                footer.padding(.horizontal, 20).padding(.bottom, 8)
             }
+
+            if snap.isGameOver { gameOverOverlay }
         }
         .preferredColorScheme(.dark)
         .task {
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 33_000_000)   // ~30fps (real-dt keeps speed correct)
+                try? await Task.sleep(nanoseconds: 33_000_000)   // ~30fps; real dt keeps speed correct
                 step()
             }
         }
     }
 
-    // MARK: HUD
-
-    private var hud: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text("SCORE \(snap.score)")
-                    .font(.system(size: 22, weight: .heavy, design: .monospaced))
-                    .foregroundStyle(NeonTheme.gold)
-                    .neonGlow(NeonTheme.gold, radius: 6)
-                Spacer()
-                if snap.feverActive {
-                    Text("FEVER ×\(snap.scoreMultiplier)")
-                        .font(.system(size: 14, weight: .heavy, design: .monospaced))
-                        .foregroundStyle(NeonTheme.gold)
-                        .neonGlow(NeonTheme.gold, radius: 8)
-                } else if snap.streakMultiplier > 1 {
-                    Text("STREAK ×\(snap.streakMultiplier)")
-                        .font(.system(size: 14, weight: .heavy, design: .monospaced))
-                        .foregroundStyle(NeonTheme.magenta)
-                }
-            }
-            // RAM bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(NeonTheme.cyan.opacity(0.12))
-                    Capsule()
-                        .fill(ramColor)
-                        .frame(width: dmaxW(geo.size.width * snap.ramFraction))
-                        .neonGlow(ramColor, radius: 5)
-                }
-            }
-            .frame(height: 12)
-            // Combo meter
-            Text("COMBO \(snap.combo)/\(snap.comboThreshold)")
-                .font(.system(size: 11, weight: .regular, design: .monospaced))
-                .foregroundStyle(NeonTheme.cyan.opacity(0.6))
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
+    /// DataCore ring progress: campaign target progress, else fever charge.
+    private var coreProgress: Double {
+        snap.targetScore != nil ? snap.targetProgress : snap.comboProgress
     }
-
-    private var ramColor: Color {
-        snap.ramFraction < 0.25 ? NeonTheme.danger : (snap.feverActive ? NeonTheme.gold : NeonTheme.cyan)
-    }
-
-    private func dmaxW(_ w: CGFloat) -> CGFloat { w < 0.0 ? 0.0 : w }
 
     // MARK: Grid
 
@@ -123,17 +94,15 @@ struct GameView: View {
             let spacing: CGFloat = 10
             let cell = (side - spacing * CGFloat(cols - 1)) / CGFloat(cols)
             VStack(spacing: spacing) {
-                ForEach(0..<rows, id: \.self) { row in
+                ForEach(0..<rows) { row in
                     HStack(spacing: spacing) {
-                        ForEach(0..<cols, id: \.self) { col in
+                        ForEach(0..<cols) { col in
                             let index = row * cols + col
-                            CellView(node: byCell[index],
-                                     size: cell,
+                            CellView(node: byCell[index], size: cell,
+                                     feverActive: snap.feverActive,
                                      isZone: snap.dmzZone.contains(index),
                                      flashing: flashCell == index)
                                 .frame(width: cell, height: cell)
-                                // No .contentShape (absent in Skip, #39); the cell's faint
-                                // filled well (below) makes the whole frame tappable.
                                 .onTapGesture { tap(index) }
                         }
                     }
@@ -145,13 +114,12 @@ struct GameView: View {
         .aspectRatio(1, contentMode: .fit)
     }
 
-    // MARK: Footer
-
     private var footer: some View {
         HStack {
             Button("◂ MENU") { onExit() }
                 .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundStyle(NeonTheme.textDim)
+                .buttonStyle(.plain)
             Spacer()
             Text(modeLabel)
                 .font(.system(size: 11, weight: .regular, design: .monospaced))
@@ -160,7 +128,7 @@ struct GameView: View {
     }
 
     private var gameOverOverlay: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 16) {
             Text(snap.didWin ? "CORE CRACKED" : "DISCONNECTED")
                 .font(.system(size: 26, weight: .heavy, design: .monospaced))
                 .foregroundStyle(snap.didWin ? NeonTheme.gold : NeonTheme.danger)
@@ -169,16 +137,8 @@ struct GameView: View {
                 .font(.system(size: 18, weight: .heavy, design: .monospaced))
                 .foregroundStyle(NeonTheme.cyan)
             HStack(spacing: 14) {
-                Button("RECONNECT") { restart() }
-                    .font(.system(size: 15, weight: .bold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.background)
-                    .padding(.horizontal, 22).padding(.vertical, 12)
-                    .background(Capsule().fill(NeonTheme.cyan))
-                Button("JACK OUT") { onExit() }
-                    .font(.system(size: 15, weight: .bold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.magenta)
-                    .padding(.horizontal, 22).padding(.vertical, 12)
-                    .background(Capsule().stroke(NeonTheme.magenta, lineWidth: 1.5))
+                TerminalButton(title: "RECONNECT", color: NeonTheme.cyan) { restart() }
+                TerminalButton(title: "JACK OUT", color: NeonTheme.magenta) { onExit() }
             }
         }
         .padding(34)
@@ -202,7 +162,6 @@ struct GameView: View {
         guard !snap.isGameOver else { return }
         _ = engine.handleTap(cellIndex: index)
         flashCell = index
-        flashSeq += 1
         snap = engine.snapshot
     }
 
@@ -215,99 +174,284 @@ struct GameView: View {
     }
 }
 
-// MARK: - Cell
+// MARK: - HUD (RAM bar + campaign target bar)
+
+private struct HUDView: View {
+    let snapshot: SessionSnapshot
+
+    var body: some View {
+        VStack(spacing: 8) {
+            if let target = snapshot.targetScore {
+                VStack(spacing: 4) {
+                    HStack {
+                        Text("DATA CORE")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundStyle(NeonTheme.gold)
+                        Spacer()
+                        Text("\(snapshot.score) / \(target)")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundStyle(NeonTheme.gold)
+                    }
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color.white.opacity(0.08))
+                            Capsule().fill(NeonTheme.gold)
+                                .frame(width: clampW(geo.size.width * snapshot.targetProgress))
+                                .neonGlow(NeonTheme.gold, radius: 5)
+                        }
+                    }
+                    .frame(height: 7)
+                }
+                .padding(.bottom, 2)
+            }
+            RAMBar(fraction: snapshot.ramFraction)
+        }
+    }
+}
+
+private struct RAMBar: View {
+    let fraction: Double
+
+    private var color: Color {
+        fraction > 0.5 ? NeonTheme.cyan : (fraction > 0.25 ? NeonTheme.gold : NeonTheme.danger)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("RAM")
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.08))
+                    Capsule().fill(color)
+                        .frame(width: clampW(geo.size.width * fraction))
+                        .neonGlow(color, radius: 6)
+                }
+            }
+            .frame(height: 12)
+        }
+    }
+}
+
+private func clampW(_ w: CGFloat) -> CGFloat { w < 0.0 ? 0.0 : w }
+
+// MARK: - Big score
+
+private struct BigScoreView: View {
+    let snapshot: SessionSnapshot
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("SCORE")
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+                .tracking(3)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(snapshot.score)")
+                    .font(.system(size: 46, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.cyan)
+                    .neonGlow(NeonTheme.cyan, radius: 10)
+                if snapshot.scoreMultiplier > imaxI(1, snapshot.streakMultiplier) {
+                    Text("×\(snapshot.scoreMultiplier)")
+                        .font(.system(size: 22, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                        .neonGlow(NeonTheme.gold, radius: 7)
+                }
+            }
+            if let next = snapshot.nextMilestone, !snapshot.isGameOver {
+                Text("NEXT ◆ \(next)")
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.textDim)
+                    .padding(.top, 1)
+            }
+        }
+    }
+}
+
+private func imaxI(_ a: Int, _ b: Int) -> Int { a > b ? a : b }
+
+private struct StreakBadge: View {
+    let multiplier: Int
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: sfSym("flame.fill")).font(.system(size: 11, weight: .bold))
+            Text("STREAK ×\(multiplier)")
+                .font(.system(size: 12, weight: .heavy, design: .monospaced))
+        }
+        .foregroundStyle(NeonTheme.gold)
+        .neonGlow(NeonTheme.gold, radius: 4)
+        .padding(.horizontal, 10).padding(.vertical, 4)
+        .background(Capsule().fill(NeonTheme.gold.opacity(0.12))
+            .overlay(Capsule().stroke(NeonTheme.gold.opacity(0.5), lineWidth: 1)))
+    }
+}
+
+// MARK: - DataCore charge ring (Canvas-free; spinning dashed rings + progress trim)
+
+private struct DataCoreView: View {
+    let progress: Double
+    let feverActive: Bool
+    let label: String
+    let decodeToken: Int
+
+    @State private var spin: Double = 0
+
+    private var tint: Color { feverActive ? NeonTheme.gold : NeonTheme.cyan }
+
+    var body: some View {
+        GeometryReader { geo in
+            let mn = geo.size.width < geo.size.height ? geo.size.width : geo.size.height
+            let raw = mn - 12.0
+            let s: CGFloat = raw < 70.0 ? 70.0 : (raw > 180.0 ? 180.0 : raw)
+            ZStack {
+                Circle()
+                    .stroke(NeonTheme.gridLineDim.opacity(0.35), style: StrokeStyle(lineWidth: 1.0, dash: [2.0, 14.0]))
+                    .frame(width: s, height: s)
+                    .rotationEffect(.degrees(-spin * 0.6))
+                Circle()
+                    .stroke(tint.opacity(0.40), style: StrokeStyle(lineWidth: 1.5, dash: [4.0, 12.0]))
+                    .frame(width: s * 0.86, height: s * 0.86)
+                    .rotationEffect(.degrees(spin))
+                Circle().stroke(tint.opacity(0.15), lineWidth: 3.0).frame(width: s * 0.6, height: s * 0.6)
+                Circle()
+                    .trim(from: 0, to: progressClamped)
+                    .stroke(tint, style: StrokeStyle(lineWidth: 4.0, lineCap: .round))
+                    .frame(width: s * 0.6, height: s * 0.6)
+                    .rotationEffect(.degrees(-90))
+                    .neonGlow(tint, radius: 5)
+                VStack(spacing: 3) {
+                    Hexagon().stroke(tint, lineWidth: 2)
+                        .frame(width: s * 0.18, height: s * 0.18)
+                        .neonGlow(tint, radius: 6)
+                    Text(label)
+                        .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textDim)
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .onAppear { withAnimation(.linear(duration: 14).repeatForever(autoreverses: false)) { spin = 360 } }
+    }
+
+    private var progressClamped: Double {
+        let p = progress
+        if p < 0.0001 { return 0.0001 }
+        return p > 1.0 ? 1.0 : p
+    }
+}
+
+// MARK: - Cell + node sprite (rounded-rect tile + ring + glyph, mirroring iOS NodeSprite)
 
 private struct CellView: View {
     let node: GridNode?
     let size: CGFloat
+    let feverActive: Bool
     let isZone: Bool
     let flashing: Bool
 
     var body: some View {
         ZStack {
-            // Empty cell well — a faint fill (so the whole cell is a tap target, since
-            // SkipUI has no .contentShape) plus the terminal-grid outline.
-            RoundedRectangle(cornerRadius: 10)
-                .fill(NeonTheme.cyan.opacity(0.05))
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(isZone ? NeonTheme.danger.opacity(0.8) : NeonTheme.cyan.opacity(0.12),
-                        style: StrokeStyle(lineWidth: isZone ? 2.0 : 1.0,
-                                           dash: isZone ? [5.0, 4.0] : [CGFloat]()))
-
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(0.02))
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(NeonTheme.gridLineDim.opacity(0.5), lineWidth: 1)
+            if isZone {
+                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(NeonTheme.danger.opacity(0.10))
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(NeonTheme.danger.opacity(0.85), style: StrokeStyle(lineWidth: 2, dash: [6.0, 4.0]))
+                    .neonGlow(NeonTheme.danger, radius: 6)
+            }
             if let node = node {
-                sprite(for: node)
+                NodeSprite(node: node, feverActive: feverActive, cell: size)
+                    .padding(size * 0.16)
+            }
+        }
+    }
+}
+
+/// One node's sprite: a ringed rounded-rect tile + a glyph, matching the iOS NodeSprite
+/// structure. Glyphs use sfSym (SF Symbols → Material substitutes on Android).
+private struct NodeSprite: View {
+    let node: GridNode
+    let feverActive: Bool
+    let cell: CGFloat
+
+    private var glyph: CGFloat { cell * 0.22 }
+    private var ring: CGFloat { cell * 0.022 < 2.0 ? 2.0 : cell * 0.022 }
+
+    var body: some View {
+        if let order = node.setOrder, let n = node.setSize {
+            setSprite(order: order, of: n)
+        } else if feverActive && node.type != .firewallBomb {
+            tile(color: NeonTheme.gold, symbol: "bolt.fill", ringed: true)
+        } else {
+            switch node.type {
+            case .standardDaemon: tile(color: NeonTheme.cyan, symbol: "circle.grid.cross.fill", ringed: false)
+            case .armoredDaemon:  tile(color: node.isBreached ? NeonTheme.gold : NeonTheme.magenta,
+                                       symbol: node.isBreached ? "lock.open.fill" : "lock.shield.fill", ringed: !node.isBreached)
+            case .firewallBomb:   tile(color: NeonTheme.danger, symbol: "exclamationmark.triangle.fill", ringed: false)
+            case .dataCache:      tile(color: NeonTheme.gold, symbol: "square.stack.3d.up.fill", ringed: true)
+            case .wormDaemon:     tile(color: NeonTheme.worm, symbol: "scribble.variable", ringed: true)
+            case .powerUp:        tile(color: NeonTheme.textPrimary, symbol: powerSymbol(node.powerKind), ringed: true)
+            case .intrusion:      tile(color: NeonTheme.danger, symbol: "hexagon.fill", ringed: true)
             }
         }
     }
 
-    @ViewBuilder
-    private func sprite(for node: GridNode) -> some View {
-        let d = size * 0.62
-        switch node.type {
-        case .firewallBomb:
-            // never-tap hazard — hostile red diamond
-            Diamond()
-                .fill(NeonTheme.danger)
-                .frame(width: d, height: d)
-                .neonGlow(NeonTheme.danger, radius: 9)
-        case .armoredDaemon:
-            ZStack {
-                Circle().fill(node.isBreached ? NeonTheme.magenta.opacity(0.4) : NeonTheme.magenta)
-                    .frame(width: d, height: d)
-                Circle().stroke(NeonTheme.magenta, lineWidth: 2).frame(width: d * 1.18, height: d * 1.18)
-            }
-            .neonGlow(NeonTheme.magenta, radius: 8)
-        case .dataCache:
-            RoundedRectangle(cornerRadius: 5)
-                .fill(NeonTheme.gold)
-                .frame(width: d, height: d)
-                .neonGlow(NeonTheme.gold, radius: 9)
-        case .intrusion:
-            Hexagon()
-                .fill(NeonTheme.danger)
-                .frame(width: d, height: d)
-                .neonGlow(NeonTheme.danger, radius: 7)
-        case .powerUp:
-            Circle().fill(NeonTheme.gold)
-                .frame(width: d * 0.8, height: d * 0.8)
-                .neonGlow(NeonTheme.gold, radius: 10)
-        default:
-            // standard + worm
-            Circle()
-                .fill(NeonTheme.cyan)
-                .frame(width: d, height: d)
-                .neonGlow(NeonTheme.cyan, radius: flashing ? 14.0 : 8.0)
-                .overlay(node.isSetMember ? AnyView(setPip(node)) : AnyView(EmptyView()))
+    private func powerSymbol(_ kind: PowerUpKind?) -> String {
+        switch kind {
+        case .timeFreeze: return "snowflake"
+        case .overclock:  return "bolt.fill"
+        case .purge:      return "wind"
+        case nil:         return "sparkles"   // Skip: optional nil-case is `case nil`, not `.none`
         }
     }
 
-    private func setPip(_ node: GridNode) -> some View {
-        Text("\(node.setOrder ?? 0)")
-            .font(.system(size: size * 0.26, weight: .heavy, design: .monospaced))
-            .foregroundStyle(NeonTheme.background)
+    private func tile(color: Color, symbol: String, ringed: Bool) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 14, style: .continuous).fill(color.opacity(0.18))
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(color, lineWidth: ringed ? ring * 1.4 : ring)
+                .neonGlow(color, radius: 8)
+            Image(systemName: sfSym(symbol))
+                .font(.system(size: glyph, weight: .bold))
+                .foregroundStyle(color)
+                .neonGlow(color, radius: 4)
+        }
+    }
+
+    private func setSprite(order: Int, of n: Int) -> some View {
+        let color = NeonTheme.cyan
+        return ZStack {
+            RoundedRectangle(cornerRadius: 14, style: .continuous).fill(color.opacity(0.18))
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(color, lineWidth: ring * 1.25)
+                .neonGlow(color, radius: 8)
+            VStack(spacing: cell * 0.03) {
+                Text("\(order)")
+                    .font(.system(size: glyph * 0.95, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(color)
+                    .neonGlow(color, radius: 4)
+                HStack(spacing: cell * 0.03) {
+                    ForEach(0..<n) { i in
+                        Circle()
+                            .fill(i < order ? color : color.opacity(0.25))
+                            .frame(width: cell * 0.045, height: cell * 0.045)
+                    }
+                }
+            }
+        }
     }
 }
 
-// MARK: - Shapes (Canvas-free)
-
-private struct Diamond: Shape {
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: rect.midX, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
-        p.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
-        p.closeSubpath()
-        return p
-    }
-}
+// MARK: - Hexagon shape (DataCore idle glyph)
 
 private struct Hexagon: Shape {
     func path(in rect: CGRect) -> Path {
         var p = Path()
-        let w = rect.width, h = rect.height
         let cx = rect.midX, cy = rect.midY
-        let r = (w < h ? w : h) / 2.0
+        let r = (rect.width < rect.height ? rect.width : rect.height) / 2.0
         var i = 0
         while i < 6 {
             let angle = Double.pi / 3.0 * Double(i) - Double.pi / 2.0

@@ -122,6 +122,7 @@ struct RootView: View {
                 .neonGlow(NeonTheme.cyan, radius: 8)
             }
             .buttonStyle(.plain)
+            .frame(maxWidth: .infinity)   // full-width tap target (Skip Button sizes to content)
 
             VStack(spacing: 8) {
                 sectionLabel("MODES")
