@@ -1145,7 +1145,7 @@ private struct CellView: View {
                     .neonGlow(NeonTheme.danger, radius: 6)
             }
             if let node {
-                NodeSprite(node: node, feverActive: feverActive)
+                NodeSprite(node: node, feverActive: feverActive, cell: size)
                     .padding(size * 0.16)   // sprite smaller than the tap cell
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
                     .id(node.id)
@@ -1180,6 +1180,14 @@ private struct CellView: View {
 private struct NodeSprite: View {
     let node: GridNode
     let feverActive: Bool
+    /// The cell size, so the glyph/number/pips/ring scale with the cell (the SF Symbol
+    /// is otherwise a fixed point size → tiny inside the large iPad cells).
+    var cell: CGFloat = 110
+
+    /// Glyph point size ≈ 20% of the cell (matches the original 22pt on a ~110pt phone cell).
+    private var glyph: CGFloat { cell * 0.20 }
+    /// Ring stroke scales gently with the cell so it doesn't read as hairline on iPad.
+    private var ring: CGFloat { max(2, cell * 0.022) }
 
     var body: some View {
         if let order = node.setOrder, let n = node.setSize {
@@ -1205,7 +1213,7 @@ private struct NodeSprite: View {
                 sprite(color: NeonTheme.gold, symbol: "square.stack.3d.up.fill", ringed: true)
             case .wormDaemon:
                 // Acid-green squiggle that visibly squirms — a distinct, moving target.
-                WormNodeSprite()
+                WormNodeSprite(glyph: glyph, ring: ring)
             case .powerUp:
                 // White "special pickup" — kind shown by its glyph.
                 sprite(color: NeonTheme.textPrimary, symbol: Self.powerSymbol(node.powerKind), ringed: true)
@@ -1231,10 +1239,10 @@ private struct NodeSprite: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(color.opacity(0.18))
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(color, lineWidth: ringed ? 3 : 2)
+                .stroke(color, lineWidth: ringed ? ring * 1.4 : ring)
                 .neonGlow(color, radius: 8)
             Image(systemName: symbol)
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(size: glyph, weight: .bold))
                 .foregroundStyle(color)
                 .neonGlow(color, radius: 4)
         }
@@ -1248,18 +1256,18 @@ private struct NodeSprite: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(color.opacity(0.18))
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(color, lineWidth: 2.5)
+                .stroke(color, lineWidth: ring * 1.25)
                 .neonGlow(color, radius: 8)
-            VStack(spacing: 3) {
+            VStack(spacing: cell * 0.03) {
                 Text("\(order)")
-                    .font(.system(size: 19, weight: .heavy, design: .monospaced))
+                    .font(.system(size: glyph * 0.95, weight: .heavy, design: .monospaced))
                     .foregroundStyle(color)
                     .neonGlow(color, radius: 4)
-                HStack(spacing: 3) {
+                HStack(spacing: cell * 0.03) {
                     ForEach(0..<n, id: \.self) { i in
                         Circle()
                             .fill(i < order ? color : color.opacity(0.25))
-                            .frame(width: 4.5, height: 4.5)
+                            .frame(width: cell * 0.045, height: cell * 0.045)
                     }
                 }
             }
@@ -1271,6 +1279,8 @@ private struct NodeSprite: View {
 /// squirm (rotate + sway) so it reads as a living, moving target at a glance —
 /// the visual counterpart to its distinct decode chirp. Snaps still for Reduce Motion.
 private struct WormNodeSprite: View {
+    var glyph: CGFloat = 22
+    var ring: CGFloat = 3
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var wiggle = false
 
@@ -1279,10 +1289,10 @@ private struct WormNodeSprite: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(NeonTheme.worm.opacity(0.18))
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(NeonTheme.worm, lineWidth: 3)
+                .stroke(NeonTheme.worm, lineWidth: ring * 1.4)
                 .neonGlow(NeonTheme.worm, radius: 8)
             Image(systemName: "scribble.variable")
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(size: glyph, weight: .bold))
                 .foregroundStyle(NeonTheme.worm)
                 .neonGlow(NeonTheme.worm, radius: 4)
                 .rotationEffect(.degrees(wiggle ? 7 : -7))
