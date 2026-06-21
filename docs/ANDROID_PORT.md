@@ -14,6 +14,58 @@ transpiled)** — SwiftUI → Jetpack Compose, Swift → Kotlin.
 
 ---
 
+## STATUS / voortgang
+
+| Fase | Status | Bewijs |
+|---|---|---|
+| P0 — Toolchain | ✅ | `skip checkup` kern-groen (skip 1.8.16, AGP 9.2.0, Kotlin 2.3.0). Test-Kotlin-harness faalt cosmetisch (JUnit-naamparse), niet de build. |
+| P1 — Scaffold + APK | ✅ | `skip init --transpiled-app` → `GridBreakerSkip/`. `skip export --debug` → `GridBreaker-debug.apk` 84,6 MB + `.aab` 24 MB. |
+| **M2a — RENDER-SPIKE** | ✅ **GO** | Live op emulator (Android 16). Zie hieronder. |
+| M1 — Engine + models | ⏳ | volgende |
+
+### M2a render-spike — uitslag (2026-06-21): **GO**
+
+De spike testte de drie unieke risico's live. Twee kernprimitieven van de
+iOS-app zijn **hard afwezig** in SkipUI 1.8.16, maar beide hebben een **bewezen,
+mooi-renderende workaround**:
+
+1. **`TimelineView` — NIET geïmplementeerd** (`Timeline.swift` is volledig een
+   `/* */`-stub). De 60fps game-loop-driver bestaat niet.
+   → **Workaround (bewezen):** een `.task { while !cancelled { Task.sleep(~16ms);
+   clock += dt } }`-loop die `@State` muteert; Compose recomposeert per tick.
+   Animeert vloeiend op de emulator. **LET OP:** de naïeve vaste-accumulator
+   liep trager dan real-time → de echte game **moet `dt` uit echte timestamps
+   (`Date`) berekenen**, ands is de speelsnelheid framerate-afhankelijk.
+2. **`Canvas` / `GraphicsContext` — NIET geïmplementeerd** (beide `/* */`-stubs).
+   Alle beams/trails/particles die de iOS-app via Canvas tekent.
+   → **Workaround (bewezen):** `Path` + `Shape` ZIJN geïmplementeerd. De beam
+   herbouwd als een `Shape` met `.stroke` + `.blur` + glow — rendert perfect.
+3. **`neonGlow` (dubbele `.shadow`) — WERKT** (`.shadow(color:radius:)` is
+   geïmplementeerd). De hele neon-glow-signatuur (70 callsites) overleeft de port
+   ongewijzigd. Live bevestigd: titel, nodes én beam gloeien correct.
+
+Ook geïmplementeerd & bevestigd: `.blur`, `.offset`, `.scaleEffect`, `.opacity`,
+`Color(red:green:blue:)`, `Path`, `Shape`. Escape-hatch `ComposeView {}` bestaat
+voor als een effect later tóch native Compose nodig heeft.
+
+### Nieuwe pitfalls (deze sessie — aanvulling op de Eldor-catalogus)
+
+48. **`TimelineView` bestaat niet in SkipUI** — vervang door een `Task.sleep`-loop
+    die `@State`/`@Observable` muteert (en bereken `dt` uit `Date`).
+49. **`Canvas`/`GraphicsContext` bestaan niet** — herbouw tekenwerk met `Path`/
+    `Shape`-views + `.blur`/`.shadow`, of `ComposeView` voor complexe gevallen.
+50. **`Double.truncatingRemainder(dividingBy:)` zit niet in SkipLib** — gebruik
+    `Int`-modulo of `fmod`-equivalent.
+51. **Scaffold-drift skip 1.8.16 (Gradle):** `Android/app/build.gradle.kts` ships
+    twee stale regels die AGP 9.x weigert: (a) `alias(libs.plugins.kotlin.android)`
+    — bestaat niet meer in de catalog (AGP 9.x heeft ingebouwde Kotlin-support),
+    verwijderen; (b) `getDefaultProguardFile("proguard-android.txt")` →
+    `"proguard-android-optimize.txt"`. Beide eenmalig gefixt in dit project.
+52. **App start niet via `monkey -c LAUNCHER`** (result -5); start met
+    `adb shell am start -n nl.gridbreaker.app/grid.breaker.MainActivity`.
+
+---
+
 ## 0. Waarom Skip (en niet Flutter/Compose-MP/web)
 
 Identiek aan de Eldor-afweging — voor *één* extra platform (Android) is Skip
