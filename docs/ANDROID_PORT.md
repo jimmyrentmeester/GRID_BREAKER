@@ -25,8 +25,19 @@ transpiled)** — SwiftUI → Jetpack Compose, Swift → Kotlin.
 | **M2 — Speelbare grid** | ✅ | Skip-native `GameView`: 3×3 grid uit snapshot, getypte glow-sprites (circle/diamond/hex/square via Shape), HUD (score/RAM-bar/combo/fever/streak), real-dt loop, tap→decode→score live bevestigd, game-over + RECONNECT. Neon-look intact. |
 | **Release-AAB (M6-kern)** | ✅ vroeg geverifieerd | `skip export --release` → `GridBreaker-release.aab` **12,4 MB** + APK 14,5 MB (R8/ProGuard, van 24 MB debug). Geïnstalleerd + draait identiek — minificatie strip niets fataals. De-riskt de Play-Store-build. |
 | **M5 — Leaderboards** | ✅ by construction | `GameCenterService` (GameKit) is bewust **niet** mee-geport naar de Skip-target → er zijn op Android geen leaderboard-calls. Lokale high-scores werken al via `GameStore` (M1). Play Games Services = los later traject. |
-| **M4 — Menu's & meta** | 🟡 deels | Echte iOS-views geport (parity): volledige `NeonTheme` (palette-systeem), menu-hub + router, **TOP RUNS** + **CYBERDECK** wired. Menu live-geverifieerd (getrouwe match met iOS). Resterend: Cosmetics/Codex/Settings/Campaign-select (placeholders), GameView-visuals (SF-Symbol-sprites + DataCore) gelijktrekken. |
-| M3 — Audio + haptics | ⏳ | de zwaarste shim (zie §3) — `AVAudioEngine`+PCM → Android `AudioTrack`. Aparte focus-sessie. |
+| **M4 — Menu's & meta** | ✅ | Alle iOS-views geport (parity), live-geverifieerd op emulator: menu-hub + router, **CYBERDECK**, **CAMPAIGN** (level-select), **COSMETICS** (palettes + trails), **TOP RUNS**, **CODEX**, **SETTINGS** (incl. Slider). Volledige `NeonTheme` palette-systeem. GameView-visuals gelijkgetrokken met iOS (RAM-bar, SCORE/NEXT, **DataCore CHARGE-ring**, ring-sprite-tegels). |
+| M3 — Audio + haptics | ⏳ | de zwaarste shim (zie §3) — `AVAudioEngine`+PCM → Android `AudioTrack`. Aparte focus-sessie (nu de enige resterende pariteits-stap). |
+
+> **Icon-pariteit (fundamentele platform-grens):** SF Symbols zijn Apple-only en mogen
+> niet op Android worden gebundeld. `IconCompat.sfSym(_:)` mapt elk gebruikt symbool naar
+> een ondersteund Material-substituut (66 SF-namen mappen in SkipUI; de rest = driehoek).
+> Iconen zijn dus semantisch gelijk, niet pixel-identiek; echte glyph-pariteit zou eigen,
+> from-scratch getekende icon-assets vereisen (een aparte ontwerp-taak). De in-game node-
+> sprites gebruiken Shapes + (gemapte) glyphs.
+
+> **Emulator-prestatie:** de software-GPU-emulator (swiftshader) is traag — cold-start
+> ~20s, en na langdurig gebruik komt een Android-"System UI isn't responding"-dialoog op
+> (emulator, niet de app). Verificatie gebeurt per verse boot → snel screenshot.
 
 ### Pitfalls uit M4 (menu's)
 
