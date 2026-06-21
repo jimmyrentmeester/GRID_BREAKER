@@ -10,6 +10,10 @@ import SwiftUI
 struct GameView: View {
     let config: GameConfig
     let seed: UInt64
+    let targetScore: Int?
+    let difficultyBias: Int
+    let modeLabel: String
+    let onExit: () -> Void
 
     @State private var engine: GridEngine
     @State private var snap: SessionSnapshot
@@ -17,17 +21,23 @@ struct GameView: View {
     @State private var flashCell: Int = -1
     @State private var flashSeq: Int = 0
 
-    init(config: GameConfig, seed: UInt64) {
+    init(config: GameConfig, seed: UInt64, targetScore: Int? = nil, difficultyBias: Int = 0,
+         modeLabel: String = "ENDLESS", onExit: @escaping () -> Void = {}) {
         self.config = config
         self.seed = seed
-        let e = GridEngine(config: config, seed: seed)
+        self.targetScore = targetScore
+        self.difficultyBias = difficultyBias
+        self.modeLabel = modeLabel
+        self.onExit = onExit
+        let e = GridEngine(config: config, deck: .starter, gridSize: .threeByThree,
+                           seed: seed, targetScore: targetScore, difficultyBias: difficultyBias)
         _engine = State(initialValue: e)
         _snap = State(initialValue: e.snapshot)
     }
 
     var body: some View {
         ZStack {
-            Neon.background.ignoresSafeArea()
+            NeonTheme.background.ignoresSafeArea()
 
             VStack(spacing: 14) {
                 hud
@@ -61,24 +71,24 @@ struct GameView: View {
             HStack {
                 Text("SCORE \(snap.score)")
                     .font(.system(size: 22, weight: .heavy, design: .monospaced))
-                    .foregroundStyle(Neon.gold)
-                    .neonGlow(Neon.gold, radius: 6)
+                    .foregroundStyle(NeonTheme.gold)
+                    .neonGlow(NeonTheme.gold, radius: 6)
                 Spacer()
                 if snap.feverActive {
                     Text("FEVER ×\(snap.scoreMultiplier)")
                         .font(.system(size: 14, weight: .heavy, design: .monospaced))
-                        .foregroundStyle(Neon.gold)
-                        .neonGlow(Neon.gold, radius: 8)
+                        .foregroundStyle(NeonTheme.gold)
+                        .neonGlow(NeonTheme.gold, radius: 8)
                 } else if snap.streakMultiplier > 1 {
                     Text("STREAK ×\(snap.streakMultiplier)")
                         .font(.system(size: 14, weight: .heavy, design: .monospaced))
-                        .foregroundStyle(Neon.magenta)
+                        .foregroundStyle(NeonTheme.magenta)
                 }
             }
             // RAM bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Neon.cyan.opacity(0.12))
+                    Capsule().fill(NeonTheme.cyan.opacity(0.12))
                     Capsule()
                         .fill(ramColor)
                         .frame(width: dmaxW(geo.size.width * snap.ramFraction))
@@ -89,13 +99,13 @@ struct GameView: View {
             // Combo meter
             Text("COMBO \(snap.combo)/\(snap.comboThreshold)")
                 .font(.system(size: 11, weight: .regular, design: .monospaced))
-                .foregroundStyle(Neon.cyan.opacity(0.6))
+                .foregroundStyle(NeonTheme.cyan.opacity(0.6))
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
     private var ramColor: Color {
-        snap.ramFraction < 0.25 ? Neon.danger : (snap.feverActive ? Neon.gold : Neon.cyan)
+        snap.ramFraction < 0.25 ? NeonTheme.danger : (snap.feverActive ? NeonTheme.gold : NeonTheme.cyan)
     }
 
     private func dmaxW(_ w: CGFloat) -> CGFloat { w < 0.0 ? 0.0 : w }
@@ -138,29 +148,42 @@ struct GameView: View {
     // MARK: Footer
 
     private var footer: some View {
-        Text(config.daemonSetEnabled ? "PROTOCOL" : (snap.targetScore != nil ? "CAMPAIGN" : "ENDLESS"))
-            .font(.system(size: 11, weight: .regular, design: .monospaced))
-            .foregroundStyle(Neon.cyan.opacity(0.4))
+        HStack {
+            Button("◂ MENU") { onExit() }
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+            Spacer()
+            Text(modeLabel)
+                .font(.system(size: 11, weight: .regular, design: .monospaced))
+                .foregroundStyle(NeonTheme.cyan.opacity(0.4))
+        }
     }
 
     private var gameOverOverlay: some View {
         VStack(spacing: 18) {
             Text(snap.didWin ? "CORE CRACKED" : "DISCONNECTED")
                 .font(.system(size: 26, weight: .heavy, design: .monospaced))
-                .foregroundStyle(snap.didWin ? Neon.gold : Neon.danger)
-                .neonGlow(snap.didWin ? Neon.gold : Neon.danger, radius: 10)
+                .foregroundStyle(snap.didWin ? NeonTheme.gold : NeonTheme.danger)
+                .neonGlow(snap.didWin ? NeonTheme.gold : NeonTheme.danger, radius: 10)
             Text("SCORE \(snap.score)")
                 .font(.system(size: 18, weight: .heavy, design: .monospaced))
-                .foregroundStyle(Neon.cyan)
-            Button("RECONNECT") { restart() }
-                .font(.system(size: 15, weight: .bold, design: .monospaced))
-                .foregroundStyle(Neon.background)
-                .padding(.horizontal, 24).padding(.vertical, 12)
-                .background(Capsule().fill(Neon.cyan))
+                .foregroundStyle(NeonTheme.cyan)
+            HStack(spacing: 14) {
+                Button("RECONNECT") { restart() }
+                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.background)
+                    .padding(.horizontal, 22).padding(.vertical, 12)
+                    .background(Capsule().fill(NeonTheme.cyan))
+                Button("JACK OUT") { onExit() }
+                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                    .foregroundStyle(NeonTheme.magenta)
+                    .padding(.horizontal, 22).padding(.vertical, 12)
+                    .background(Capsule().stroke(NeonTheme.magenta, lineWidth: 1.5))
+            }
         }
         .padding(34)
-        .background(RoundedRectangle(cornerRadius: 18).fill(Neon.background.opacity(0.92))
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Neon.cyan.opacity(0.4), lineWidth: 1)))
+        .background(RoundedRectangle(cornerRadius: 18).fill(NeonTheme.background.opacity(0.92))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(NeonTheme.cyan.opacity(0.4), lineWidth: 1)))
     }
 
     // MARK: Loop + input
@@ -184,7 +207,8 @@ struct GameView: View {
     }
 
     private func restart() {
-        let e = GridEngine(config: config, seed: seed)
+        let e = GridEngine(config: config, deck: .starter, gridSize: .threeByThree,
+                           seed: seed, targetScore: targetScore, difficultyBias: difficultyBias)
         engine = e
         snap = e.snapshot
         lastTickAt = 0
@@ -204,9 +228,9 @@ private struct CellView: View {
             // Empty cell well — a faint fill (so the whole cell is a tap target, since
             // SkipUI has no .contentShape) plus the terminal-grid outline.
             RoundedRectangle(cornerRadius: 10)
-                .fill(Neon.cyan.opacity(0.05))
+                .fill(NeonTheme.cyan.opacity(0.05))
             RoundedRectangle(cornerRadius: 10)
-                .stroke(isZone ? Neon.danger.opacity(0.8) : Neon.cyan.opacity(0.12),
+                .stroke(isZone ? NeonTheme.danger.opacity(0.8) : NeonTheme.cyan.opacity(0.12),
                         style: StrokeStyle(lineWidth: isZone ? 2.0 : 1.0,
                                            dash: isZone ? [5.0, 4.0] : [CGFloat]()))
 
@@ -223,36 +247,36 @@ private struct CellView: View {
         case .firewallBomb:
             // never-tap hazard — hostile red diamond
             Diamond()
-                .fill(Neon.danger)
+                .fill(NeonTheme.danger)
                 .frame(width: d, height: d)
-                .neonGlow(Neon.danger, radius: 9)
+                .neonGlow(NeonTheme.danger, radius: 9)
         case .armoredDaemon:
             ZStack {
-                Circle().fill(node.isBreached ? Neon.magenta.opacity(0.4) : Neon.magenta)
+                Circle().fill(node.isBreached ? NeonTheme.magenta.opacity(0.4) : NeonTheme.magenta)
                     .frame(width: d, height: d)
-                Circle().stroke(Neon.magenta, lineWidth: 2).frame(width: d * 1.18, height: d * 1.18)
+                Circle().stroke(NeonTheme.magenta, lineWidth: 2).frame(width: d * 1.18, height: d * 1.18)
             }
-            .neonGlow(Neon.magenta, radius: 8)
+            .neonGlow(NeonTheme.magenta, radius: 8)
         case .dataCache:
             RoundedRectangle(cornerRadius: 5)
-                .fill(Neon.gold)
+                .fill(NeonTheme.gold)
                 .frame(width: d, height: d)
-                .neonGlow(Neon.gold, radius: 9)
+                .neonGlow(NeonTheme.gold, radius: 9)
         case .intrusion:
             Hexagon()
-                .fill(Neon.danger)
+                .fill(NeonTheme.danger)
                 .frame(width: d, height: d)
-                .neonGlow(Neon.danger, radius: 7)
+                .neonGlow(NeonTheme.danger, radius: 7)
         case .powerUp:
-            Circle().fill(Neon.gold)
+            Circle().fill(NeonTheme.gold)
                 .frame(width: d * 0.8, height: d * 0.8)
-                .neonGlow(Neon.gold, radius: 10)
+                .neonGlow(NeonTheme.gold, radius: 10)
         default:
             // standard + worm
             Circle()
-                .fill(Neon.cyan)
+                .fill(NeonTheme.cyan)
                 .frame(width: d, height: d)
-                .neonGlow(Neon.cyan, radius: flashing ? 14.0 : 8.0)
+                .neonGlow(NeonTheme.cyan, radius: flashing ? 14.0 : 8.0)
                 .overlay(node.isSetMember ? AnyView(setPip(node)) : AnyView(EmptyView()))
         }
     }
@@ -260,7 +284,7 @@ private struct CellView: View {
     private func setPip(_ node: GridNode) -> some View {
         Text("\(node.setOrder ?? 0)")
             .font(.system(size: size * 0.26, weight: .heavy, design: .monospaced))
-            .foregroundStyle(Neon.background)
+            .foregroundStyle(NeonTheme.background)
     }
 }
 
