@@ -26,7 +26,12 @@ transpiled)** — SwiftUI → Jetpack Compose, Swift → Kotlin.
 | **Release-AAB (M6-kern)** | ✅ vroeg geverifieerd | `skip export --release` → `GridBreaker-release.aab` **12,4 MB** + APK 14,5 MB (R8/ProGuard, van 24 MB debug). Geïnstalleerd + draait identiek — minificatie strip niets fataals. De-riskt de Play-Store-build. |
 | **M5 — Leaderboards** | ✅ by construction | `GameCenterService` (GameKit) is bewust **niet** mee-geport naar de Skip-target → er zijn op Android geen leaderboard-calls. Lokale high-scores werken al via `GameStore` (M1). Play Games Services = los later traject. |
 | **M4 — Menu's & meta** | ✅ | Alle iOS-views geport (parity), live-geverifieerd op emulator: menu-hub + router, **CYBERDECK**, **CAMPAIGN** (level-select), **COSMETICS** (palettes + trails), **TOP RUNS**, **CODEX**, **SETTINGS** (incl. Slider). Volledige `NeonTheme` palette-systeem. GameView-visuals gelijkgetrokken met iOS (RAM-bar, SCORE/NEXT, **DataCore CHARGE-ring**, ring-sprite-tegels). |
-| M3 — Audio + haptics | ⏳ | de zwaarste shim (zie §3) — `AVAudioEngine`+PCM → Android `AudioTrack`. Aparte focus-sessie (nu de enige resterende pariteits-stap). |
+| **M3 — Audio + haptics** | ✅ build+runtime-verified | iOS-synth (12 SFX, sine/saw/LPF/FM/soft-clip) verbatim geport → 16-bit PCM `[Int16]` → Android `AudioTrack` (MODE_STATIC per shot). Haptics → `Vibrator`/`VibrationEffect` via `ProcessInfo.processInfo.androidContext`. Alle events gewired (decode/breach/miss/bomb/fever/…). VIBRATE-permissie toegevoegd. Draait runtime zonder crash; **echt geluid/trilling vereist een fysiek toestel** (emulator is geluidloos). Muziek (speler-MP3's) niet geport — geen gebundelde tracks. |
+
+> **🎉 Volledige pariteit bereikt (M1–M6).** De Android-build matcht de iOS-versie in
+> functionaliteit en uiterlijk, binnen de Skip/platform-grenzen (icon-substituten,
+> geen Canvas-trails/particles). Resterend = alleen device-listen voor audio + een
+> Play-Store-keystore bij distributie (M6 §7).
 
 > **Icon-pariteit (fundamentele platform-grens):** SF Symbols zijn Apple-only en mogen
 > niet op Android worden gebundeld. `IconCompat.sfSym(_:)` mapt elk gebruikt symbool naar

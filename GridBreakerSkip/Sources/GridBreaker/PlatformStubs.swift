@@ -9,29 +9,8 @@ import Foundation
 //     the iOS "player declined auth" path. Local high scores still work via GameStore.
 // Keeping the same API surface means the ported views/engine compile unchanged.
 
-/// Sound effects (same cases as iOS so ported call-sites match). No-op until M3.
-enum SFX {
-    case decode, decodeArmored, decodeBig, decodeWorm
-    case breach, miss, bomb, fever, gameOver, ramLow
-    case uiTap, purchase
-}
-
-final class AudioEngine: @unchecked Sendable {
-    static let shared = AudioEngine()
-    private init() {}
-
-    var enabled = true
-    var musicVolume = 0.85
-    var sfxVolume = 0.7
-
-    func start() {}
-    func play(_ sfx: SFX, step: Int = 0) {}
-}
-
-/// Haptics — no-op stub (Android Vibrator integration is M3).
-enum Haptics {
-    nonisolated(unsafe) static var enabled = true
-}
+// AudioEngine, SFX and Haptics now live in Audio.swift (real Android AudioTrack synth
+// + Vibrator, M3). Game Center remains a no-op stub here (no Android equivalent, M5).
 
 // MARK: - Game Center (no Android equivalent — all no-ops)
 

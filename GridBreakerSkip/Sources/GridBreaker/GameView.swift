@@ -19,6 +19,7 @@ struct GameView: View {
     @State private var snap: SessionSnapshot
     @State private var lastTickAt: Double = 0
     @State private var flashCell: Int = -1
+    @State private var decodeRun: Int = 0      // arpeggio step for chained decodes
 
     init(config: GameConfig, seed: UInt64, targetScore: Int? = nil, difficultyBias: Int = 0,
          modeLabel: String = "ENDLESS", onExit: @escaping () -> Void = {}) {
@@ -154,15 +155,54 @@ struct GameView: View {
         if lastTickAt == 0.0 { lastTickAt = now; return }
         let dt = now - lastTickAt
         lastTickAt = now
-        _ = engine.tick(deltaTime: dt)
+        let events = engine.tick(deltaTime: dt)
+        process(events)
         snap = engine.snapshot
     }
 
     private func tap(_ index: Int) {
         guard !snap.isGameOver else { return }
-        _ = engine.handleTap(cellIndex: index)
+        let events = engine.handleTap(cellIndex: index)
         flashCell = index
+        process(events)
         snap = engine.snapshot
+    }
+
+    /// Map engine events to audio + haptics (mirrors the iOS juice layer).
+    private func process(_ events: [GameEvent]) {
+        for e in events {
+            switch e {
+            case let .nodeDecoded(type, _):
+                switch type {
+                case NodeType.armoredDaemon: Haptics.impact(.medium); AudioEngine.shared.play(.decodeArmored)
+                case NodeType.dataCache:     Haptics.impact(.medium); AudioEngine.shared.play(.decodeBig)
+                case NodeType.wormDaemon:    Haptics.impact(.light);  AudioEngine.shared.play(.decodeWorm)
+                default:                     Haptics.impact(.light);  AudioEngine.shared.play(.decode, step: decodeRun)
+                }
+                decodeRun += 1
+            case .nodeBreached:        Haptics.impact(.soft);  AudioEngine.shared.play(.breach)
+            case .emptyMiss:           decodeRun = 0; Haptics.impact(.rigid); AudioEngine.shared.play(.miss)
+            case .nodeExpired:         decodeRun = 0; Haptics.impact(.rigid); AudioEngine.shared.play(.miss)
+            case .missAbsorbed:        Haptics.impact(.soft);  AudioEngine.shared.play(.breach)
+            case .firewallDefused:     Haptics.impact(.medium); AudioEngine.shared.play(.decodeBig)
+            case .firewallExploded:    decodeRun = 0; Haptics.error(); AudioEngine.shared.play(.bomb)
+            case .feverStarted:        Haptics.success(); AudioEngine.shared.play(.fever)
+            case .feverEnded:          Haptics.impact(.soft)
+            case .ramCritical:         Haptics.impact(.rigid); AudioEngine.shared.play(.ramLow)
+            case .gridExpanded:        Haptics.success(); AudioEngine.shared.play(.fever)
+            case .powerUpCollected:    Haptics.success(); AudioEngine.shared.play(.fever)
+            case .milestoneReached:    Haptics.success(); AudioEngine.shared.play(.fever)
+            case .daemonSetSpawned:    Haptics.impact(.soft); AudioEngine.shared.play(.breach)
+            case .daemonSetAdvanced:   break
+            case .daemonSetCompleted:  Haptics.impact(.rigid); AudioEngine.shared.play(.decodeBig)
+            case .daemonSetWrongOrder: decodeRun = 0; Haptics.impact(.rigid); AudioEngine.shared.play(.miss)
+            case .dmzSpawned:          Haptics.impact(.medium); AudioEngine.shared.play(.breach)
+            case .intrusionCleared:    Haptics.impact(.light); AudioEngine.shared.play(.decode)
+            case .dmzOverrunSpawned:   Haptics.impact(.soft); AudioEngine.shared.play(.breach)
+            case .dmzPurged:           Haptics.success(); AudioEngine.shared.play(.fever)
+            case .gameOver:            Haptics.error(); AudioEngine.shared.play(.gameOver)
+            }
+        }
     }
 
     private func restart() {
@@ -171,6 +211,7 @@ struct GameView: View {
         engine = e
         snap = e.snapshot
         lastTickAt = 0
+        decodeRun = 0
     }
 }
 
