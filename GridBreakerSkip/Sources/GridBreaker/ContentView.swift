@@ -1,110 +1,159 @@
 import SwiftUI
 
-// MARK: - Neon theme (subset, for the render spike)
+// MARK: - Neon theme (subset)
 
 enum Neon {
     static let background = Color(red: 0.02, green: 0.02, blue: 0.05)
     static let cyan       = Color(red: 0.20, green: 0.95, blue: 1.00)
     static let magenta    = Color(red: 1.00, green: 0.20, blue: 0.80)
     static let gold       = Color(red: 1.00, green: 0.82, blue: 0.25)
-    static let gridDim    = Color(red: 0.45, green: 0.25, blue: 0.85)
+    static let danger     = Color(red: 1.00, green: 0.25, blue: 0.30)
 }
 
 extension View {
-    /// The neon glow signature: double-shadow halo. 70 callsites in the iOS app.
-    /// `.shadow(color:radius:)` IS implemented in SkipUI → glow survives the port.
     func neonGlow(_ color: Color, radius: CGFloat = 10) -> some View {
         self.shadow(color: color.opacity(0.9), radius: radius)
             .shadow(color: color.opacity(0.5), radius: radius * 2)
     }
 }
 
-// MARK: - Beam shape (Canvas replacement)
+// MARK: - M1 verification view
+//
+// Drives the REAL ported GridEngine on Android — proves the deterministic core
+// ticks, spawns, drains RAM, scores, and resolves taps. Real `dt` from Date
+// timestamps (not a fixed accumulator) so speed is wall-clock-correct. The full
+// grid UI is M2; this is the engine readout + a few live nodes you can tap.
 
-/// SkipUI has NO Canvas/GraphicsContext. But `Path` + `Shape` ARE implemented,
-/// so the beam/trail/particle rendering is rebuilt as a Shape with `.blur` + glow.
-struct BeamShape: Shape {
-    var phase: Double
-
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        let mid = rect.midY
-        p.move(to: CGPoint(x: 0.0, y: mid))
-        let steps = 60
-        var i = 0
-        while i <= steps {
-            let fx = Double(i) / Double(steps)
-            let x = fx * rect.width
-            let y = mid + sin(phase * 3.0 + fx * 8.0) * 24.0
-            p.addLine(to: CGPoint(x: x, y: y))
-            i += 1
-        }
-        return p
-    }
-}
-
-// MARK: - Render spike
-
-/// M2a render spike — proves the PORTABLE rendering stack works on Android, after
-/// the spike found TimelineView + Canvas are unavailable in SkipUI 1.8.16:
-///   1. neonGlow (double .shadow) ✅ implemented
-///   2. Game loop via a Task.sleep clock (TimelineView replacement)
-///   3. Beam via Path/Shape + .blur (Canvas replacement)
 struct ContentView: View {
-    @State private var clock: Double = 0.0
+    @State private var engine = GridEngine(config: GameConfig.endless(), seed: UInt64(20260621))
+    @State private var snap: SessionSnapshot? = nil
+    @State private var lastTickAt: Double = 0
+    @State private var events: Int = 0
 
     var body: some View {
-        let pulse = 0.5 + 0.5 * sin(clock * 2.0)       // 0…1 breathing
-        let drift = sin(clock * 1.3)                    // -1…1 horizontal drift
+        let s = snap
 
-        ZStack {
+        return ZStack {
             Neon.background.ignoresSafeArea()
 
-            VStack(spacing: 44) {
-                // RISK #1: glow on text
+            VStack(spacing: 22) {
                 Text("GRID_BREAKER")
-                    .font(.system(size: 30, weight: .heavy, design: .monospaced))
+                    .font(.system(size: 26, weight: .heavy, design: .monospaced))
                     .foregroundStyle(Neon.cyan)
-                    .neonGlow(Neon.cyan, radius: 10)
-
-                // RISK #2: the game-loop clock drives a pulsing + drifting node
-                ZStack {
-                    Circle()
-                        .fill(Neon.cyan)
-                        .frame(width: 70, height: 70)
-                        .scaleEffect(0.8 + 0.35 * pulse)
-                        .neonGlow(Neon.cyan, radius: 14)
-
-                    Circle()
-                        .fill(Neon.magenta)
-                        .frame(width: 26, height: 26)
-                        .neonGlow(Neon.magenta, radius: 10)
-                        .offset(x: drift * 90.0, y: 0.0)
-                }
-                .frame(height: 160)
-
-                // RISK #3: Canvas replaced by Shape + blur + glow
-                BeamShape(phase: clock)
-                    .stroke(Neon.gold, lineWidth: 3.0)
-                    .blur(radius: 2.0)
-                    .neonGlow(Neon.gold, radius: 6)
-                    .frame(height: 90)
-                    .padding(.horizontal, 24)
-
-                // NOTE: Double.truncatingRemainder(dividingBy:) is not in SkipLib → use Int modulo.
-                Text("clock = \(Int(clock) % 1000)s")
-                    .font(.system(size: 13, weight: .regular, design: .monospaced))
+                    .neonGlow(Neon.cyan, radius: 9)
+                Text("engine on android — M1")
+                    .font(.system(size: 12, weight: .regular, design: .monospaced))
                     .foregroundStyle(Neon.gold.opacity(0.7))
+
+                if let s = s {
+                    VStack(spacing: 10) {
+                        readout("SCORE", "\(s.score)", Neon.gold)
+                        readout("RAM", String(format: "%.1f / %.0f", s.ramRemaining, s.ramCapacity), Neon.cyan)
+                        readout("NODES", "\(s.nodes.count)", Neon.magenta)
+                        readout("COMBO", "\(s.combo) / \(s.comboThreshold)", Neon.cyan)
+                        readout("FEVER", s.feverActive ? "ON" : "off", s.feverActive ? Neon.gold : Neon.cyan)
+                        readout("ELAPSED", String(format: "%.1fs", s.elapsed), Neon.gold)
+                    }
+                    .padding(18)
+                    .background(RoundedRectangle(cornerRadius: 14)
+                        .stroke(Neon.cyan.opacity(0.35), lineWidth: 1))
+
+                    // A live row of the actual spawned nodes — tap to decode the first.
+                    HStack(spacing: 8) {
+                        ForEach(s.nodes.prefix(6)) { node in
+                            Circle()
+                                .fill(color(for: node.type))
+                                .frame(width: 26, height: 26)
+                                .neonGlow(color(for: node.type), radius: 6)
+                        }
+                    }
+                    .frame(height: 34)
+
+                    if s.isGameOver {
+                        Text("DISCONNECTED — \(reasonText(s.gameOverReason))")
+                            .font(.system(size: 13, weight: .heavy, design: .monospaced))
+                            .foregroundStyle(Neon.danger)
+                        Button("RECONNECT") { restart() }
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Neon.background)
+                            .padding(.horizontal, 20).padding(.vertical, 10)
+                            .background(Capsule().fill(Neon.cyan))
+                    } else {
+                        Button("DECODE FIRST NODE") { tapFirst() }
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Neon.background)
+                            .padding(.horizontal, 20).padding(.vertical, 10)
+                            .background(Capsule().fill(Neon.cyan))
+                    }
+                } else {
+                    Text("booting engine…")
+                        .font(.system(size: 13, design: .monospaced))
+                        .foregroundStyle(Neon.cyan)
+                }
             }
+            .padding(24)
         }
         .preferredColorScheme(.dark)
         .task {
-            // The portable game loop: ~60fps tick. Replaces TimelineView(.animation).
-            // The real engine will call engine.tick(dt) here with a Date-based dt.
+            snap = engine.snapshot
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 16_000_000)
-                clock += 0.016
+                try? await Task.sleep(nanoseconds: 33_000_000)   // ~30fps tick
+                step()
             }
         }
+    }
+
+    private func readout(_ label: String, _ value: String, _ tint: Color) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 13, weight: .regular, design: .monospaced))
+                .foregroundStyle(Neon.cyan.opacity(0.7))
+            Spacer()
+            Text(value)
+                .font(.system(size: 15, weight: .heavy, design: .monospaced))
+                .foregroundStyle(tint)
+        }
+        .frame(width: 220)
+    }
+
+    private func color(for type: NodeType) -> Color {
+        switch type {
+        case .firewallBomb: return Neon.danger
+        case .armoredDaemon: return Neon.magenta
+        case .dataCache: return Neon.gold
+        default: return Neon.cyan
+        }
+    }
+
+    private func reasonText(_ r: GameOverReason?) -> String {
+        guard let r = r else { return "?" }
+        switch r {
+        case .ramDepleted: return "RAM"
+        case .firewallHit: return "FIREWALL"
+        case .coreCracked: return "CRACKED"
+        case .dmzOverrun: return "DMZ"
+        }
+    }
+
+    private func step() {
+        let now = Date().timeIntervalSinceReferenceDate
+        if lastTickAt == 0.0 { lastTickAt = now; return }
+        let dt = now - lastTickAt
+        lastTickAt = now
+        let ev = engine.tick(deltaTime: dt)
+        events += ev.count
+        snap = engine.snapshot
+    }
+
+    private func tapFirst() {
+        guard let first = engine.snapshot.nodes.first else { return }
+        _ = engine.handleTap(cellIndex: first.cellIndex)
+        snap = engine.snapshot
+    }
+
+    private func restart() {
+        engine = GridEngine(config: GameConfig.endless(), seed: UInt64(20260621))
+        lastTickAt = 0
+        snap = engine.snapshot
     }
 }

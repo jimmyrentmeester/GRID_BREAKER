@@ -21,7 +21,8 @@ transpiled)** — SwiftUI → Jetpack Compose, Swift → Kotlin.
 | P0 — Toolchain | ✅ | `skip checkup` kern-groen (skip 1.8.16, AGP 9.2.0, Kotlin 2.3.0). Test-Kotlin-harness faalt cosmetisch (JUnit-naamparse), niet de build. |
 | P1 — Scaffold + APK | ✅ | `skip init --transpiled-app` → `GridBreakerSkip/`. `skip export --debug` → `GridBreaker-debug.apk` 84,6 MB + `.aab` 24 MB. |
 | **M2a — RENDER-SPIKE** | ✅ **GO** | Live op emulator (Android 16). Zie hieronder. |
-| M1 — Engine + models | ⏳ | volgende |
+| **M1 — Engine + models + persistence** | ✅ | Hele deterministische kern (GridEngine 771 + alle models + GameStore) transpileert + draait live: RAM-drain, node-spawn, tick (real-dt), tap→score/combo/refill, armored 2-taps — allemaal correct op de emulator. |
+| M2 — Speelbare grid | ⏳ | volgende |
 
 ### M2a render-spike — uitslag (2026-06-21): **GO**
 
@@ -63,6 +64,35 @@ voor als een effect later tóch native Compose nodig heeft.
     `"proguard-android-optimize.txt"`. Beide eenmalig gefixt in dit project.
 52. **App start niet via `monkey -c LAUNCHER`** (result -5); start met
     `adb shell am start -n nl.gridbreaker.app/grid.breaker.MainActivity`.
+
+### Pitfalls uit M1 (engine + models)
+
+53. **Seeded-RNG met `UInt64`:** (a) `&+=` (compound) wordt niet vertaald → gebruik
+    `state = state &+ X`; `&*` → Kotlin `*` werkt (ULong wrapt). (b) Hex-literals >2^63
+    overflowen Kotlin's signed `Long` ("value out of range") — Skip zet geen `uL`-suffix;
+    bouw de constant uit 16-bit chunks via `UInt64(0x….) << n | …`. (c) `Double.random`,
+    `Int.random(in:using:)`, `randomElement(using:)`, `shuffle(using:)` werken niet met een
+    custom generator → schrijf eigen helpers op de RNG (`uniform()`, `int(inRange:)`, een
+    index-helper + concrete `shuffledInts`).
+54. **`min`/`max` widen overal** (ook `Double,Double`) naar een boxed `Number & Comparable`
+    → concrete `dmin/dmax/imin/imax` (ternary) of expliciete `if`-clamps. Idem elke
+    gemengde ternary: `cond ? 0.20 : 0` moet `: 0.0`; `cond ? Double(x) : 1` moet `: 1.0`.
+55. **`range.filter { }` levert een Kotlin `List`**, niet een Skip `Array` → `.count`,
+    indexing en doorgeven aan een `[Int]`-param falen. Bouw de array met een expliciete
+    `for … where … { append }`-loop.
+56. **Enum-case als constructor-arg met weggelaten default-params** → "unable to determine
+    owning type for member '.x'"; schrijf het type voltuit: `type: NodeType.intrusion`.
+57. **`ClosedRange<Int>` → Kotlin `IntRange`** heeft geen `.lowerBound`/`.upperBound`;
+    geef geen `ClosedRange` terug uit gedeelde code — gebruik een eigen `struct {lo, hi}`.
+58. **`TimeInterval.infinity` / `.infinity`** resolvet niet → gebruik een grote eindige
+    waarde (de persistente nodes slaan expiry sowieso over).
+59. **`@Observable` vereist `import Observation`** in een bestand dat alleen Foundation importeert.
+60. **`Double.truncatingRemainder` ontbreekt** (zie #50) — `Int`-modulo of `fmod`.
+
+> **Determinisme-caveat:** de RNG-helpers houden Android intern deterministisch (zelfde
+> seed → zelfde run). De uniform/int-afleiding wijkt af van Swifts stdlib, dus een Daily-
+> seed kan een ándere board geven dan iOS. Voor cross-platform Daily-pariteit moeten beide
+> platforms dezelfde helpers gebruiken (later, indien gewenst).
 
 ---
 
