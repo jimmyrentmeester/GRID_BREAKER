@@ -45,18 +45,26 @@ struct RootView: View {
                              targetScore: core.targetScore, difficultyBias: core.difficultyBias,
                              modeLabel: core.name.uppercased(), onExit: { screen = .campaign })
                 } else { placeholder("CAMPAIGN") { screen = .menu } }
-            case .campaign:  placeholder("CAMPAIGN") { screen = .menu }
+            case .campaign:
+                CampaignView(store: store,
+                             onPlay: { core in activeCore = core; tap(); screen = .core },
+                             onBack: { tap(); screen = .menu }).playColumn()
             case .cyberdeck:
                 CyberdeckView(store: store, onBack: { tap(); screen = .menu }).playColumn()
-            case .cosmetics: placeholder("COSMETICS") { screen = .menu }
+            case .cosmetics:
+                CosmeticsView(store: store, onBack: { tap(); screen = .menu }).playColumn()
             case .scores:
                 HighScoresView(scores: store.highScores,
                                dailyBest: store.dailyBest(forDay: Self.today().key),
                                campaignProgress: store.campaignProgress,
                                campaignTotal: Campaign.count,
                                onBack: { tap(); screen = .menu }).playColumn()
-            case .codex:     placeholder("CODEX") { screen = .menu }
-            case .settings:  placeholder("SETTINGS") { screen = .menu }
+            case .codex:
+                CodexView(onBack: { tap(); screen = .menu }).playColumn()
+            case .settings:
+                SettingsView(store: store,
+                             onCodex: { tap(); screen = .codex },
+                             onBack: { tap(); screen = .menu }).playColumn()
             }
         }
         .preferredColorScheme(.dark)
