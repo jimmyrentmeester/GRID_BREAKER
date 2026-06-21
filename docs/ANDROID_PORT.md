@@ -22,7 +22,8 @@ transpiled)** — SwiftUI → Jetpack Compose, Swift → Kotlin.
 | P1 — Scaffold + APK | ✅ | `skip init --transpiled-app` → `GridBreakerSkip/`. `skip export --debug` → `GridBreaker-debug.apk` 84,6 MB + `.aab` 24 MB. |
 | **M2a — RENDER-SPIKE** | ✅ **GO** | Live op emulator (Android 16). Zie hieronder. |
 | **M1 — Engine + models + persistence** | ✅ | Hele deterministische kern (GridEngine 771 + alle models + GameStore) transpileert + draait live: RAM-drain, node-spawn, tick (real-dt), tap→score/combo/refill, armored 2-taps — allemaal correct op de emulator. |
-| M2 — Speelbare grid | ⏳ | volgende |
+| **M2 — Speelbare grid** | ✅ | Skip-native `GameView`: 3×3 grid uit snapshot, getypte glow-sprites (circle/diamond/hex/square via Shape), HUD (score/RAM-bar/combo/fever/streak), real-dt loop, tap→decode→score live bevestigd, game-over + RECONNECT. Neon-look intact. |
+| M3 — Audio + haptics | ⏳ | volgende |
 
 ### M2a render-spike — uitslag (2026-06-21): **GO**
 
