@@ -167,13 +167,44 @@ extension View {
             .shadow(color: color.opacity(0.5), radius: radius * 2)
     }
 
-    /// Caps content to a comfortable phone-width column and centers it horizontally.
-    /// On large screens (iPad) this keeps menus/shops/onboarding as a readable column
-    /// over the neon surround instead of stretching a phone layout edge-to-edge; on
-    /// iPhone the cap exceeds the screen width, so it's a no-op. The reusable fix for
-    /// every "chrome" screen (the in-session grid gets its own composition).
+    /// Presents a "chrome" screen (menu/shop/codex/onboarding) as a centered column.
+    ///
+    /// - iPhone: caps to `maxWidth` and centers (the cap exceeds the screen width, so
+    ///   it's effectively a no-op — the phone layout fills the screen).
+    /// - iPad: lays the content out on a phone-width *design canvas* and **uniformly
+    ///   scales it up** to fill the screen height, so type, icons and spacing all grow
+    ///   together (a phone-sized column with phone-sized fonts looks tiny on a 4:3 iPad).
+    ///   Scaling the whole canvas keeps the composition identical to iPhone, just bigger,
+    ///   and keeps any inner `ScrollView` viewport correct (its height scales to fill).
     func playColumn(_ maxWidth: CGFloat = 480) -> some View {
-        frame(maxWidth: maxWidth)
-            .frame(maxWidth: .infinity, alignment: .center)
+        modifier(PlayColumn(base: maxWidth))
+    }
+}
+
+/// Implements `playColumn` — see its doc. iPad uses a scaled design canvas; the scale
+/// is capped so it never blows the column wider than a comfortable reading measure.
+struct PlayColumn: ViewModifier {
+    let base: CGFloat
+    @Environment(\.horizontalSizeClass) private var hSize
+
+    func body(content: Content) -> some View {
+        if hSize == .regular {
+            // iPad: scale a `base`-wide design canvas up to fill the height.
+            GeometryReader { geo in
+                // Scale to fill height, but cap so the column stays a readable width and
+                // we don't over-magnify on very tall/large iPads.
+                let byHeight = geo.size.height / 900.0       // 900pt ≈ the phone design height
+                let byWidth  = (geo.size.width * 0.82) / base // leave a neon margin around it
+                let scale = max(1.15, min(1.7, min(byHeight, byWidth)))
+                content
+                    .frame(width: base, height: geo.size.height / scale)
+                    .scaleEffect(scale)
+                    .frame(width: geo.size.width, height: geo.size.height, alignment: .center)
+            }
+        } else {
+            content
+                .frame(maxWidth: base)
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
     }
 }

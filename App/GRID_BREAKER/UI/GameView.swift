@@ -275,6 +275,8 @@ struct SessionOutcome: Equatable {
 struct GameView: View {
     @State private var model: GameViewModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var sc: CGFloat { hSize == .regular ? 1.4 : 1.0 }   // iPad chrome scale
     @State private var shakeAnim: CGFloat = 0
     @State private var outcome: SessionOutcome?
     @State private var trailPoints: [TrailPoint] = []
@@ -563,9 +565,9 @@ struct GameView: View {
             if !model.snapshot.isGameOver && !model.isPaused {
                 Button { model.pause() } label: {
                     Image(systemName: "pause.fill")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 16 * sc, weight: .bold))
                         .foregroundStyle(NeonTheme.textDim)
-                        .frame(width: 44, height: 44)
+                        .frame(width: 44 * sc, height: 44 * sc)
                         .background(Circle().stroke(NeonTheme.gridLineDim.opacity(0.5), lineWidth: 1))
                 }
                 .buttonStyle(TerminalButtonStyle())
@@ -732,6 +734,8 @@ struct GameView: View {
 /// device gets a worse layout.
 private struct IslandFrameRow: View {
     let snapshot: SessionSnapshot
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var sc: CGFloat { hSize == .regular ? 1.4 : 1.0 }
 
     private var ramColor: Color {
         snapshot.ramFraction > 0.5 ? NeonTheme.cyan
@@ -744,10 +748,10 @@ private struct IslandFrameRow: View {
             Spacer(minLength: 100)
             VStack(alignment: .trailing, spacing: 0) {
                 Text("RAM")
-                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 9 * sc, weight: .semibold, design: .monospaced))
                     .foregroundStyle(NeonTheme.textDim)
                 Text("\(Int(ceil(max(0, snapshot.ramRemaining))))s")
-                    .font(.system(size: 20, weight: .heavy, design: .monospaced))
+                    .font(.system(size: 20 * sc, weight: .heavy, design: .monospaced))
                     .foregroundStyle(ramColor)
                     .neonGlow(ramColor, radius: 6)
                     .monospacedDigit()
@@ -843,12 +847,14 @@ private struct DataCoreView: View {
 
     @State private var spin: Double = 0
     @State private var pulse: CGFloat = 1
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var sc: CGFloat { hSize == .regular ? 1.4 : 1.0 }
 
     private var tint: Color { feverActive ? NeonTheme.gold : NeonTheme.cyan }
 
     var body: some View {
         GeometryReader { geo in
-            let s = max(70, min(min(geo.size.width, geo.size.height) - 12, 180))
+            let s = max(70, min(min(geo.size.width, geo.size.height) - 12, 180 * sc))
             ZStack {
                 Circle()
                     .stroke(NeonTheme.gridLineDim.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [2, 14]))
@@ -871,7 +877,7 @@ private struct DataCoreView: View {
                         .font(.system(size: s * 0.16, weight: .bold))
                         .foregroundStyle(tint).neonGlow(tint, radius: 6)
                     Text(label)
-                        .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                        .font(.system(size: 8 * sc, weight: .semibold, design: .monospaced))
                         .foregroundStyle(NeonTheme.textDim)
                 }
                 .scaleEffect(pulse)
@@ -898,16 +904,18 @@ private struct DataCoreView: View {
 /// multiplier in gold, and carries the shield-charge indicator.
 private struct BigScoreView: View {
     let snapshot: SessionSnapshot
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var sc: CGFloat { hSize == .regular ? 1.4 : 1.0 }   // iPad bumps chrome type
 
     var body: some View {
         VStack(spacing: 0) {
             Text("SCORE")
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .font(.system(size: 11 * sc, weight: .semibold, design: .monospaced))
                 .foregroundStyle(NeonTheme.textDim)
                 .tracking(3)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("\(snapshot.score)")
-                    .font(.system(size: 46, weight: .heavy, design: .monospaced))
+                    .font(.system(size: 46 * sc, weight: .heavy, design: .monospaced))
                     .foregroundStyle(NeonTheme.cyan)
                     .neonGlow(NeonTheme.cyan, radius: 10)
                     .monospacedDigit()
@@ -916,14 +924,14 @@ private struct BigScoreView: View {
                 // Overclock); the steady streak multiplier is shown by the STREAK badge.
                 if snapshot.scoreMultiplier > max(1, snapshot.streakMultiplier) {
                     Text("×\(snapshot.scoreMultiplier)")
-                        .font(.system(size: 22, weight: .heavy, design: .monospaced))
+                        .font(.system(size: 22 * sc, weight: .heavy, design: .monospaced))
                         .foregroundStyle(NeonTheme.gold)
                         .neonGlow(NeonTheme.gold, radius: 7)
                 }
             }
             if snapshot.shieldCharges > 0 {
                 Label("\(snapshot.shieldCharges)", systemImage: "shield.fill")
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .font(.system(size: 12 * sc, weight: .bold, design: .monospaced))
                     .foregroundStyle(NeonTheme.gold)
                     .padding(.top, 2)
             }
@@ -932,7 +940,7 @@ private struct BigScoreView: View {
             // (ground truth 1.5) without shouting over the score.
             if let next = snapshot.nextMilestone, !snapshot.isGameOver {
                 Text("NEXT ◆ \(next)")
-                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 10 * sc, weight: .semibold, design: .monospaced))
                     .foregroundStyle(NeonTheme.textDim)
                     .padding(.top, 1)
             }
@@ -955,12 +963,14 @@ private struct BigScoreView: View {
 private struct StreakBadge: View {
     let multiplier: Int
     let pulse: Bool
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var sc: CGFloat { hSize == .regular ? 1.4 : 1.0 }
 
     var body: some View {
         HStack(spacing: 5) {
-            Image(systemName: "flame.fill").font(.system(size: 11, weight: .bold))
+            Image(systemName: "flame.fill").font(.system(size: 11 * sc, weight: .bold))
             Text("STREAK ×\(multiplier)")
-                .font(.system(size: 12, weight: .heavy, design: .monospaced))
+                .font(.system(size: 12 * sc, weight: .heavy, design: .monospaced))
                 .monospacedDigit()
         }
         .foregroundStyle(NeonTheme.gold)
@@ -979,6 +989,8 @@ private struct StreakBadge: View {
 private struct HUDView: View {
     let snapshot: SessionSnapshot
     var coreName: String? = nil
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var sc: CGFloat { hSize == .regular ? 1.4 : 1.0 }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -986,11 +998,11 @@ private struct HUDView: View {
                 VStack(spacing: 4) {
                     HStack {
                         Text(coreName ?? "DATA CORE")
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .font(.system(size: 12 * sc, weight: .bold, design: .monospaced))
                             .foregroundStyle(NeonTheme.gold)
                         Spacer()
                         Text("\(snapshot.score) / \(target)")
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .font(.system(size: 12 * sc, weight: .bold, design: .monospaced))
                             .foregroundStyle(NeonTheme.gold)
                     }
                     GeometryReader { geo in
@@ -1017,6 +1029,8 @@ private struct HUDView: View {
 /// The RAM time buffer — the core resource. Shifts cyan → red as it drains.
 private struct RAMBar: View {
     let fraction: Double
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var sc: CGFloat { hSize == .regular ? 1.4 : 1.0 }
 
     private var color: Color {
         fraction > 0.5 ? NeonTheme.cyan
@@ -1027,7 +1041,7 @@ private struct RAMBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             Text("RAM")
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .font(.system(size: 10 * sc, weight: .medium, design: .monospaced))
                 .foregroundStyle(NeonTheme.textDim)
             GeometryReader { geo in
                 let w = geo.size.width
@@ -1044,7 +1058,7 @@ private struct RAMBar: View {
                         .animation(.easeOut(duration: 0.18), value: fraction)
                 }
             }
-            .frame(height: 12)
+            .frame(height: 12 * sc)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("RAM remaining")
