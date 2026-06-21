@@ -231,6 +231,10 @@ private struct MenuTile: View {
             }
         }
         .buttonStyle(.plain)
+        // Also fill on the Button itself (not just its label): in Skip a Button sizes to
+        // content, so without this an HStack can give the first tile all the width and
+        // squeeze its siblings to vertical slivers.
+        .frame(maxWidth: .infinity)
     }
 }
 
