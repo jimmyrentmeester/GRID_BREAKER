@@ -20,6 +20,10 @@ struct GameView: View {
     @State private var lastTickAt: Double = 0
     @State private var flashCell: Int = -1
     @State private var decodeRun: Int = 0      // arpeggio step for chained decodes
+    @State private var clock: Double = 0       // monotonic seconds, drives trail/particle fades
+    @State private var trailPoints: [TrailPt] = []
+    @State private var bursts: [Burst] = []
+    @State private var lastTapCenter: CGPoint = .zero
 
     init(config: GameConfig, seed: UInt64, targetScore: Int? = nil, difficultyBias: Int = 0,
          modeLabel: String = "ENDLESS", onExit: @escaping () -> Void = {}) {
@@ -94,25 +98,51 @@ struct GameView: View {
             let side = geo.size.width < geo.size.height ? geo.size.width : geo.size.height
             let spacing: CGFloat = 10
             let cell = (side - spacing * CGFloat(cols - 1)) / CGFloat(cols)
-            VStack(spacing: spacing) {
-                ForEach(0..<rows) { row in
-                    HStack(spacing: spacing) {
-                        ForEach(0..<cols) { col in
-                            let index = row * cols + col
-                            CellView(node: byCell[index], size: cell,
-                                     feverActive: snap.feverActive,
-                                     isZone: snap.dmzZone.contains(index),
-                                     flashing: flashCell == index)
-                                .frame(width: cell, height: cell)
-                                .onTapGesture { tap(index) }
+            // Cells + the cosmetic overlays (tap-trail beam/nodes + decode particle
+            // bursts) share one side×side coordinate space so trail points line up.
+            ZStack(alignment: .topLeading) {
+                VStack(spacing: spacing) {
+                    ForEach(0..<rows) { row in
+                        HStack(spacing: spacing) {
+                            ForEach(0..<cols) { col in
+                                let index = row * cols + col
+                                CellView(node: byCell[index], size: cell,
+                                         feverActive: snap.feverActive,
+                                         isZone: snap.dmzZone.contains(index),
+                                         flashing: flashCell == index)
+                                    .frame(width: cell, height: cell)
+                                    .onTapGesture { tapCell(index, cols: cols, cell: cell, spacing: spacing) }
+                            }
                         }
                     }
+                }
+                TrailLayer(points: trailPoints, skin: TrailSkins.equipped, now: clock)
+                    .allowsHitTesting(false)
+                ForEach(bursts) { b in
+                    ParticleBurst(burst: b, now: clock).allowsHitTesting(false)
                 }
             }
             .frame(width: side, height: side)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .aspectRatio(1, contentMode: .fit)
+    }
+
+    /// Center of cell `index` in the side×side grid coordinate space.
+    private func cellCenter(_ index: Int, cols: Int, cell: CGFloat, spacing: CGFloat) -> CGPoint {
+        let r = index / cols, c = index % cols
+        let step = cell + spacing
+        return CGPoint(x: CGFloat(c) * step + cell / 2.0, y: CGFloat(r) * step + cell / 2.0)
+    }
+
+    /// Tap handler that also drops a trail point + decode burst at the cell center.
+    private func tapCell(_ index: Int, cols: Int, cell: CGFloat, spacing: CGFloat) {
+        let p = cellCenter(index, cols: cols, cell: cell, spacing: spacing)
+        if !TrailSkins.equipped.isOff {
+            trailPoints.append(TrailPt(x: p.x, y: p.y, born: clock))
+            if trailPoints.count > 12 { trailPoints.removeFirst(trailPoints.count - 12) }
+        }
+        tap(index, burstAt: p)
     }
 
     private var footer: some View {
@@ -149,23 +179,38 @@ struct GameView: View {
 
     // MARK: Loop + input
 
+    private let trailLifetime = 0.6
+    private let burstLifetime = 0.5
+
     private func step() {
         guard !snap.isGameOver else { return }
         let now = Date().timeIntervalSinceReferenceDate
         if lastTickAt == 0.0 { lastTickAt = now; return }
         let dt = now - lastTickAt
         lastTickAt = now
+        clock += dt
         let events = engine.tick(deltaTime: dt)
         process(events)
+        // Prune faded cosmetics.
+        let tl = trailLifetime, bl = burstLifetime, c = clock
+        if !trailPoints.isEmpty { trailPoints.removeAll { c - $0.born > tl } }
+        if !bursts.isEmpty { bursts.removeAll { c - $0.born > bl } }
         snap = engine.snapshot
     }
 
-    private func tap(_ index: Int) {
+    private func tap(_ index: Int, burstAt: CGPoint? = nil) {
         guard !snap.isGameOver else { return }
+        lastTapCenter = burstAt ?? CGPoint.zero
         let events = engine.handleTap(cellIndex: index)
         flashCell = index
         process(events)
         snap = engine.snapshot
+    }
+
+    /// Spawn a particle burst at the last tapped cell (Canvas-free: animated Shapes).
+    private func spawnBurst(_ color: Color) {
+        bursts.append(Burst(x: lastTapCenter.x, y: lastTapCenter.y, color: color, born: clock))
+        if bursts.count > 3 { bursts.removeFirst(bursts.count - 3) }   // cap for low-end GPUs
     }
 
     /// Map engine events to audio + haptics (mirrors the iOS juice layer).
@@ -174,10 +219,10 @@ struct GameView: View {
             switch e {
             case let .nodeDecoded(type, _):
                 switch type {
-                case NodeType.armoredDaemon: Haptics.impact(.medium); AudioEngine.shared.play(.decodeArmored)
-                case NodeType.dataCache:     Haptics.impact(.medium); AudioEngine.shared.play(.decodeBig)
-                case NodeType.wormDaemon:    Haptics.impact(.light);  AudioEngine.shared.play(.decodeWorm)
-                default:                     Haptics.impact(.light);  AudioEngine.shared.play(.decode, step: decodeRun)
+                case NodeType.armoredDaemon: Haptics.impact(.medium); AudioEngine.shared.play(.decodeArmored); spawnBurst(NeonTheme.gold)
+                case NodeType.dataCache:     Haptics.impact(.medium); AudioEngine.shared.play(.decodeBig); spawnBurst(NeonTheme.gold)
+                case NodeType.wormDaemon:    Haptics.impact(.light);  AudioEngine.shared.play(.decodeWorm); spawnBurst(NeonTheme.worm)
+                default:                     Haptics.impact(.light);  AudioEngine.shared.play(.decode, step: decodeRun); spawnBurst(NeonTheme.cyan)
                 }
                 decodeRun += 1
             case .nodeBreached:        Haptics.impact(.soft);  AudioEngine.shared.play(.breach)
@@ -185,7 +230,7 @@ struct GameView: View {
             case .nodeExpired:         decodeRun = 0; Haptics.impact(.rigid); AudioEngine.shared.play(.miss)
             case .missAbsorbed:        Haptics.impact(.soft);  AudioEngine.shared.play(.breach)
             case .firewallDefused:     Haptics.impact(.medium); AudioEngine.shared.play(.decodeBig)
-            case .firewallExploded:    decodeRun = 0; Haptics.error(); AudioEngine.shared.play(.bomb)
+            case .firewallExploded:    decodeRun = 0; Haptics.error(); AudioEngine.shared.play(.bomb); spawnBurst(NeonTheme.danger)
             case .feverStarted:        Haptics.success(); AudioEngine.shared.play(.fever)
             case .feverEnded:          Haptics.impact(.soft)
             case .ramCritical:         Haptics.impact(.rigid); AudioEngine.shared.play(.ramLow)
@@ -194,10 +239,10 @@ struct GameView: View {
             case .milestoneReached:    Haptics.success(); AudioEngine.shared.play(.fever)
             case .daemonSetSpawned:    Haptics.impact(.soft); AudioEngine.shared.play(.breach)
             case .daemonSetAdvanced:   break
-            case .daemonSetCompleted:  Haptics.impact(.rigid); AudioEngine.shared.play(.decodeBig)
+            case .daemonSetCompleted:  Haptics.impact(.rigid); AudioEngine.shared.play(.decodeBig); spawnBurst(NeonTheme.gold)
             case .daemonSetWrongOrder: decodeRun = 0; Haptics.impact(.rigid); AudioEngine.shared.play(.miss)
             case .dmzSpawned:          Haptics.impact(.medium); AudioEngine.shared.play(.breach)
-            case .intrusionCleared:    Haptics.impact(.light); AudioEngine.shared.play(.decode)
+            case .intrusionCleared:    Haptics.impact(.light); AudioEngine.shared.play(.decode); spawnBurst(NeonTheme.danger)
             case .dmzOverrunSpawned:   Haptics.impact(.soft); AudioEngine.shared.play(.breach)
             case .dmzPurged:           Haptics.success(); AudioEngine.shared.play(.fever)
             case .gameOver:            Haptics.error(); AudioEngine.shared.play(.gameOver)
@@ -212,6 +257,132 @@ struct GameView: View {
         snap = e.snapshot
         lastTickAt = 0
         decodeRun = 0
+        trailPoints = []
+        bursts = []
+    }
+}
+
+// MARK: - Tap-trail + particles (Canvas-free; SwiftUI Shapes + the game-loop clock)
+
+/// One tap sample for the trail.
+struct TrailPt: Identifiable, Equatable {
+    let id = UUID()
+    let x: CGFloat
+    let y: CGFloat
+    let born: Double
+}
+
+/// A decode particle burst (precomputed directions; animated by progress = age/lifetime).
+struct Burst: Identifiable, Equatable {
+    let id = UUID()
+    let x: CGFloat
+    let y: CGFloat
+    let color: Color
+    let born: Double
+    static func == (a: Burst, b: Burst) -> Bool { a.id == b.id }
+}
+
+/// The equipped trail rendered as a fading neon "data stream": a polyline through the
+/// recent tap points (glow pass + crisp pass) with a node at each point. Canvas-free —
+/// the polyline is a `Path`-based `Shape`, nodes are small Shape views; the tail recedes
+/// as points age out of the pruned list. Mirrors the iOS TrailLayer look within Skip.
+private struct TrailLayer: View {
+    let points: [TrailPt]
+    let skin: TrailSkin
+    let now: Double
+    private let lifetime = 0.6
+
+    var body: some View {
+        if !skin.isOff && points.count >= 1 {
+            let color = skin.color()
+            ZStack(alignment: .topLeading) {
+                // Beam: glow (blurred) + crisp pass of the whole polyline.
+                if points.count >= 2 {
+                    TrailLine(points: points)
+                        .stroke(color.opacity(0.5), style: beamStyle(skin.lineWidth * 1.6))
+                        .blur(radius: skin.lineWidth * 0.9 < 2.0 ? 2.0 : skin.lineWidth * 0.9)
+                    TrailLine(points: points)
+                        .stroke(color.opacity(0.85), style: beamStyle(skin.lineWidth))
+                }
+                // Nodes (fade with age).
+                ForEach(points) { p in
+                    let f = fade(p)
+                    node(color: color, size: skin.size * (0.7 + 0.3 * f))
+                        .opacity(0.9 * Double(f))
+                        .position(x: p.x, y: p.y)
+                }
+            }
+        }
+    }
+
+    private func fade(_ p: TrailPt) -> CGFloat {
+        let a = 1.0 - (now - p.born) / lifetime
+        return a < 0.0 ? 0.0 : CGFloat(a)
+    }
+
+    private func beamStyle(_ w: CGFloat) -> StrokeStyle {
+        StrokeStyle(lineWidth: w, lineCap: .round, lineJoin: .round,
+                    dash: skin.dashed ? [w * 0.15 < 0.5 ? 0.5 : w * 0.15, w * 1.5] : [CGFloat]())
+    }
+
+    @ViewBuilder private func node(color: Color, size: CGFloat) -> some View {
+        switch skin.dot {
+        case .square:  RoundedRectangle(cornerRadius: 2, style: .continuous).fill(color).frame(width: size, height: size)
+        case .diamond: TrailDiamond().fill(color).frame(width: size, height: size)
+        default:       Circle().fill(color).frame(width: size, height: size)
+        }
+    }
+}
+
+/// Polyline through the trail points (Path Shape — Canvas-free).
+private struct TrailLine: Shape {
+    let points: [TrailPt]
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        guard points.count >= 2 else { return p }
+        p.move(to: CGPoint(x: points[0].x, y: points[0].y))
+        var i = 1
+        while i < points.count { p.addLine(to: CGPoint(x: points[i].x, y: points[i].y)); i += 1 }
+        return p
+    }
+}
+
+private struct TrailDiamond: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        p.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
+        p.closeSubpath()
+        return p
+    }
+}
+
+/// A decode particle burst: 8 dots flung outward + fading (animated by the loop clock).
+private struct ParticleBurst: View {
+    let burst: Burst
+    let now: Double
+    private let lifetime = 0.5
+    private let count = 6
+
+    var body: some View {
+        let age = now - burst.born
+        let prog = age / lifetime
+        let p = prog < 0.0 ? 0.0 : (prog > 1.0 ? 1.0 : prog)
+        let dist = 26.0 * p
+        let op = 1.0 - p
+        ZStack(alignment: .topLeading) {
+            ForEach(0..<count) { i in
+                let ang = Double.pi * 2.0 * Double(i) / Double(count)
+                Circle()
+                    .fill(burst.color)
+                    .frame(width: 6.0 * (1.0 - 0.5 * p), height: 6.0 * (1.0 - 0.5 * p))
+                    .opacity(op)
+                    .position(x: burst.x + CGFloat(cos(ang)) * dist,
+                              y: burst.y + CGFloat(sin(ang)) * dist)
+            }
+        }
     }
 }
 

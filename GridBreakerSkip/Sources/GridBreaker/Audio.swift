@@ -33,7 +33,12 @@ final class AudioEngine: @unchecked Sendable {
     func start() {
         guard !started else { return }
         started = true
-        renderAll()
+        // Synthesise the 12 SFX off the main thread — ~500k DSP samples would otherwise
+        // block first paint (and risk an ANR) at launch. play() reads pcm defensively
+        // (nil until ready → silent), so early taps just miss the (sub-second) warm-up.
+        Task.detached(priority: .utility) { [weak self] in
+            self?.renderAll()
+        }
     }
 
     func play(_ sfx: SFX, step: Int = 0) {

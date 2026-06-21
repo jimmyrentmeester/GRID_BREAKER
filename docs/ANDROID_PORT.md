@@ -29,9 +29,24 @@ transpiled)** — SwiftUI → Jetpack Compose, Swift → Kotlin.
 | **M3 — Audio + haptics** | ✅ build+runtime-verified | iOS-synth (12 SFX, sine/saw/LPF/FM/soft-clip) verbatim geport → 16-bit PCM `[Int16]` → Android `AudioTrack` (MODE_STATIC per shot). Haptics → `Vibrator`/`VibrationEffect` via `ProcessInfo.processInfo.androidContext`. Alle events gewired (decode/breach/miss/bomb/fever/…). VIBRATE-permissie toegevoegd. Draait runtime zonder crash; **echt geluid/trilling vereist een fysiek toestel** (emulator is geluidloos). Muziek (speler-MP3's) niet geport — geen gebundelde tracks. |
 
 > **🎉 Volledige pariteit bereikt (M1–M6).** De Android-build matcht de iOS-versie in
-> functionaliteit en uiterlijk, binnen de Skip/platform-grenzen (icon-substituten,
-> geen Canvas-trails/particles). Resterend = alleen device-listen voor audio + een
-> Play-Store-keystore bij distributie (M6 §7).
+> functionaliteit en uiterlijk, binnen de Skip/platform-grenzen. Resterend = alleen
+> device-checks (audio-listen + trail/particle-visuals) + een Play-Store-keystore (M6 §7).
+
+### Tap-trails + particles — Canvas-vrij herbouwd
+
+De iOS tap-trail + decode-particles gebruiken Canvas (afwezig in Skip). Omdat je trail-
+skins in de shop **koopt**, moeten ze écht werken — dus herbouwd met SwiftUI:
+- **Tap-trail**: een `Path`-Shape-polyline door de recente tap-cel-centra (glow- + crisp-
+  pass) + een node per punt (cirkel/vierkant/ruit per skin), fadend via de game-loop-klok;
+  de staart trekt weg doordat punten op leeftijd worden gesnoeid. Per skin: kleur/vorm/
+  dikte/dash uit `TrailSkin`. Gevoed door cel-taps ("springt tussen de cellen die je raakt").
+- **Particles**: een decode-burst = 6 dots die naar buiten vliegen + faden (offset/opacity
+  per progress), per event gekleurd. Canvas-vrij.
+- **Perf**: caps (12 trail-punten, 3 bursts × 6 dots) zodat het licht blijft op zwakke GPU's.
+  Twee echte fixes na een ANR op de software-emulator: (1) deze caps, (2) de SFX-synth
+  (`renderAll`, ~500k DSP-samples) van de main-thread naar `Task.detached` — blokkeerde
+  anders de eerste paint bij launch. Build- + runtime-stabiel (app blijft ALIVE in-game);
+  de transiente visual zelf vereist een echt toestel (emulator te traag om 'm te vangen).
 
 > **Icon-pariteit (fundamentele platform-grens):** SF Symbols zijn Apple-only en mogen
 > niet op Android worden gebundeld. `IconCompat.sfSym(_:)` mapt elk gebruikt symbool naar
