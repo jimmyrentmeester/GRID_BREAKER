@@ -3,6 +3,20 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #100 — RAM frame follows the rounded screen corners (2026-06-22)
+Maintainer ask: let the frame follow the device's rounded screen corners and scale across sizes.
+- **`UI/Juice.swift`** `PerimeterDrain`: the two half-perimeters are now built as rounded paths — each
+  corner is a quarter-circle approximated by 8 short segments (round line joins hide the facets), so
+  the existing arclength walker (the split-drain / front descent) works unchanged. Added a
+  `cornerRadius` param; everything is computed in `rect` units (inset 4pt) so it scales to any screen.
+- **`GameView.swift`**: pass a device-appropriate radius without private API — iPad (regular size
+  class) 20, notch/Dynamic-Island iPhones 50, home-button iPhones 4 — roughly concentric with the
+  display given the 4pt inset.
+- **Verified** (iPhone 16 sim): builds; at full RAM the cyan frame hugs all four rounded corners like
+  a built-in HUD frame (captured); the split-drain + glow still work.
+- Note: exact per-device radius would need the private `_displayCornerRadius` (App-Store risk) — the
+  size-class heuristic is close on common devices and safe.
+
 ## Run #99 — RAM frame: earlier, bar-matched bottom glow (2026-06-22)
 Maintainer tweak: start the bottom glow sooner (≈2/3 through the gold band, fraction ≈0.34 instead of
 0.25) and let its colour follow the bar (gold→red) instead of always red. `UI/Juice.swift`

@@ -509,8 +509,13 @@ struct GameView: View {
             // red at critical (pairing with the existing audio double-pulse). On-theme and
             // out of the grid's way; the slim top bar stays as the precise readout.
             if ramBackground && !model.snapshot.isGameOver {
+                // Approximate the device's display corner radius (no private API): iPad has
+                // gentle corners, notch/Dynamic-Island iPhones ~50, home-button iPhones are
+                // near-square. The frame insets 4pt, so this is roughly concentric.
+                let corner: CGFloat = hSize == .regular ? 20 : (hasIslandOrNotch ? 50 : 4)
                 RAMPerimeterFrame(fraction: model.snapshot.ramFraction,
                                   feverActive: model.snapshot.feverActive,
+                                  cornerRadius: corner,
                                   reduceMotion: reduceMotion)
                     .accessibilityHidden(true)
             }

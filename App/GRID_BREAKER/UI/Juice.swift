@@ -324,6 +324,7 @@ struct ErrorFlashBorder: View {
 struct RAMPerimeterFrame: View {
     let fraction: Double          // 0…1 remaining RAM
     var feverActive: Bool = false
+    var cornerRadius: CGFloat = 0 // follow the device's rounded screen corners
     let reduceMotion: Bool
     @State private var critPulse = false
 
@@ -344,12 +345,12 @@ struct RAMPerimeterFrame: View {
         let glow = f < glowStart ? (glowStart - f) / glowStart : 0.0
         ZStack {
             // Dim full-perimeter rail — the "spent" arc still reads as a frame.
-            PerimeterDrain(fraction: 1)
+            PerimeterDrain(fraction: 1, cornerRadius: cornerRadius)
                 .stroke(tint.opacity(0.10),
                         style: StrokeStyle(lineWidth: lineW, lineCap: .round, lineJoin: .round))
             // Remaining RAM: two symmetric arcs from the descending fronts down to the
             // bottom-centre, glowing.
-            PerimeterDrain(fraction: f)
+            PerimeterDrain(fraction: f, cornerRadius: cornerRadius)
                 .stroke(tint, style: StrokeStyle(lineWidth: lineW, lineCap: .round, lineJoin: .round))
                 .shadow(color: tint.opacity(0.85), radius: critical ? 9 : 5)
                 .opacity(critical && !reduceMotion ? (critPulse ? 1.0 : 0.55)
@@ -373,10 +374,14 @@ struct RAMPerimeterFrame: View {
 /// The remaining-RAM perimeter as two symmetric arcs. Both start at the descending
 /// "front" (arclength `(1-fraction)·halfPerimeter` from top-centre) and run down to the
 /// bottom-centre — so at full RAM the whole frame is drawn, and the two fronts glide down
-/// the left/right edges and meet at the bottom as RAM → 0. Inset built in (no layout
-/// padding) so the view behaves like a plain edge border.
+/// the left/right edges and meet at the bottom as RAM → 0. The perimeter follows the
+/// device's rounded screen corners (`cornerRadius`), approximated as a dense polyline so
+/// the existing arclength walker handles it unchanged. Inset built in (no layout padding)
+/// so the view behaves like a plain edge border, and everything is in `rect` units so it
+/// scales to any screen size.
 private struct PerimeterDrain: Shape {
     var fraction: Double
+    var cornerRadius: CGFloat = 0
     var inset: CGFloat = 4
     var animatableData: Double { get { fraction } set { fraction = newValue } }
 
@@ -384,18 +389,47 @@ private struct PerimeterDrain: Shape {
         var p = Path()
         let f = max(0.0, min(1.0, fraction))
         guard f > 0.001 else { return p }
-        let r = rect.insetBy(dx: inset, dy: inset)
-        let tc = CGPoint(x: r.midX, y: r.minY)
-        let tr = CGPoint(x: r.maxX, y: r.minY)
-        let br = CGPoint(x: r.maxX, y: r.maxY)
-        let bc = CGPoint(x: r.midX, y: r.maxY)
-        let tl = CGPoint(x: r.minX, y: r.minY)
-        let bl = CGPoint(x: r.minX, y: r.maxY)
-        let half = r.width + r.height                 // arclength of each half (TC→…→BC)
+        let r0 = rect.insetBy(dx: inset, dy: inset)
+        let r = max(0, min(cornerRadius, min(r0.width, r0.height) / 2 - 1))
+        let right = halfPoints(r0, r, right: true)    // TC → top-right → bottom-right → BC
+        let left  = halfPoints(r0, r, right: false)   // TC → top-left  → bottom-left  → BC
+        let half = polyLength(right)                  // both halves are equal length
         let start = CGFloat(1.0 - f) * half           // descend point from top-centre
-        appendArc(&p, [tc, tr, br, bc], from: start)  // right half
-        appendArc(&p, [tc, tl, bl, bc], from: start)  // left half
+        appendArc(&p, right, from: start)
+        appendArc(&p, left,  from: start)
         return p
+    }
+
+    /// One half of the rounded perimeter, top-centre → … → bottom-centre, with the two
+    /// corners approximated by short segments (round line joins hide the facets).
+    private func halfPoints(_ r: CGRect, _ rad: CGFloat, right: Bool) -> [CGPoint] {
+        let n = 8
+        var pts: [CGPoint] = [CGPoint(x: r.midX, y: r.minY)]   // top-centre
+        func arc(_ c: CGPoint, _ from: Double, _ to: Double) {
+            for k in 1...n {
+                let a = (from + (to - from) * Double(k) / Double(n)) * .pi / 180
+                pts.append(CGPoint(x: c.x + rad * CGFloat(cos(a)), y: c.y + rad * CGFloat(sin(a))))
+            }
+        }
+        if right {
+            pts.append(CGPoint(x: r.maxX - rad, y: r.minY))
+            arc(CGPoint(x: r.maxX - rad, y: r.minY + rad), -90, 0)    // top-right
+            pts.append(CGPoint(x: r.maxX, y: r.maxY - rad))
+            arc(CGPoint(x: r.maxX - rad, y: r.maxY - rad), 0, 90)     // bottom-right
+        } else {
+            pts.append(CGPoint(x: r.minX + rad, y: r.minY))
+            arc(CGPoint(x: r.minX + rad, y: r.minY + rad), -90, -180) // top-left
+            pts.append(CGPoint(x: r.minX, y: r.maxY - rad))
+            arc(CGPoint(x: r.minX + rad, y: r.maxY - rad), 180, 90)   // bottom-left
+        }
+        pts.append(CGPoint(x: r.midX, y: r.maxY))   // bottom-centre
+        return pts
+    }
+
+    private func polyLength(_ v: [CGPoint]) -> CGFloat {
+        var s: CGFloat = 0
+        for i in 1..<v.count { s += hypot(v[i].x - v[i - 1].x, v[i].y - v[i - 1].y) }
+        return s
     }
 
     /// Emit the polyline from arclength `s` (measured from the first vertex) to the end.
