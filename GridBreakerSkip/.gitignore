@@ -12,7 +12,9 @@ local.properties
 .gradle/
 .android/
 .kotlin/
-Android/app/keystore.jks
+# Signing material — never commit (private key + plaintext passwords)
+*.keystore
+*.jks
 Android/app/keystore.properties
 
 xcodebuild*.log
