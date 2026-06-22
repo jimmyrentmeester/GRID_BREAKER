@@ -3,6 +3,25 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #97 — RAM background: pivot waterline → screen-edge containment frame (2026-06-22)
+Maintainer feedback after the on-device pass: the draining waterline works but reads "battery/
+tank", not netrunner — and asked about doing more with the screen edge. (We hadn't avoided the
+edge for best-practice reasons; the opposite — we'd just scoped it to the critical alarm.) Chose
+"rand-frame vervangt waterline".
+- **`UI/Juice.swift`**: replaced `RAMBackdrop` (waterline) + `RAMCriticalEdge` (separate red alarm)
+  with one `RAMPerimeterFrame` — a screen-edge "containment frame" that IS the meter: a dim full-
+  perimeter rail + a lit `Rectangle().trim(0…ramFraction)` stroke that burns down as RAM drains,
+  colour cyan→gold→red, glows, re-lights a segment on each decode, and folds the critical alarm in
+  (intensify + breathing red pulse under 15%, static under Reduce Motion). Zero grid-interior cost.
+- **`GameView.swift`**: dropped the behind-content waterline layer and the separate critical-edge
+  layer; one `RAMPerimeterFrame` over the content (gated by `ramBackground` + `!isGameOver`). Doc
+  comments + `SaveData.ramBackgroundEnabled` doc updated (no schema change — same toggle/key).
+- **Verified** (iPhone 16 sim): Debug build succeeds; the gold near-full frame, the red frame, and
+  the burn-down to a short top-left segment at ~1s RAM all captured live; game-over hides it; the
+  SETTINGS ▸ DISPLAY toggle is unchanged. Cyan tier shares the code path.
+- Next (maintainer): on-device feel pass of the frame; tune line weight / inset / corner radius to
+  taste, then decide default + ship version.
+
 ## Run #96 — RAM-as-environment background (optional, Settings toggle) (2026-06-22)
 Post-launch feedback: the top RAM bar is hard to track while focused on the grid. Built the
 "RAM as draining background" idea, grounded in peripheral-vision best practices (perifeer zicht

@@ -301,8 +301,8 @@ struct GameView: View {
     /// Daily challenge: endless rules on a fixed, date-derived seed (everyone gets the
     /// same board). Replays reuse the seed so it stays "today's" board.
     let daily: Bool
-    /// Player preference: render the RAM clock as a draining play-field background
-    /// (waterline + critical edge) on top of the slim top bar. See RAMBackdrop.
+    /// Player preference: render the RAM clock as a draining screen-edge containment
+    /// frame on top of the slim top bar. See RAMPerimeterFrame.
     let ramBackground: Bool
     /// Fixed RNG seed (daily challenge). nil → a fresh seed each run/replay.
     let fixedSeed: UInt64?
@@ -416,15 +416,6 @@ struct GameView: View {
                     .ignoresSafeArea().accessibilityHidden(true)
             }
 
-            // RAM-as-environment (optional): a draining waterline behind the play field
-            // so the RAM clock is felt without watching the top bar. Behind the content.
-            if ramBackground && !model.snapshot.isGameOver {
-                RAMBackdrop(fraction: model.snapshot.ramFraction,
-                            feverActive: model.snapshot.feverActive,
-                            reduceMotion: reduceMotion)
-                    .accessibilityHidden(true)
-            }
-
             VStack(spacing: 0) {
                 HUDView(snapshot: model.snapshot, coreName: core?.name)
                     .padding(.horizontal, 20)
@@ -507,11 +498,14 @@ struct GameView: View {
                     .accessibilityHidden(true)
             }
 
-            // RAM critical alarm (optional): a breathing red edge when RAM is nearly out,
-            // pairing with the existing audio double-pulse. Only with the RAM background on.
+            // RAM-as-environment (optional): the screen-edge containment frame is the RAM
+            // meter — it burns down as the clock drains, re-lights on decode, and pulses
+            // red at critical (pairing with the existing audio double-pulse). On-theme and
+            // out of the grid's way; the slim top bar stays as the precise readout.
             if ramBackground && !model.snapshot.isGameOver {
-                RAMCriticalEdge(active: model.snapshot.ramFraction < 0.15,
-                                reduceMotion: reduceMotion)
+                RAMPerimeterFrame(fraction: model.snapshot.ramFraction,
+                                  feverActive: model.snapshot.feverActive,
+                                  reduceMotion: reduceMotion)
                     .accessibilityHidden(true)
             }
 

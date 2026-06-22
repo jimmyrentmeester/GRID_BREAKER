@@ -144,14 +144,15 @@ aren't good enough). Options to explore: scale content up on the regular size-cl
 richer/2-column iPad layout, or a larger play field — not just a centered phone column. No
 live impact until a universal build + iPad screenshots are actually submitted (v1.0 stays live).
 
-## 🔶 RAM-as-environment background (built on branch, on-device feel pass pending)
-Branch `feature/ram-background` (Run #96). The RAM clock can now also render as a draining
-play-field background: a bright "waterline" recedes top→down (colour cyan→gold→red), with a
-breathing red screen-edge alarm under ~15%. Optional via SETTINGS ▸ DISPLAY ▸ "RAM BACKGROUND"
-(default on); the slim top bar stays as the precise readout. Solves the "hard to track RAM while
-watching the grid" feedback (peripheral-vision best practice). **Pending (maintainer):** play on a
-real device, decide whether it becomes the default and ships in a future version. Not merged to main
-(v1.2 is in review).
+## 🔶 RAM-as-environment: screen-edge containment frame (built on branch, feel pass pending)
+Branch `feature/ram-background` (Runs #96–97). The RAM clock can now also render as a draining
+screen-edge "containment frame": the perimeter is lit at full RAM and burns down as the clock drains
+(colour cyan→gold→red), re-lighting a segment on each decode and pulsing red at critical. Optional via
+SETTINGS ▸ DISPLAY ▸ "RAM BACKGROUND" (default on); the slim top bar stays as the precise readout.
+Solves the "hard to track RAM while watching the grid" feedback (peripheral-vision best practice), and
+is more on-theme than the first attempt (a draining "waterline", #96, which read battery/tank — pivoted
+in #97). **Pending (maintainer):** on-device feel pass; tune line weight / inset / corner radius, then
+decide default + ship version. Not merged to main (v1.2 is in review).
 
 ## Monetization (planned — see docs/MONETIZATION.md)
 Free, **no ads**, no pay-to-win ever. Phase 0: ship free. Phase 1: in-fiction tip

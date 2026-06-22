@@ -43,9 +43,9 @@ struct SaveData: Codable, Sendable {
     var ownedTrailIDs: [String] = ["none", "comet"]
     /// Currently equipped tap-trail skin ID.
     var equippedTrailID: String = "comet"
-    /// Render the RAM clock as a draining play-field background (waterline + critical
-    /// edge alarm) on top of the slim top bar — easier to track without looking away
-    /// from the grid. Preference, not progress.
+    /// Render the RAM clock as a draining screen-edge containment frame on top of the
+    /// slim top bar — easier to track without looking away from the grid. Preference,
+    /// not progress.
     var ramBackgroundEnabled: Bool = true
 
     enum CodingKeys: String, CodingKey {
