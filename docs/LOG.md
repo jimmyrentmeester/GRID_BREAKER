@@ -3,6 +3,27 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #96 — RAM-as-environment background (optional, Settings toggle) (2026-06-22)
+Post-launch feedback: the top RAM bar is hard to track while focused on the grid. Built the
+"RAM as draining background" idea, grounded in peripheral-vision best practices (perifeer zicht
+pikt randen/beweging/helderheid op, geen dunne balk bovenin). On a feature branch
+(`feature/ram-background`) so main stays clean while v1.2 is in review.
+- **`UI/Juice.swift`**: `RAMBackdrop` — the play field fills from the bottom; a bright "waterline"
+  recedes top→down with `ramFraction`, colour cyan→gold→red, body low-opacity (keeps the grid
+  readable), rises on every decode (visible top-up). `RAMCriticalEdge` — a breathing red screen-edge
+  alarm under ~15% RAM (static tint under Reduce Motion), pairing with the existing `.ramCritical`
+  audio double-pulse. One continuous (waterline) + one late alarm (edge) → never two motions at once.
+- **`GameView.swift`**: both layers gated by a new `ramBackground` init flag + `!isGameOver`; the slim
+  top RAM bar stays as the precise readout (layered, not replaced).
+- **Persistence**: `SaveData.ramBackgroundEnabled` (default true, tolerant-decoded, kept across
+  `resetProgress` as a preference) + `GameStore.setRamBackgroundEnabled`. New SETTINGS ▸ DISPLAY ▸
+  "RAM BACKGROUND" toggle. Passed from all four `GameView` call-sites in `RootView`.
+- **Verified** (iPhone 16 sim): Debug build succeeds; waterline drains top→down with the gold and red
+  tiers + the red critical edge captured live; the top bar persists; game-over hides the layer; the
+  Settings toggle flips ON/OFF and persists. Cyan tier shares the same code path. Default-on for the
+  on-device feel pass; flipping the default later is one line.
+- Next (maintainer): play it on a real device, decide default + whether to ship in a future version.
+
 ## Run #95 — Flow/chill dead code cleanup (2026-06-20)
 Removed all 37 unreachable `chill`/Flow references before merging PROTOCOL to main.
 - **`GameView.swift`** (`GameViewModel` + `GameView`): removed `chill` field + init param from

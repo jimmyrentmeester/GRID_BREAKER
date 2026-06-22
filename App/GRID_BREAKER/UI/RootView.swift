@@ -36,6 +36,7 @@ struct RootView: View {
                 titleScreen.playColumn().transition(.opacity)
             case .endless:
                 GameView(deck: store.cyberdeck,
+                         ramBackground: store.ramBackgroundEnabled,
                          bestScore: store.highScores.first?.score ?? 0,
                          onExit: { screen = .menu },
                          recordSession: { score, _ in
@@ -48,6 +49,7 @@ struct RootView: View {
                 // Daily challenge — endless rules on today's shared seed; its own best.
                 let today = Self.today()
                 GameView(deck: store.cyberdeck, seed: today.seed, daily: true,
+                         ramBackground: store.ramBackgroundEnabled,
                          bestScore: store.dailyBest(forDay: today.key),
                          onExit: { screen = .menu },
                          recordSession: { score, _ in store.recordDaily(score: score, day: today.key) })
@@ -56,6 +58,7 @@ struct RootView: View {
                 // PROTOCOL — objective-driven challenge mode (replaces Flow). Pays Credits
                 // but keeps its score off the Endless leaderboard (own character).
                 GameView(deck: store.cyberdeck, protocolMode: true,
+                         ramBackground: store.ramBackgroundEnabled,
                          onExit: { screen = .menu },
                          recordSession: { score, _ in
                              let earned = store.recordProtocolRun(score: score)
@@ -71,6 +74,7 @@ struct RootView: View {
             case .core:
                 if let core = activeCore {
                     GameView(core: core, deck: store.cyberdeck,
+                             ramBackground: store.ramBackgroundEnabled,
                              briefing: store.isCleared(core) ? nil : core.briefing,
                              onExit: { screen = .campaign },
                              onNext: Campaign.core(id: core.id + 1).map { next in { activeCore = next } },

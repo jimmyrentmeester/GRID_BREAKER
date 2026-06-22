@@ -301,6 +301,9 @@ struct GameView: View {
     /// Daily challenge: endless rules on a fixed, date-derived seed (everyone gets the
     /// same board). Replays reuse the seed so it stays "today's" board.
     let daily: Bool
+    /// Player preference: render the RAM clock as a draining play-field background
+    /// (waterline + critical edge) on top of the slim top bar. See RAMBackdrop.
+    let ramBackground: Bool
     /// Fixed RNG seed (daily challenge). nil → a fresh seed each run/replay.
     let fixedSeed: UInt64?
     /// New-mechanic briefing to show before the run (nil = skip, e.g. already cleared).
@@ -318,6 +321,7 @@ struct GameView: View {
          protocolMode: Bool = false,
          seed: UInt64? = nil,
          daily: Bool = false,
+         ramBackground: Bool = false,
          briefing: CoreFeature? = nil,
          bestScore: Int = 0,
          onExit: @escaping () -> Void,
@@ -326,6 +330,7 @@ struct GameView: View {
         self.core = core
         self.protocolMode = protocolMode
         self.daily = daily
+        self.ramBackground = ramBackground
         self.fixedSeed = seed
         self.briefing = briefing
         self.bestScore = bestScore
@@ -411,6 +416,15 @@ struct GameView: View {
                     .ignoresSafeArea().accessibilityHidden(true)
             }
 
+            // RAM-as-environment (optional): a draining waterline behind the play field
+            // so the RAM clock is felt without watching the top bar. Behind the content.
+            if ramBackground && !model.snapshot.isGameOver {
+                RAMBackdrop(fraction: model.snapshot.ramFraction,
+                            feverActive: model.snapshot.feverActive,
+                            reduceMotion: reduceMotion)
+                    .accessibilityHidden(true)
+            }
+
             VStack(spacing: 0) {
                 HUDView(snapshot: model.snapshot, coreName: core?.name)
                     .padding(.horizontal, 20)
@@ -490,6 +504,14 @@ struct GameView: View {
             // an error stays legible on a busy board (issue #2). Above the streak pulse.
             if !model.snapshot.isGameOver {
                 ErrorFlashBorder(trigger: model.errorFlashSeq, reduceMotion: reduceMotion)
+                    .accessibilityHidden(true)
+            }
+
+            // RAM critical alarm (optional): a breathing red edge when RAM is nearly out,
+            // pairing with the existing audio double-pulse. Only with the RAM background on.
+            if ramBackground && !model.snapshot.isGameOver {
+                RAMCriticalEdge(active: model.snapshot.ramFraction < 0.15,
+                                reduceMotion: reduceMotion)
                     .accessibilityHidden(true)
             }
 

@@ -43,12 +43,16 @@ struct SaveData: Codable, Sendable {
     var ownedTrailIDs: [String] = ["none", "comet"]
     /// Currently equipped tap-trail skin ID.
     var equippedTrailID: String = "comet"
+    /// Render the RAM clock as a draining play-field background (waterline + critical
+    /// edge alarm) on top of the slim top bar — easier to track without looking away
+    /// from the grid. Preference, not progress.
+    var ramBackgroundEnabled: Bool = true
 
     enum CodingKeys: String, CodingKey {
         case version, cyberdeck, highScores, soundEnabled, hapticsEnabled, campaignProgress, tutorialSeen
         case musicVolume, sfxVolume, dailyBestScore, dailyBestDay
         case ownedPaletteIDs, equippedPaletteID, ownedTrailIDs, equippedTrailID
-        case starterCreditsGranted, campaignBests
+        case starterCreditsGranted, campaignBests, ramBackgroundEnabled
     }
 
     static let empty = SaveData()
@@ -123,5 +127,6 @@ extension SaveData {
         if !ownedTrailIDs.contains("none") { ownedTrailIDs.append("none") }
         if !ownedTrailIDs.contains("comet") { ownedTrailIDs.append("comet") }
         equippedTrailID = try c.decodeIfPresent(String.self, forKey: .equippedTrailID) ?? equippedTrailID
+        ramBackgroundEnabled = try c.decodeIfPresent(Bool.self, forKey: .ramBackgroundEnabled) ?? ramBackgroundEnabled
     }
 }

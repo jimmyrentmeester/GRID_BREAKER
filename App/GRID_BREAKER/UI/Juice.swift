@@ -310,6 +310,72 @@ struct ErrorFlashBorder: View {
     }
 }
 
+// MARK: - RAM as environment (optional, Settings toggle)
+
+/// RAM-as-environment: the play field fills from the bottom and the bright "waterline"
+/// recedes top→down as the RAM clock drains, so remaining RAM is felt in peripheral
+/// vision without looking away from the grid. The body is low-opacity (keeps the grid
+/// readable); the receding waterline is the bright, motion-carrying edge that the eye
+/// catches. Colour shifts cyan→gold→red with the level, and the line rises smoothly on
+/// every decode (a visible "top-up"). Optional — the slim top RAM bar stays as the
+/// precise readout. Fed by the deterministic `ramFraction` (skill: dress real state).
+struct RAMBackdrop: View {
+    let fraction: Double          // 0…1 remaining RAM
+    var feverActive: Bool = false
+    let reduceMotion: Bool
+
+    private var tint: Color {
+        fraction > 0.5 ? NeonTheme.cyan
+        : fraction > 0.25 ? NeonTheme.gold
+        : NeonTheme.danger
+    }
+
+    var body: some View {
+        let f = max(0, min(1, fraction))
+        let peak = feverActive ? 0.08 : 0.16   // dampen behind the gold Fever atmosphere
+        GeometryReader { geo in
+            VStack(spacing: 0) {
+                Rectangle()
+                    .fill(tint)
+                    .frame(height: 2.5)
+                    .shadow(color: tint.opacity(0.9), radius: 6)
+                    .opacity(0.9)
+                LinearGradient(colors: [tint.opacity(peak), tint.opacity(0.03)],
+                               startPoint: .bottom, endPoint: .top)
+            }
+            .frame(height: max(2.5, geo.size.height * f))
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.3), value: f)
+            .animation(.easeInOut(duration: 0.4), value: tint)
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+}
+
+/// Red screen-edge alarm when RAM is critically low. Breathes (slow pulse) to grab
+/// peripheral attention; a static tint under Reduce Motion. Pairs with the existing
+/// audio double-pulse + haptic on `.ramCritical`. Only the alarm — the waterline carries
+/// the continuous level, so the two never animate at once (calm continuous vs late alarm).
+struct RAMCriticalEdge: View {
+    let active: Bool
+    let reduceMotion: Bool
+    @State private var pulse = false
+
+    var body: some View {
+        RadialGradient(colors: [.clear, NeonTheme.danger.opacity(0.30)],
+                       center: .center, startRadius: 220, endRadius: 560)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .opacity(active ? (reduceMotion ? 0.7 : (pulse ? 1 : 0.45)) : 0)
+            .animation(.easeInOut(duration: 0.45), value: active)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.65).repeatForever(autoreverses: true),
+                       value: pulse)
+            .onChange(of: active) { _, on in pulse = on && !reduceMotion }
+            .onAppear { pulse = active && !reduceMotion }
+    }
+}
+
 // MARK: - Screen shake
 
 /// Horizontal shake driven by an animatable 0→1 ramp (Part 2.2 / brief §10.6:

@@ -40,6 +40,12 @@ final class GameStore {
         persist()
     }
 
+    var ramBackgroundEnabled: Bool { save.ramBackgroundEnabled }
+    func setRamBackgroundEnabled(_ on: Bool) {
+        save.ramBackgroundEnabled = on
+        persist()
+    }
+
     var musicVolume: Double { save.musicVolume }
     func setMusicVolume(_ v: Double) {
         save.musicVolume = min(1, max(0, v))
@@ -88,6 +94,7 @@ final class GameStore {
         fresh.hapticsEnabled = save.hapticsEnabled
         fresh.musicVolume = save.musicVolume
         fresh.sfxVolume = save.sfxVolume
+        fresh.ramBackgroundEnabled = save.ramBackgroundEnabled
         fresh.tutorialSeen = save.tutorialSeen
         // Onboarding state isn't "gameplay progress" — keep it so we don't re-grant CR.
         fresh.starterCreditsGranted = save.starterCreditsGranted
