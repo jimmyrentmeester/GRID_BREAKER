@@ -2,6 +2,42 @@
 
 Short, human-readable changelog (newest first).
 
+## 1.2 — PROTOCOL mode, Codex, iPad fullscreen & fixes (2026-06-22)
+
+### PROTOCOL — new mode
+A new mode built around two alternating objectives that change the game mid-run.
+
+- **DAEMON SET**: a numbered chain of daemons spawns across the grid. Tap them in
+  order — wrong order is a miss, and the set stays until you crack it. Complete the
+  full sequence for a one-shot ×4 on your next decode; finish it during a Fever chain
+  and that Fever runs four times as long. Sets get longer and appear faster as your
+  score climbs.
+- **DMZ PURGE**: a hostile intrusion zone lights up in red. Every second without
+  action, the overrun creeps — filling cells until the grid is gone. Clear every
+  intrusion in the zone to purge it and claim a RAM bonus. The clock doesn't pause
+  while you work.
+
+The two objectives alternate throughout the run, layered over the normal daemon
+stream, with a ramp that tightens the windows as your score grows.
+
+### Codex
+A scannable in-game manual, always one tap away from the menu or the pause screen.
+Covers all five node types, the three power-ups, how RAM / Fever / streaks / grid
+growth work, what every Cyberdeck upgrade adds up to, and a summary of all four
+modes — so you never have to guess a rule mid-run.
+
+### iPad: full-screen layout
+The game now fills your whole iPad screen. Grid, HUD, menus, and all chrome screens
+scale to the full iPad canvas — no more phone-width column centered in the middle.
+
+### Fixes
+- Game Center leaderboards now submit scores correctly in production.
+- The Cyberdeck now shows cumulative upgrade values ("+12s RAM buffer",
+  "+3 mistakes absorbed") so you know exactly what you own.
+- Restart is now available from the pause menu without quitting first.
+- New players land directly on the menu with 150 starter CR and a Campaign pointer
+  instead of a forced tutorial.
+
 ## 1.0.26 — Game Center: global rankings & achievements (2026-06-12)
 - Sign in to Game Center (optional!) and your endless and daily-challenge scores
   join global leaderboards — see how your best run stacks up worldwide.
