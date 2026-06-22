@@ -3,6 +3,32 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #98 — RAM frame: split-drain redesign + grid layout-shift fix (2026-06-22)
+Two maintainer notes after the device pass: (1) when RAM is in the red the remaining lit bit sat at
+the *top* (hard to read); (2) the grid "sometimes grows/shrinks slightly", suspected to be the new
+frame.
+- **Split-drain frame** (`UI/Juice.swift`): new `PerimeterDrain` Shape — the lit line now splits at
+  top-centre and the two fronts descend evenly down both sides, meeting at the bottom-centre as RAM →
+  0 (built from two symmetric arcs, each from the descending front `(1-fraction)·halfPerimeter` down
+  to bottom-centre; animatable on fraction so it still glides + re-lights on decode). So remaining RAM
+  always sits LOW (read "almost out" at the bottom, near the grid). Added an upward red glow rising
+  from the bottom edge as 0 nears. Removed the layout-affecting `.padding(lineW/2)` — inset is built
+  into the Shape, so the view is now structured exactly like the existing edge borders.
+- **Grid layout-shift fix** (`GameView.swift`): root cause was NOT the RAM frame (measured: grid-top y
+  identical across RAM levels). The grid uses `aspectRatio(.fit)` and takes leftover space above a
+  `Spacer(maxHeight:96)` buffer; conditionally-inserted score-block rows — the endless STREAK badge
+  and the shield-charge indicator — change the score block's height, and once the spacer buffer is
+  exhausted (shorter devices / data-core at full height) the grid resizes. Fixed by reserving constant
+  height for both (the badge in a `frame(height:26·sc)` slot, endless-only; the shield in a
+  `frame(height:16·sc)` slot) so neither toggling can shift the grid. `×N` is height-safe (smaller
+  than the score glyph); grid 3×3→4×4 keeps its outer square. The frame is also exonerated/isolated:
+  no animated padding, drawn like the other borders.
+- **Verified** (iPhone 16 sim): Debug build succeeds; the red frame now sits at the bottom with the
+  upward glow (captured at ~1s/5s RAM); fronts descend symmetrically; game-over hides it; layout reads
+  correctly. Cyan/gold tiers share the code path.
+- Next (maintainer): on-device feel pass of the split-drain + the stabilised layout; tune to taste,
+  then decide default + ship version.
+
 ## Run #97 — RAM background: pivot waterline → screen-edge containment frame (2026-06-22)
 Maintainer feedback after the on-device pass: the draining waterline works but reads "battery/
 tank", not netrunner — and asked about doing more with the screen edge. (We hadn't avoided the

@@ -427,10 +427,16 @@ struct GameView: View {
                 VStack(spacing: 6) {
                     BigScoreView(snapshot: model.snapshot)
                     // Endless clean-streak base multiplier — rewards long, clean survival.
-                    if core == nil && model.snapshot.streakMultiplier > 1
-                        && !model.snapshot.isGameOver {
-                        StreakBadge(multiplier: model.snapshot.streakMultiplier, pulse: streakPulse)
-                            .transition(.scale(scale: 0.6).combined(with: .opacity))
+                    // The slot reserves a constant height (endless/daily) so the badge
+                    // appearing/disappearing can't resize the grid below it (layout shift).
+                    if core == nil {
+                        ZStack {
+                            if model.snapshot.streakMultiplier > 1 && !model.snapshot.isGameOver {
+                                StreakBadge(multiplier: model.snapshot.streakMultiplier, pulse: streakPulse)
+                                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+                            }
+                        }
+                        .frame(height: 26 * sc)
                     }
                     DataCoreView(progress: coreProgress,
                                  feverActive: model.snapshot.feverActive,
@@ -945,12 +951,17 @@ private struct BigScoreView: View {
                         .neonGlow(NeonTheme.gold, radius: 7)
                 }
             }
-            if snapshot.shieldCharges > 0 {
-                Label("\(snapshot.shieldCharges)", systemImage: "shield.fill")
-                    .font(.system(size: 12 * sc, weight: .bold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.gold)
-                    .padding(.top, 2)
+            // Reserved-height slot so a shield charge dropping to 0 (or appearing) can't
+            // change the score block's height and shift the grid below it (layout shift).
+            ZStack {
+                if snapshot.shieldCharges > 0 {
+                    Label("\(snapshot.shieldCharges)", systemImage: "shield.fill")
+                        .font(.system(size: 12 * sc, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                }
             }
+            .frame(height: 16 * sc)
+            .padding(.top, 2)
             // Next landmark (endless/daily only — the engine reports nil elsewhere):
             // a quiet, always-true goal line so there's forever a "why am I here"
             // (ground truth 1.5) without shouting over the score.

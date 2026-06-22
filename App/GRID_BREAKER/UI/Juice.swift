@@ -312,14 +312,15 @@ struct ErrorFlashBorder: View {
 
 // MARK: - RAM as environment (optional, Settings toggle)
 
-/// RAM-as-environment: the screen-edge "containment frame" is the RAM meter. The full
-/// perimeter is lit at full RAM and burns down as the clock drains (a ring-timer
-/// unwound into a rectangle) — felt in peripheral vision without looking away from the
-/// grid, and never touching the grid interior (zero readability cost). Colour shifts
-/// cyan→gold→red, a segment re-lights on every decode (a visible "top-up"), and the
-/// frame intensifies + breathes red at critical (folding in the old separate alarm).
-/// On-theme: a system perimeter failing. Optional — the slim top RAM bar stays as the
-/// precise readout. Fed by the deterministic `ramFraction` (skill: dress real state).
+/// RAM-as-environment: the screen-edge "containment frame" is the RAM meter. At full RAM
+/// the whole perimeter is lit; as the clock drains the lit line **splits at top-centre and
+/// the two ends descend evenly down both sides, meeting at the bottom when RAM hits 0** —
+/// so the remaining RAM always sits low (you read "almost out" at the bottom, near the
+/// grid, not up at the top). Colour shifts cyan→gold→red, a segment re-lights on each
+/// decode (a visible "top-up"), and as 0 nears a red glow rises from the bottom edge.
+/// On-theme (a system perimeter failing), never touches the grid interior, and structured
+/// like the existing edge borders so it can't perturb layout. The slim top bar stays as
+/// the precise readout. Fed by the deterministic `ramFraction` (skill: dress real state).
 struct RAMPerimeterFrame: View {
     let fraction: Double          // 0…1 remaining RAM
     var feverActive: Bool = false
@@ -332,23 +333,29 @@ struct RAMPerimeterFrame: View {
         : NeonTheme.danger
     }
     private var critical: Bool { fraction < 0.15 }
-    private var lineW: CGFloat { critical ? 5 : 3.5 }
+    private var lineW: CGFloat { critical ? 4.5 : 3 }
 
     var body: some View {
         let f = max(0.0, min(1.0, fraction))
+        // Red glow that rises from the bottom edge as RAM approaches 0.
+        let glow = f < 0.25 ? (0.25 - f) / 0.25 : 0.0
         ZStack {
             // Dim full-perimeter rail — the "spent" arc still reads as a frame.
-            Rectangle()
-                .stroke(tint.opacity(0.10), lineWidth: lineW)
-            // Remaining RAM: the lit arc, trimmed to the fraction, glowing.
-            Rectangle()
-                .trim(from: 0, to: f)
-                .stroke(tint, style: StrokeStyle(lineWidth: lineW, lineCap: .round))
-                .shadow(color: tint.opacity(0.85), radius: critical ? 11 : 6)
+            PerimeterDrain(fraction: 1)
+                .stroke(tint.opacity(0.10),
+                        style: StrokeStyle(lineWidth: lineW, lineCap: .round, lineJoin: .round))
+            // Remaining RAM: two symmetric arcs from the descending fronts down to the
+            // bottom-centre, glowing.
+            PerimeterDrain(fraction: f)
+                .stroke(tint, style: StrokeStyle(lineWidth: lineW, lineCap: .round, lineJoin: .round))
+                .shadow(color: tint.opacity(0.85), radius: critical ? 9 : 5)
+                .opacity(critical && !reduceMotion ? (critPulse ? 1.0 : 0.55)
+                         : (feverActive ? 0.7 : 0.95))
+            // Upward red glow from the bottom edge near depletion.
+            RadialGradient(colors: [NeonTheme.danger.opacity(0.6), .clear],
+                           center: UnitPoint(x: 0.5, y: 1.04), startRadius: 0, endRadius: 280)
+                .opacity(glow * (reduceMotion ? 0.6 : (critPulse ? 0.7 : 0.35)))
         }
-        .padding(lineW / 2)                       // keep the stroke fully on-screen
-        .opacity(critical && !reduceMotion ? (critPulse ? 1.0 : 0.5)
-                 : (feverActive ? 0.7 : 0.92))    // dampen behind the gold Fever wash
         .ignoresSafeArea()
         .allowsHitTesting(false)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.3), value: f)
@@ -357,6 +364,57 @@ struct RAMPerimeterFrame: View {
                    value: critPulse)
         .onChange(of: critical) { _, c in critPulse = c && !reduceMotion }
         .onAppear { critPulse = critical && !reduceMotion }
+    }
+}
+
+/// The remaining-RAM perimeter as two symmetric arcs. Both start at the descending
+/// "front" (arclength `(1-fraction)·halfPerimeter` from top-centre) and run down to the
+/// bottom-centre — so at full RAM the whole frame is drawn, and the two fronts glide down
+/// the left/right edges and meet at the bottom as RAM → 0. Inset built in (no layout
+/// padding) so the view behaves like a plain edge border.
+private struct PerimeterDrain: Shape {
+    var fraction: Double
+    var inset: CGFloat = 4
+    var animatableData: Double { get { fraction } set { fraction = newValue } }
+
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let f = max(0.0, min(1.0, fraction))
+        guard f > 0.001 else { return p }
+        let r = rect.insetBy(dx: inset, dy: inset)
+        let tc = CGPoint(x: r.midX, y: r.minY)
+        let tr = CGPoint(x: r.maxX, y: r.minY)
+        let br = CGPoint(x: r.maxX, y: r.maxY)
+        let bc = CGPoint(x: r.midX, y: r.maxY)
+        let tl = CGPoint(x: r.minX, y: r.minY)
+        let bl = CGPoint(x: r.minX, y: r.maxY)
+        let half = r.width + r.height                 // arclength of each half (TC→…→BC)
+        let start = CGFloat(1.0 - f) * half           // descend point from top-centre
+        appendArc(&p, [tc, tr, br, bc], from: start)  // right half
+        appendArc(&p, [tc, tl, bl, bc], from: start)  // left half
+        return p
+    }
+
+    /// Emit the polyline from arclength `s` (measured from the first vertex) to the end.
+    private func appendArc(_ p: inout Path, _ v: [CGPoint], from s: CGFloat) {
+        var acc: CGFloat = 0
+        var started = false
+        for i in 1..<v.count {
+            let a = v[i - 1], b = v[i]
+            let segLen = hypot(b.x - a.x, b.y - a.y)
+            let segEnd = acc + segLen
+            if !started {
+                if s <= segEnd {
+                    let t = segLen == 0 ? 0 : (s - acc) / segLen
+                    p.move(to: CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t))
+                    p.addLine(to: b)
+                    started = true
+                }
+            } else {
+                p.addLine(to: b)
+            }
+            acc = segEnd
+        }
     }
 }
 
