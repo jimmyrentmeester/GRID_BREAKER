@@ -3,6 +3,13 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #99 — RAM frame: earlier, bar-matched bottom glow (2026-06-22)
+Maintainer tweak: start the bottom glow sooner (≈2/3 through the gold band, fraction ≈0.34 instead of
+0.25) and let its colour follow the bar (gold→red) instead of always red. `UI/Juice.swift`
+`RAMPerimeterFrame`: `glowStart = 0.34` and the glow `RadialGradient` now uses `tint` (so it's gold in
+the gold band and shifts to red toward 0, animated with the existing `value: tint` colour transition).
+Verified live on iPhone 16 sim: in the gold band the bottom glow now reads gold; builds clean.
+
 ## Run #98 — RAM frame: split-drain redesign + grid layout-shift fix (2026-06-22)
 Two maintainer notes after the device pass: (1) when RAM is in the red the remaining lit bit sat at
 the *top* (hard to read); (2) the grid "sometimes grows/shrinks slightly", suspected to be the new

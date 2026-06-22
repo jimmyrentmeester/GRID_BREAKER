@@ -337,8 +337,11 @@ struct RAMPerimeterFrame: View {
 
     var body: some View {
         let f = max(0.0, min(1.0, fraction))
-        // Red glow that rises from the bottom edge as RAM approaches 0.
-        let glow = f < 0.25 ? (0.25 - f) / 0.25 : 0.0
+        // Glow rising from the bottom edge — begins ~2/3 through the gold band (≈0.33)
+        // and ramps to full at 0; its colour follows `tint` so it shifts gold→red with
+        // the bar.
+        let glowStart = 0.34
+        let glow = f < glowStart ? (glowStart - f) / glowStart : 0.0
         ZStack {
             // Dim full-perimeter rail — the "spent" arc still reads as a frame.
             PerimeterDrain(fraction: 1)
@@ -351,8 +354,8 @@ struct RAMPerimeterFrame: View {
                 .shadow(color: tint.opacity(0.85), radius: critical ? 9 : 5)
                 .opacity(critical && !reduceMotion ? (critPulse ? 1.0 : 0.55)
                          : (feverActive ? 0.7 : 0.95))
-            // Upward red glow from the bottom edge near depletion.
-            RadialGradient(colors: [NeonTheme.danger.opacity(0.6), .clear],
+            // Upward glow from the bottom edge as depletion nears (gold→red with the bar).
+            RadialGradient(colors: [tint.opacity(0.6), .clear],
                            center: UnitPoint(x: 0.5, y: 1.04), startRadius: 0, endRadius: 280)
                 .opacity(glow * (reduceMotion ? 0.6 : (critPulse ? 0.7 : 0.35)))
         }
