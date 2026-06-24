@@ -241,6 +241,14 @@ struct GameConfig: Sendable {
         }
         // Grid grows once you're halfway to the target (only on cores that unlock it).
         c.gridEscalationScore = core.grid4x4 ? max(1, core.targetScore / 2) : nil
+        // Boss cores layer a PROTOCOL objective onto the time-attack fight (the chapter
+        // climax). Reuses the verified objective scheduler/mechanics from protocolMode().
+        switch core.bossObjective {
+        case .none: break
+        case .daemonSet: c.daemonSetEnabled = true
+        case .dmz:       c.dmzEnabled = true
+        case .both:      c.daemonSetEnabled = true; c.dmzEnabled = true
+        }
         return c
     }
 

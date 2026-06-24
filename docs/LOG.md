@@ -3,6 +3,20 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #102 — Campaign 2.0 slice 2: PROTOCOL bosses as chapter finales (2026-06-24)
+Each chapter's boss core now runs a PROTOCOL objective during the time-attack fight.
+- **`Core/Models/Campaign.swift`**: `BossObjective` enum (none/daemonSet/dmz/both) +
+  `DataCore.bossObjective`; set on the 4 bosses (Lockchain → DAEMON SET, Trap Room → DMZ
+  PURGE, The Hunt → DAEMON SET, The Monolith → both) with boss briefings explaining the
+  objective.
+- **`Core/Models/GameConfig.swift`** `campaign(for:)`: enables `daemonSetEnabled`/`dmzEnabled`
+  from the core's `bossObjective`, layering the verified PROTOCOL objective scheduler onto the
+  campaign time-attack config. Normal cores unchanged.
+- **Verified:** Debug build succeeds; new deterministic check `scripts/enginecheck/campaignboss.swift`
+  (added to the default `run.sh` set) — 6/6 pass: boss cores enable the right flags, non-boss
+  cores none, and core-4 / core-8 boss configs actually spawn a DAEMON SET / DMZ in-engine.
+  (Objective mechanics themselves already verified via PROTOCOL mode + daemonset/dmz checks.)
+
 ## Run #101 — Campaign 2.0 slice 1: chapters + slower pacing (2026-06-24)
 First slice of `docs/CAMPAIGN_REDESIGN.md`. Also merged `feature/ram-background` → main.
 - **`Core/Models/Campaign.swift`**: new `Chapter` model (id/title/tagline) + `DataCore.chapter`

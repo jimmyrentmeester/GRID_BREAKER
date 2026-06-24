@@ -22,6 +22,9 @@ struct Chapter: Identifiable, Sendable, Equatable {
 /// a faster, busier pace. Mechanics are gated in **cumulatively**; a new one is
 /// introduced only at the start of a chapter (with a `briefing`), then practised.
 /// Pure data; the engine and UI read it.
+/// The PROTOCOL objective a boss core runs during the fight (none on normal cores).
+enum BossObjective: Sendable, Equatable { case none, daemonSet, dmz, both }
+
 struct DataCore: Identifiable, Sendable, Equatable {
     let id: Int            // 1-based core number / order
     let chapter: Int       // which chapter this core belongs to
@@ -29,8 +32,10 @@ struct DataCore: Identifiable, Sendable, Equatable {
     let targetScore: Int
     let timeBudget: TimeInterval
     let difficultyBias: Int
-    /// Chapter finale — a tougher climax (wired to a PROTOCOL objective in a later slice).
+    /// Chapter finale — a tougher climax that runs a PROTOCOL objective (see bossObjective).
     var isBoss: Bool = false
+    /// On a boss, which PROTOCOL objective layers onto the time-attack fight.
+    var bossObjective: BossObjective = .none
     // Cumulative feature gates.
     var armored: Bool = false
     var bombs: Bool = false
@@ -76,7 +81,10 @@ enum Campaign {
                                        detail: "Magenta shells take two taps: crack the shell, then decode.",
                                        symbol: "lock.shield.fill")),
         DataCore(id: 4, chapter: 1, name: "Lockchain", targetScore: 44, timeBudget: 60, difficultyBias: 45,
-                 isBoss: true, armored: true),
+                 isBoss: true, bossObjective: .daemonSet, armored: true,
+                 briefing: CoreFeature(title: "BOSS · DAEMON SET",
+                                       detail: "Numbered daemons appear — tap them in order (1→N) for a big bonus. Wrong order is a miss.",
+                                       symbol: "list.number")),
         // ── Chapter 2 · Corporate ICE — new: firewall bombs, Fever ──────────────────
         DataCore(id: 5, chapter: 2, name: "Cold Storage Node", targetScore: 40, timeBudget: 60, difficultyBias: 55,
                  armored: true, bombs: true,
@@ -91,7 +99,10 @@ enum Campaign {
                                        detail: "Chain 8 clean decodes to trigger Fever: ×2 score and golden nodes.",
                                        symbol: "bolt.fill")),
         DataCore(id: 8, chapter: 2, name: "Trap Room", targetScore: 74, timeBudget: 68, difficultyBias: 120,
-                 isBoss: true, armored: true, bombs: true, fever: true),
+                 isBoss: true, bossObjective: .dmz, armored: true, bombs: true, fever: true,
+                 briefing: CoreFeature(title: "BOSS · DMZ PURGE",
+                                       detail: "A red intrusion zone spreads — clear every cell in it before the overrun fills the grid.",
+                                       symbol: "hexagon.fill")),
         // ── Chapter 3 · Deep Systems — new: data caches, worms ──────────────────────
         DataCore(id: 9, chapter: 3, name: "Data Vault", targetScore: 70, timeBudget: 68, difficultyBias: 130,
                  armored: true, bombs: true, fever: true, cache: true,
@@ -106,7 +117,10 @@ enum Campaign {
         DataCore(id: 11, chapter: 3, name: "Infestation", targetScore: 100, timeBudget: 70, difficultyBias: 195,
                  armored: true, bombs: true, fever: true, cache: true, worm: true),
         DataCore(id: 12, chapter: 3, name: "The Hunt", targetScore: 116, timeBudget: 72, difficultyBias: 225,
-                 isBoss: true, armored: true, bombs: true, fever: true, cache: true, worm: true),
+                 isBoss: true, bossObjective: .daemonSet, armored: true, bombs: true, fever: true, cache: true, worm: true,
+                 briefing: CoreFeature(title: "BOSS · DAEMON SET",
+                                       detail: "Longer ordered chains now, on a busy board. Crack the sequence in order for the bonus.",
+                                       symbol: "list.number")),
         // ── Chapter 4 · The Core — new: power-ups, grid 4×4 ─────────────────────────
         DataCore(id: 13, chapter: 4, name: "Daemon Foundry", targetScore: 110, timeBudget: 72, difficultyBias: 230,
                  armored: true, bombs: true, fever: true, cache: true, worm: true,
@@ -127,10 +141,10 @@ enum Campaign {
                                        detail: "Reach the halfway mark and the grid grows to 4×4 — more targets, faster.",
                                        symbol: "square.grid.4x3.fill")),
         DataCore(id: 16, chapter: 4, name: "The Monolith", targetScore: 180, timeBudget: 72, difficultyBias: 310,
-                 isBoss: true, armored: true, bombs: true, fever: true, cache: true, worm: true,
+                 isBoss: true, bossObjective: .both, armored: true, bombs: true, fever: true, cache: true, worm: true,
                  powerKinds: [.timeFreeze, .overclock, .purge], grid4x4: true,
                  briefing: CoreFeature(title: "THE MONOLITH",
-                                       detail: "Every system at once, at full tilt. Crack it and the grid is yours.",
+                                       detail: "Every system at once — daemon sets AND purge zones, full tilt. Crack it and the grid is yours.",
                                        symbol: "crown.fill")),
     ]
 

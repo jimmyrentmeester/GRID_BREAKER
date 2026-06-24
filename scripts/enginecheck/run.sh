@@ -17,7 +17,7 @@ CORE=(
   App/GRID_BREAKER/Core/Models/Campaign.swift
 )
 
-checks=("${@:-daemonset dmz ramp}")
+checks=("${@:-daemonset dmz ramp campaignboss}")
 status=0
 for name in ${checks[@]}; do
   src="scripts/enginecheck/${name}.swift"
