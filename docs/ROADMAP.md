@@ -3,21 +3,25 @@
 Milestones end with a running, watchable artifact (ground-truth Part 4.5). One
 scoped slice per session.
 
-## ✅ PROTOCOL mode — complete (Runs #88–95, merged 2026-06-20)
-Branch `feature/protocol-mode` merged to main. All four phases built, verified, cleaned up.
-See `docs/PROTOCOL_MODE.md`. **Pending: on-device feel pass + v1.2 App Store submission.**
+## ✅ v1.2 — LIVE on the App Store (2026-06-22)
+Shipped: PROTOCOL mode (Runs #88–95, `docs/PROTOCOL_MODE.md`), the in-game Codex, iPad
+full-screen scaling, and post-launch fixes. **Game Center is fully working in v1.2**
+(leaderboards + the 13 achievements verified live). Universal iPhone + iPad build.
 
-Ramp numbers on main (tune in `GameConfig.protocolMode()` if play reveals issues):
+PROTOCOL ramp numbers on main (tune in `GameConfig.protocolMode()` if play reveals issues):
 - Objective gap: 5.5 s → 2.5 s floor (compression 0.010). At score 30 ≈ 4.1 s, 60 ≈ 3.0 s.
 - Overrun cadence: 1.6 s → 0.75 s floor (compression 0.008). At score 50 ≈ 1.07 s.
 - DAEMON SET size: always 2 at score 0; 2–3 at score 15; 2–4 at score 30.
 - DMZ zone size: always 2 at score 0; 2–3 at score 20; 2–4 at score 40.
 
-**Still to do (maintainer):**
-1. On-device feel pass: play 2–3 PROTOCOL runs, confirm tap response / zone outline /
-   overrun pulse / purge sting feel right. Tune balance numbers above if needed.
-2. Bump version to v1.2 (`MARKETING_VERSION` in both project configs).
-3. Archive from main → upload → submit in App Store Connect.
+## ▶ NEXT — Campaign 2.0 + growth (planning, 2026-06-24)
+Two strategy docs drive the next phase:
+- **`docs/CAMPAIGN_REDESIGN.md`** — chapters + slower mechanic pacing + PROTOCOL-as-boss +
+  star/mastery objectives + retention features (the campaign feedback: "introduces new
+  things too fast").
+- **`docs/GROWTH_AND_INCOME.md`** — marketing plan (ASO, short-form video, daily-share
+  hook, Apple featuring) + the cosmetic-only path to a real side income. Installs are
+  dipping; this is the priority lever.
 
 ## ✅ M0 — Scaffold + docs (done)
 - New repo, hand-authored Xcode project (iOS 17, portrait, dark).
@@ -123,34 +127,32 @@ Full-codebase review + headless sim audit (D23, Run #69). Endless gains a real
 late-game ceiling (drain ramp, refill decay, fever-threshold ramp — campaign/Flow
 untouched), fever stays dense on the 4×4 grid, worm hop/tap races resolve in the
 player's favor, plus small hardening fixes (spawn-debt clamp, dead config removed,
-cached notch check, cancellable countdown, music-queue wrap). **Pending: Xcode
-build + on-device feel pass of the new endless curve (Q7).**
+cached notch check, cancellable countdown, music-queue wrap). Shipped + live since v1.2.
 
-## 🔶 Game Center — global boards + achievements (built, verification pending)
-Report-only GameKit layer (`Services/GameCenterService.swift`, Run #75): optional
-auth, endless + daily leaderboards (replaces the out-of-scope web backend),
-13 achievements fired from the verified `GameEvent` stream + idempotent meta sync,
-`GKAccessPoint` on the menu hub only. Engine authority untouched; Flow exempt.
-**Pending (Q8):** Xcode build, App Store Connect Game Center config (IDs in the
-service file), on-device pass (auth sheet, access-point placement, banners).
+## ✅ Game Center — global boards + achievements (LIVE in v1.2)
+Report-only GameKit layer (`Services/GameCenterService.swift`, Run #75): optional auth,
+endless + daily leaderboards, 13 achievements from the verified `GameEvent` stream.
+**Configured in App Store Connect and verified working live in v1.2** (auth sheet,
+access point, leaderboards, achievement banners).
 
-## 🔶 Backlog — iPad layout doesn't use the screen (blocks v1.1-with-iPad)
-The universal build works on iPad, but the `playColumn` approach just **centers a
-phone-width column (360–480pt)** on the big screen, leaving lots of black space — the
-chrome screens and the play field both read as "empty" on a 13" iPad. The App Store
-screenshots (`docs/screenshots/ipad-13/`) show this. **Must be fixed before submitting a
-v1.1 with iPad enabled** (ASC requires iPad screenshots for a universal build, and these
-aren't good enough). Options to explore: scale content up on the regular size-class, a
-richer/2-column iPad layout, or a larger play field — not just a centered phone column. No
-live impact until a universal build + iPad screenshots are actually submitted (v1.0 stays live).
+## ✅ iPad layout — fixed in v1.2
+The phone-width-column problem is resolved: the regular size class now scales content to
+the full iPad canvas (GeometryReader + scaleEffect), and the App Store iPad screenshots
+(`docs/screenshots/ipad-13/`) were re-shot full-screen. Universal build shipping in v1.2.
 
-## Monetization (planned — see docs/MONETIZATION.md)
-Free, **no ads**, no pay-to-win ever. Phase 0: ship free. Phase 1: in-fiction tip
-jar (consumable IAPs; Small Business Program first). Phase 2: cosmetic theme packs
-(non-consumable, render-layer only). Build only after release traction.
+## 🔶 Android port — done (not published)
+Skip (skip.tools) transpiled port at `~/GRID_BREAKER/GridBreakerSkip`, full parity within
+Skip's limits (see `docs/ANDROID_PORT.md`): deterministic engine, all screens, audio +
+haptics, Canvas-free tap-trails/particles. Signed release APK/AAB build. **Pending
+(maintainer):** Play Store Developer account + listing + on-device audio listen before
+publishing. Keystore is local + gitignored — back it up off-repo.
+
+## Monetization (planned — see docs/MONETIZATION.md + docs/GROWTH_AND_INCOME.md)
+Free, **no ads**, no pay-to-win ever. **Small Business Program: already enrolled** (15%
+commission locked in before the first sale). Phase 1: in-fiction tip jar (consumable IAPs).
+Phase 2: cosmetic theme packs (non-consumable, render-layer only). Build the store only
+once installs/retention justify it — the growth plan comes first.
 
 ## Later (out of current scope)
-Android (Skip or CMP rewrite), web-WASM demo + backend proxy for high-score sync.
-Optional balance follow-ups from the audit: reduced credits on daily-challenge
-replays (B4 — only if seed-farming shows up in the wild). Revisit only if the
-project graduates from hobby scope.
+Web-WASM demo + backend proxy for high-score sync. Optional balance follow-up: reduced
+credits on daily-challenge replays (B4 — only if seed-farming shows up in the wild).
