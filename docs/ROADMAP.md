@@ -140,6 +140,16 @@ The phone-width-column problem is resolved: the regular size class now scales co
 the full iPad canvas (GeometryReader + scaleEffect), and the App Store iPad screenshots
 (`docs/screenshots/ipad-13/`) were re-shot full-screen. Universal build shipping in v1.2.
 
+## ✅ RAM-as-environment: screen-edge containment frame (merged to main, Runs #96–100)
+Optional RAM visualisation: a draining screen-edge "containment frame" that follows the
+device's rounded corners — lit at full RAM, burns down by splitting at top-centre and
+descending both sides to meet at the bottom at 0 (colour cyan→gold→red), re-lights a segment
+on each decode, with an upward bottom glow (gold→red) from ~⅔ through the gold band and a red
+pulse at critical. Toggle: SETTINGS ▸ DISPLAY ▸ "RAM BACKGROUND" (default on); the slim top
+bar stays as the precise readout. Also fixed a score-block layout shift that could resize the
+grid. **Pending (maintainer):** on-device feel pass + decide whether it stays default-on for
+the next App Store version.
+
 ## 🔶 Android port — done (not published)
 Skip (skip.tools) transpiled port at `~/GRID_BREAKER/GridBreakerSkip`, full parity within
 Skip's limits (see `docs/ANDROID_PORT.md`): deterministic engine, all screens, audio +

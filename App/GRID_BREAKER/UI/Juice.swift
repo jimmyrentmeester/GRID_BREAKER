@@ -310,6 +310,151 @@ struct ErrorFlashBorder: View {
     }
 }
 
+// MARK: - RAM as environment (optional, Settings toggle)
+
+/// RAM-as-environment: the screen-edge "containment frame" is the RAM meter. At full RAM
+/// the whole perimeter is lit; as the clock drains the lit line **splits at top-centre and
+/// the two ends descend evenly down both sides, meeting at the bottom when RAM hits 0** —
+/// so the remaining RAM always sits low (you read "almost out" at the bottom, near the
+/// grid, not up at the top). Colour shifts cyan→gold→red, a segment re-lights on each
+/// decode (a visible "top-up"), and as 0 nears a red glow rises from the bottom edge.
+/// On-theme (a system perimeter failing), never touches the grid interior, and structured
+/// like the existing edge borders so it can't perturb layout. The slim top bar stays as
+/// the precise readout. Fed by the deterministic `ramFraction` (skill: dress real state).
+struct RAMPerimeterFrame: View {
+    let fraction: Double          // 0…1 remaining RAM
+    var feverActive: Bool = false
+    var cornerRadius: CGFloat = 0 // follow the device's rounded screen corners
+    let reduceMotion: Bool
+    @State private var critPulse = false
+
+    private var tint: Color {
+        fraction > 0.5 ? NeonTheme.cyan
+        : fraction > 0.25 ? NeonTheme.gold
+        : NeonTheme.danger
+    }
+    private var critical: Bool { fraction < 0.15 }
+    private var lineW: CGFloat { critical ? 4.5 : 3 }
+
+    var body: some View {
+        let f = max(0.0, min(1.0, fraction))
+        // Glow rising from the bottom edge — begins ~2/3 through the gold band (≈0.33)
+        // and ramps to full at 0; its colour follows `tint` so it shifts gold→red with
+        // the bar.
+        let glowStart = 0.34
+        let glow = f < glowStart ? (glowStart - f) / glowStart : 0.0
+        ZStack {
+            // Dim full-perimeter rail — the "spent" arc still reads as a frame.
+            PerimeterDrain(fraction: 1, cornerRadius: cornerRadius)
+                .stroke(tint.opacity(0.10),
+                        style: StrokeStyle(lineWidth: lineW, lineCap: .round, lineJoin: .round))
+            // Remaining RAM: two symmetric arcs from the descending fronts down to the
+            // bottom-centre, glowing.
+            PerimeterDrain(fraction: f, cornerRadius: cornerRadius)
+                .stroke(tint, style: StrokeStyle(lineWidth: lineW, lineCap: .round, lineJoin: .round))
+                .shadow(color: tint.opacity(0.85), radius: critical ? 9 : 5)
+                .opacity(critical && !reduceMotion ? (critPulse ? 1.0 : 0.55)
+                         : (feverActive ? 0.7 : 0.95))
+            // Upward glow from the bottom edge as depletion nears (gold→red with the bar).
+            RadialGradient(colors: [tint.opacity(0.6), .clear],
+                           center: UnitPoint(x: 0.5, y: 1.04), startRadius: 0, endRadius: 280)
+                .opacity(glow * (reduceMotion ? 0.6 : (critPulse ? 0.7 : 0.35)))
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.3), value: f)
+        .animation(.easeInOut(duration: 0.4), value: tint)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.65).repeatForever(autoreverses: true),
+                   value: critPulse)
+        .onChange(of: critical) { _, c in critPulse = c && !reduceMotion }
+        .onAppear { critPulse = critical && !reduceMotion }
+    }
+}
+
+/// The remaining-RAM perimeter as two symmetric arcs. Both start at the descending
+/// "front" (arclength `(1-fraction)·halfPerimeter` from top-centre) and run down to the
+/// bottom-centre — so at full RAM the whole frame is drawn, and the two fronts glide down
+/// the left/right edges and meet at the bottom as RAM → 0. The perimeter follows the
+/// device's rounded screen corners (`cornerRadius`), approximated as a dense polyline so
+/// the existing arclength walker handles it unchanged. Inset built in (no layout padding)
+/// so the view behaves like a plain edge border, and everything is in `rect` units so it
+/// scales to any screen size.
+private struct PerimeterDrain: Shape {
+    var fraction: Double
+    var cornerRadius: CGFloat = 0
+    var inset: CGFloat = 4
+    var animatableData: Double { get { fraction } set { fraction = newValue } }
+
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let f = max(0.0, min(1.0, fraction))
+        guard f > 0.001 else { return p }
+        let r0 = rect.insetBy(dx: inset, dy: inset)
+        let r = max(0, min(cornerRadius, min(r0.width, r0.height) / 2 - 1))
+        let right = halfPoints(r0, r, right: true)    // TC → top-right → bottom-right → BC
+        let left  = halfPoints(r0, r, right: false)   // TC → top-left  → bottom-left  → BC
+        let half = polyLength(right)                  // both halves are equal length
+        let start = CGFloat(1.0 - f) * half           // descend point from top-centre
+        appendArc(&p, right, from: start)
+        appendArc(&p, left,  from: start)
+        return p
+    }
+
+    /// One half of the rounded perimeter, top-centre → … → bottom-centre, with the two
+    /// corners approximated by short segments (round line joins hide the facets).
+    private func halfPoints(_ r: CGRect, _ rad: CGFloat, right: Bool) -> [CGPoint] {
+        let n = 8
+        var pts: [CGPoint] = [CGPoint(x: r.midX, y: r.minY)]   // top-centre
+        func arc(_ c: CGPoint, _ from: Double, _ to: Double) {
+            for k in 1...n {
+                let a = (from + (to - from) * Double(k) / Double(n)) * .pi / 180
+                pts.append(CGPoint(x: c.x + rad * CGFloat(cos(a)), y: c.y + rad * CGFloat(sin(a))))
+            }
+        }
+        if right {
+            pts.append(CGPoint(x: r.maxX - rad, y: r.minY))
+            arc(CGPoint(x: r.maxX - rad, y: r.minY + rad), -90, 0)    // top-right
+            pts.append(CGPoint(x: r.maxX, y: r.maxY - rad))
+            arc(CGPoint(x: r.maxX - rad, y: r.maxY - rad), 0, 90)     // bottom-right
+        } else {
+            pts.append(CGPoint(x: r.minX + rad, y: r.minY))
+            arc(CGPoint(x: r.minX + rad, y: r.minY + rad), -90, -180) // top-left
+            pts.append(CGPoint(x: r.minX, y: r.maxY - rad))
+            arc(CGPoint(x: r.minX + rad, y: r.maxY - rad), 180, 90)   // bottom-left
+        }
+        pts.append(CGPoint(x: r.midX, y: r.maxY))   // bottom-centre
+        return pts
+    }
+
+    private func polyLength(_ v: [CGPoint]) -> CGFloat {
+        var s: CGFloat = 0
+        for i in 1..<v.count { s += hypot(v[i].x - v[i - 1].x, v[i].y - v[i - 1].y) }
+        return s
+    }
+
+    /// Emit the polyline from arclength `s` (measured from the first vertex) to the end.
+    private func appendArc(_ p: inout Path, _ v: [CGPoint], from s: CGFloat) {
+        var acc: CGFloat = 0
+        var started = false
+        for i in 1..<v.count {
+            let a = v[i - 1], b = v[i]
+            let segLen = hypot(b.x - a.x, b.y - a.y)
+            let segEnd = acc + segLen
+            if !started {
+                if s <= segEnd {
+                    let t = segLen == 0 ? 0 : (s - acc) / segLen
+                    p.move(to: CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t))
+                    p.addLine(to: b)
+                    started = true
+                }
+            } else {
+                p.addLine(to: b)
+            }
+            acc = segEnd
+        }
+    }
+}
+
 // MARK: - Screen shake
 
 /// Horizontal shake driven by an animatable 0→1 ramp (Part 2.2 / brief §10.6:

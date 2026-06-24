@@ -3,6 +3,93 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #100 — RAM frame follows the rounded screen corners (2026-06-22)
+Maintainer ask: let the frame follow the device's rounded screen corners and scale across sizes.
+- **`UI/Juice.swift`** `PerimeterDrain`: the two half-perimeters are now built as rounded paths — each
+  corner is a quarter-circle approximated by 8 short segments (round line joins hide the facets), so
+  the existing arclength walker (the split-drain / front descent) works unchanged. Added a
+  `cornerRadius` param; everything is computed in `rect` units (inset 4pt) so it scales to any screen.
+- **`GameView.swift`**: pass a device-appropriate radius without private API — iPad (regular size
+  class) 20, notch/Dynamic-Island iPhones 50, home-button iPhones 4 — roughly concentric with the
+  display given the 4pt inset.
+- **Verified** (iPhone 16 sim): builds; at full RAM the cyan frame hugs all four rounded corners like
+  a built-in HUD frame (captured); the split-drain + glow still work.
+- Note: exact per-device radius would need the private `_displayCornerRadius` (App-Store risk) — the
+  size-class heuristic is close on common devices and safe.
+
+## Run #99 — RAM frame: earlier, bar-matched bottom glow (2026-06-22)
+Maintainer tweak: start the bottom glow sooner (≈2/3 through the gold band, fraction ≈0.34 instead of
+0.25) and let its colour follow the bar (gold→red) instead of always red. `UI/Juice.swift`
+`RAMPerimeterFrame`: `glowStart = 0.34` and the glow `RadialGradient` now uses `tint` (so it's gold in
+the gold band and shifts to red toward 0, animated with the existing `value: tint` colour transition).
+Verified live on iPhone 16 sim: in the gold band the bottom glow now reads gold; builds clean.
+
+## Run #98 — RAM frame: split-drain redesign + grid layout-shift fix (2026-06-22)
+Two maintainer notes after the device pass: (1) when RAM is in the red the remaining lit bit sat at
+the *top* (hard to read); (2) the grid "sometimes grows/shrinks slightly", suspected to be the new
+frame.
+- **Split-drain frame** (`UI/Juice.swift`): new `PerimeterDrain` Shape — the lit line now splits at
+  top-centre and the two fronts descend evenly down both sides, meeting at the bottom-centre as RAM →
+  0 (built from two symmetric arcs, each from the descending front `(1-fraction)·halfPerimeter` down
+  to bottom-centre; animatable on fraction so it still glides + re-lights on decode). So remaining RAM
+  always sits LOW (read "almost out" at the bottom, near the grid). Added an upward red glow rising
+  from the bottom edge as 0 nears. Removed the layout-affecting `.padding(lineW/2)` — inset is built
+  into the Shape, so the view is now structured exactly like the existing edge borders.
+- **Grid layout-shift fix** (`GameView.swift`): root cause was NOT the RAM frame (measured: grid-top y
+  identical across RAM levels). The grid uses `aspectRatio(.fit)` and takes leftover space above a
+  `Spacer(maxHeight:96)` buffer; conditionally-inserted score-block rows — the endless STREAK badge
+  and the shield-charge indicator — change the score block's height, and once the spacer buffer is
+  exhausted (shorter devices / data-core at full height) the grid resizes. Fixed by reserving constant
+  height for both (the badge in a `frame(height:26·sc)` slot, endless-only; the shield in a
+  `frame(height:16·sc)` slot) so neither toggling can shift the grid. `×N` is height-safe (smaller
+  than the score glyph); grid 3×3→4×4 keeps its outer square. The frame is also exonerated/isolated:
+  no animated padding, drawn like the other borders.
+- **Verified** (iPhone 16 sim): Debug build succeeds; the red frame now sits at the bottom with the
+  upward glow (captured at ~1s/5s RAM); fronts descend symmetrically; game-over hides it; layout reads
+  correctly. Cyan/gold tiers share the code path.
+- Next (maintainer): on-device feel pass of the split-drain + the stabilised layout; tune to taste,
+  then decide default + ship version.
+
+## Run #97 — RAM background: pivot waterline → screen-edge containment frame (2026-06-22)
+Maintainer feedback after the on-device pass: the draining waterline works but reads "battery/
+tank", not netrunner — and asked about doing more with the screen edge. (We hadn't avoided the
+edge for best-practice reasons; the opposite — we'd just scoped it to the critical alarm.) Chose
+"rand-frame vervangt waterline".
+- **`UI/Juice.swift`**: replaced `RAMBackdrop` (waterline) + `RAMCriticalEdge` (separate red alarm)
+  with one `RAMPerimeterFrame` — a screen-edge "containment frame" that IS the meter: a dim full-
+  perimeter rail + a lit `Rectangle().trim(0…ramFraction)` stroke that burns down as RAM drains,
+  colour cyan→gold→red, glows, re-lights a segment on each decode, and folds the critical alarm in
+  (intensify + breathing red pulse under 15%, static under Reduce Motion). Zero grid-interior cost.
+- **`GameView.swift`**: dropped the behind-content waterline layer and the separate critical-edge
+  layer; one `RAMPerimeterFrame` over the content (gated by `ramBackground` + `!isGameOver`). Doc
+  comments + `SaveData.ramBackgroundEnabled` doc updated (no schema change — same toggle/key).
+- **Verified** (iPhone 16 sim): Debug build succeeds; the gold near-full frame, the red frame, and
+  the burn-down to a short top-left segment at ~1s RAM all captured live; game-over hides it; the
+  SETTINGS ▸ DISPLAY toggle is unchanged. Cyan tier shares the code path.
+- Next (maintainer): on-device feel pass of the frame; tune line weight / inset / corner radius to
+  taste, then decide default + ship version.
+
+## Run #96 — RAM-as-environment background (optional, Settings toggle) (2026-06-22)
+Post-launch feedback: the top RAM bar is hard to track while focused on the grid. Built the
+"RAM as draining background" idea, grounded in peripheral-vision best practices (perifeer zicht
+pikt randen/beweging/helderheid op, geen dunne balk bovenin). On a feature branch
+(`feature/ram-background`) so main stays clean while v1.2 is in review.
+- **`UI/Juice.swift`**: `RAMBackdrop` — the play field fills from the bottom; a bright "waterline"
+  recedes top→down with `ramFraction`, colour cyan→gold→red, body low-opacity (keeps the grid
+  readable), rises on every decode (visible top-up). `RAMCriticalEdge` — a breathing red screen-edge
+  alarm under ~15% RAM (static tint under Reduce Motion), pairing with the existing `.ramCritical`
+  audio double-pulse. One continuous (waterline) + one late alarm (edge) → never two motions at once.
+- **`GameView.swift`**: both layers gated by a new `ramBackground` init flag + `!isGameOver`; the slim
+  top RAM bar stays as the precise readout (layered, not replaced).
+- **Persistence**: `SaveData.ramBackgroundEnabled` (default true, tolerant-decoded, kept across
+  `resetProgress` as a preference) + `GameStore.setRamBackgroundEnabled`. New SETTINGS ▸ DISPLAY ▸
+  "RAM BACKGROUND" toggle. Passed from all four `GameView` call-sites in `RootView`.
+- **Verified** (iPhone 16 sim): Debug build succeeds; waterline drains top→down with the gold and red
+  tiers + the red critical edge captured live; the top bar persists; game-over hides the layer; the
+  Settings toggle flips ON/OFF and persists. Cyan tier shares the same code path. Default-on for the
+  on-device feel pass; flipping the default later is one line.
+- Next (maintainer): play it on a real device, decide default + whether to ship in a future version.
+
 ## Run #95 — Flow/chill dead code cleanup (2026-06-20)
 Removed all 37 unreachable `chill`/Flow references before merging PROTOCOL to main.
 - **`GameView.swift`** (`GameViewModel` + `GameView`): removed `chill` field + init param from

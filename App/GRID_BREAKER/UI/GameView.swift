@@ -301,6 +301,9 @@ struct GameView: View {
     /// Daily challenge: endless rules on a fixed, date-derived seed (everyone gets the
     /// same board). Replays reuse the seed so it stays "today's" board.
     let daily: Bool
+    /// Player preference: render the RAM clock as a draining screen-edge containment
+    /// frame on top of the slim top bar. See RAMPerimeterFrame.
+    let ramBackground: Bool
     /// Fixed RNG seed (daily challenge). nil → a fresh seed each run/replay.
     let fixedSeed: UInt64?
     /// New-mechanic briefing to show before the run (nil = skip, e.g. already cleared).
@@ -318,6 +321,7 @@ struct GameView: View {
          protocolMode: Bool = false,
          seed: UInt64? = nil,
          daily: Bool = false,
+         ramBackground: Bool = false,
          briefing: CoreFeature? = nil,
          bestScore: Int = 0,
          onExit: @escaping () -> Void,
@@ -326,6 +330,7 @@ struct GameView: View {
         self.core = core
         self.protocolMode = protocolMode
         self.daily = daily
+        self.ramBackground = ramBackground
         self.fixedSeed = seed
         self.briefing = briefing
         self.bestScore = bestScore
@@ -422,10 +427,16 @@ struct GameView: View {
                 VStack(spacing: 6) {
                     BigScoreView(snapshot: model.snapshot)
                     // Endless clean-streak base multiplier — rewards long, clean survival.
-                    if core == nil && model.snapshot.streakMultiplier > 1
-                        && !model.snapshot.isGameOver {
-                        StreakBadge(multiplier: model.snapshot.streakMultiplier, pulse: streakPulse)
-                            .transition(.scale(scale: 0.6).combined(with: .opacity))
+                    // The slot reserves a constant height (endless/daily) so the badge
+                    // appearing/disappearing can't resize the grid below it (layout shift).
+                    if core == nil {
+                        ZStack {
+                            if model.snapshot.streakMultiplier > 1 && !model.snapshot.isGameOver {
+                                StreakBadge(multiplier: model.snapshot.streakMultiplier, pulse: streakPulse)
+                                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+                            }
+                        }
+                        .frame(height: 26 * sc)
                     }
                     DataCoreView(progress: coreProgress,
                                  feverActive: model.snapshot.feverActive,
@@ -490,6 +501,22 @@ struct GameView: View {
             // an error stays legible on a busy board (issue #2). Above the streak pulse.
             if !model.snapshot.isGameOver {
                 ErrorFlashBorder(trigger: model.errorFlashSeq, reduceMotion: reduceMotion)
+                    .accessibilityHidden(true)
+            }
+
+            // RAM-as-environment (optional): the screen-edge containment frame is the RAM
+            // meter — it burns down as the clock drains, re-lights on decode, and pulses
+            // red at critical (pairing with the existing audio double-pulse). On-theme and
+            // out of the grid's way; the slim top bar stays as the precise readout.
+            if ramBackground && !model.snapshot.isGameOver {
+                // Approximate the device's display corner radius (no private API): iPad has
+                // gentle corners, notch/Dynamic-Island iPhones ~50, home-button iPhones are
+                // near-square. The frame insets 4pt, so this is roughly concentric.
+                let corner: CGFloat = hSize == .regular ? 20 : (hasIslandOrNotch ? 50 : 4)
+                RAMPerimeterFrame(fraction: model.snapshot.ramFraction,
+                                  feverActive: model.snapshot.feverActive,
+                                  cornerRadius: corner,
+                                  reduceMotion: reduceMotion)
                     .accessibilityHidden(true)
             }
 
@@ -929,12 +956,17 @@ private struct BigScoreView: View {
                         .neonGlow(NeonTheme.gold, radius: 7)
                 }
             }
-            if snapshot.shieldCharges > 0 {
-                Label("\(snapshot.shieldCharges)", systemImage: "shield.fill")
-                    .font(.system(size: 12 * sc, weight: .bold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.gold)
-                    .padding(.top, 2)
+            // Reserved-height slot so a shield charge dropping to 0 (or appearing) can't
+            // change the score block's height and shift the grid below it (layout shift).
+            ZStack {
+                if snapshot.shieldCharges > 0 {
+                    Label("\(snapshot.shieldCharges)", systemImage: "shield.fill")
+                        .font(.system(size: 12 * sc, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                }
             }
+            .frame(height: 16 * sc)
+            .padding(.top, 2)
             // Next landmark (endless/daily only — the engine reports nil elsewhere):
             // a quiet, always-true goal line so there's forever a "why am I here"
             // (ground truth 1.5) without shouting over the score.
