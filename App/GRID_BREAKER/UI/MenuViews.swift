@@ -1257,13 +1257,21 @@ struct CampaignView: View {
             }
 
             ScrollView {
-                VStack(spacing: 10) {
-                    ForEach(Campaign.cores) { core in
-                        CoreRow(core: core,
-                                cleared: store.isCleared(core),
-                                unlocked: store.isUnlocked(core),
-                                best: store.bestScore(for: core),
-                                action: { if store.isUnlocked(core) { onPlay(core) } })
+                VStack(spacing: 20) {
+                    ForEach(Campaign.chapters) { chapter in
+                        let chapterCores = Campaign.cores(inChapter: chapter.id)
+                        VStack(spacing: 10) {
+                            ChapterHeader(chapter: chapter,
+                                          locked: !chapterCores.contains { store.isUnlocked($0) },
+                                          cleared: chapterCores.allSatisfy { store.isCleared($0) })
+                            ForEach(chapterCores) { core in
+                                CoreRow(core: core,
+                                        cleared: store.isCleared(core),
+                                        unlocked: store.isUnlocked(core),
+                                        best: store.bestScore(for: core),
+                                        action: { if store.isUnlocked(core) { onPlay(core) } })
+                            }
+                        }
                     }
                 }
                 .padding(.vertical, 2)
@@ -1272,6 +1280,44 @@ struct CampaignView: View {
             TerminalButton(title: "BACK", color: NeonTheme.magenta, action: onBack)
         }
         .padding(24)
+    }
+}
+
+/// Chapter divider on the level select — title + flavour, dimmed while locked.
+private struct ChapterHeader: View {
+    let chapter: Chapter
+    let locked: Bool
+    let cleared: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                Text("CHAPTER \(chapter.id)")
+                    .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(locked ? NeonTheme.textDim : NeonTheme.cyan)
+                    .tracking(2)
+                if cleared {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 11)).foregroundStyle(NeonTheme.gold)
+                } else if locked {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 10)).foregroundStyle(NeonTheme.textDim)
+                }
+                Spacer()
+            }
+            Text(chapter.title)
+                .font(.system(size: 17, weight: .heavy, design: .monospaced))
+                .foregroundStyle(locked ? NeonTheme.textDim : NeonTheme.textPrimary)
+            Text(chapter.tagline)
+                .font(.system(size: 11, weight: .regular, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Chapter \(chapter.id), \(chapter.title). \(chapter.tagline)"
+                            + (cleared ? " Cleared." : locked ? " Locked." : ""))
     }
 }
 
@@ -1284,7 +1330,8 @@ private struct CoreRow: View {
     let action: () -> Void
 
     private var accent: Color {
-        cleared ? NeonTheme.gold : (unlocked ? NeonTheme.cyan : NeonTheme.textDim)
+        core.isBoss && unlocked && !cleared ? NeonTheme.magenta
+        : cleared ? NeonTheme.gold : (unlocked ? NeonTheme.cyan : NeonTheme.textDim)
     }
 
     var body: some View {
@@ -1301,10 +1348,17 @@ private struct CoreRow: View {
                     }
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(core.name)
-                        .font(.system(size: 15, weight: .bold, design: .monospaced))
-                        .foregroundStyle(unlocked ? NeonTheme.textPrimary : NeonTheme.textDim)
-                    Text("TARGET \(core.targetScore)  ·  \(Int(core.timeBudget))s"
+                    HStack(spacing: 6) {
+                        if core.isBoss {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(cleared ? NeonTheme.gold : accent)
+                        }
+                        Text(core.name)
+                            .font(.system(size: 15, weight: .bold, design: .monospaced))
+                            .foregroundStyle(unlocked ? NeonTheme.textPrimary : NeonTheme.textDim)
+                    }
+                    Text((core.isBoss ? "BOSS  ·  " : "") + "TARGET \(core.targetScore)  ·  \(Int(core.timeBudget))s"
                          + (best > 0 ? "  ·  BEST \(best)" : ""))
                         .font(.system(size: 11, weight: .regular, design: .monospaced))
                         .foregroundStyle(NeonTheme.textDim)

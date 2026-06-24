@@ -3,6 +3,24 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #101 — Campaign 2.0 slice 1: chapters + slower pacing (2026-06-24)
+First slice of `docs/CAMPAIGN_REDESIGN.md`. Also merged `feature/ram-background` → main.
+- **`Core/Models/Campaign.swift`**: new `Chapter` model (id/title/tagline) + `DataCore.chapter`
+  + `DataCore.isBoss`. Restructured the ladder into **4 chapters / 16 cores** (was 10 flat):
+  one new mechanic introduced only at a chapter's intro core (with its briefing), then 1–2
+  practice cores, then a boss finale. Gentler curve — targets dip at each chapter open then
+  climb (sawtooth), `difficultyBias` flattens within a chapter and steps up between them.
+  Directly addresses the "introduces new things too fast" feedback. `cores(inChapter:)` +
+  `chapter(id:)` helpers. Boss cores flagged (PROTOCOL wiring is the next slice).
+- **`UI/MenuViews.swift`**: `CampaignView` level select now groups by chapter with a
+  `ChapterHeader` (number, title, tagline, lock/cleared state); `CoreRow` shows a crown +
+  "BOSS" tag + magenta accent on finale cores. Progress counter now `/16`.
+- **Verified** (iPhone 16 sim): Debug build succeeds; level select renders chapters + taglines
+  + boss markers + locked chapters correctly (CAMPAIGN 0/16, Chapter 1 unlocked, Chapter 2
+  locked). On-device chapter screenshot captured.
+- Follow-up: a multi-skill headless campaign sim to validate the 16-core curve (none exists
+  yet — only `scripts/enginecheck/*`); the ladder is hand-tuned gentler for now.
+
 ## Run #100 — RAM frame follows the rounded screen corners (2026-06-22)
 Maintainer ask: let the frame follow the device's rounded screen corners and scale across sizes.
 - **`UI/Juice.swift`** `PerimeterDrain`: the two half-perimeters are now built as rounded paths — each
