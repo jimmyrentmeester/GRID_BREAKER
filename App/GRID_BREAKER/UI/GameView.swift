@@ -651,7 +651,7 @@ struct GameView: View {
 
             if showBriefing, let b = briefing {
                 CoreBriefingOverlay(feature: b, coreName: core?.name ?? "DATA CORE",
-                                    target: core?.targetScore ?? 0) {
+                                    target: core?.targetScore ?? 0, isBoss: core?.isBoss ?? false) {
                     showBriefing = false
                     startCountdown()
                 }
@@ -1424,6 +1424,7 @@ private struct CoreBriefingOverlay: View {
     let feature: CoreFeature
     let coreName: String
     let target: Int
+    var isBoss: Bool = false
     let onBegin: () -> Void
 
     var body: some View {
@@ -1433,13 +1434,25 @@ private struct CoreBriefingOverlay: View {
                 Text("INCOMING · \(coreName.uppercased())")
                     .font(.system(size: 12, weight: .semibold, design: .monospaced))
                     .foregroundStyle(NeonTheme.textDim)
-                Text("NEW: \(feature.title)")
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .foregroundStyle(NeonTheme.gold)
+                // Bosses are a chapter climax, not a new-mechanic tutorial — frame them
+                // as a boss rather than "NEW:".
+                if isBoss {
+                    Label("BOSS CORE", systemImage: "crown.fill")
+                        .font(.system(size: 13, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.danger)
+                        .neonGlow(NeonTheme.danger, radius: 5)
+                    Text(feature.title)
+                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                } else {
+                    Text("NEW: \(feature.title)")
+                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                }
                 Image(systemName: feature.symbol)
                     .font(.system(size: 52, weight: .bold))
-                    .foregroundStyle(NeonTheme.cyan)
-                    .neonGlow(NeonTheme.cyan, radius: 14)
+                    .foregroundStyle(isBoss ? NeonTheme.danger : NeonTheme.cyan)
+                    .neonGlow(isBoss ? NeonTheme.danger : NeonTheme.cyan, radius: 14)
                     .padding(.vertical, 4)
                 Text(feature.detail)
                     .font(.system(size: 15, weight: .medium, design: .monospaced))

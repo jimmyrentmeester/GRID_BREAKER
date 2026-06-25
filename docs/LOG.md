@@ -3,6 +3,24 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #107 — Polish pass: Codex truth-up + boss briefing + small fixes (2026-06-24)
+Walked the app screen-by-screen (code review + simctl captures; the interactive UI pass was cut
+short by a degraded computer-use/screen-recording session). Findings + fixes:
+- **Codex was stale after Campaign 2.0 + modifiers** (`UI/MenuViews.swift`): CAMPAIGN entry said
+  "10 hand-tuned cores" → now "16 cores across 4 chapters … then a boss"; added a **RUN MODIFIERS**
+  SYSTEMS entry (it was on the menu but undocumented); POWER-UPS header now notes late campaign;
+  DAILY HACK mentions the streak + share.
+- **Boss briefing reframed** (`UI/GameView.swift` + `Core/Models/Campaign.swift`): a chapter-boss
+  core showed "NEW: BOSS · DAEMON SET" — but a boss isn't a new-mechanic tutorial. Stripped the
+  "BOSS · " prefix from the three boss titles and gave `CoreBriefingOverlay` a real boss look
+  (crown "BOSS CORE" in danger-red + red objective icon) vs the cyan "NEW:" tutorial look.
+- **Checked + OK (no change needed):** menu height ≈534pt fits even iPhone SE (no overflow from the
+  added MODIFIERS row); shops, HighScores, Settings, Cosmetics all consistent; finale text already
+  uses `Campaign.count`.
+- **Flagged for the maintainer (design call, not changed):** a brand-new player sees the big
+  JACK IN (Endless) CTA *and* CAMPAIGN's "START HERE" — mild competition for the first tap.
+- Verified: builds; campaignboss + stars checks pass; menu renders correctly (simctl capture).
+
 ## Run #106 — Campaign player-sim: 16-core curve validated (2026-06-24)
 The pending validation for Campaign 2.0's gentler ladder. New headless multi-skill player-sim
 `scripts/enginecheck/campaignsim.swift` (run on demand via `run.sh campaignsim`; not in the

@@ -82,7 +82,7 @@ enum Campaign {
                                        symbol: "lock.shield.fill")),
         DataCore(id: 4, chapter: 1, name: "Lockchain", targetScore: 44, timeBudget: 60, difficultyBias: 45,
                  isBoss: true, bossObjective: .daemonSet, armored: true,
-                 briefing: CoreFeature(title: "BOSS · DAEMON SET",
+                 briefing: CoreFeature(title: "DAEMON SET",
                                        detail: "Numbered daemons appear — tap them in order (1→N) for a big bonus. Wrong order is a miss.",
                                        symbol: "list.number")),
         // ── Chapter 2 · Corporate ICE — new: firewall bombs, Fever ──────────────────
@@ -100,7 +100,7 @@ enum Campaign {
                                        symbol: "bolt.fill")),
         DataCore(id: 8, chapter: 2, name: "Trap Room", targetScore: 74, timeBudget: 68, difficultyBias: 120,
                  isBoss: true, bossObjective: .dmz, armored: true, bombs: true, fever: true,
-                 briefing: CoreFeature(title: "BOSS · DMZ PURGE",
+                 briefing: CoreFeature(title: "DMZ PURGE",
                                        detail: "A red intrusion zone spreads — clear every cell in it before the overrun fills the grid.",
                                        symbol: "hexagon.fill")),
         // ── Chapter 3 · Deep Systems — new: data caches, worms ──────────────────────
@@ -118,7 +118,7 @@ enum Campaign {
                  armored: true, bombs: true, fever: true, cache: true, worm: true),
         DataCore(id: 12, chapter: 3, name: "The Hunt", targetScore: 116, timeBudget: 72, difficultyBias: 225,
                  isBoss: true, bossObjective: .daemonSet, armored: true, bombs: true, fever: true, cache: true, worm: true,
-                 briefing: CoreFeature(title: "BOSS · DAEMON SET",
+                 briefing: CoreFeature(title: "DAEMON SET",
                                        detail: "Longer ordered chains now, on a busy board. Crack the sequence in order for the bonus.",
                                        symbol: "list.number")),
         // ── Chapter 4 · The Core — new: power-ups, grid 4×4 ─────────────────────────

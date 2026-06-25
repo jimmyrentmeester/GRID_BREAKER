@@ -325,6 +325,8 @@ struct CodexView: View {
                   text: "Long clean chains raise a score multiplier. A single miss resets it. Endless only."),
             Entry(icon: "square.grid.4x3.fill", color: NeonTheme.cyan, name: "GRID EXPANSION",
                   text: "As your score climbs the grid grows 3×3 → 4×4. Endless + later campaign cores. PROTOCOL stays 3×3."),
+            Entry(icon: "slider.horizontal.3", color: NeonTheme.magenta, name: "RUN MODIFIERS",
+                  text: "Optional Endless challenges (No Fever, Double Firewalls, Sudden Drain, Blitz) — a harder run earns more Credits. They never affect the leaderboard score."),
         ]
     }
 
@@ -344,11 +346,11 @@ struct CodexView: View {
             Entry(icon: "play.fill", color: NeonTheme.cyan, name: "ENDLESS (JACK IN)",
                   text: "Survive as long as your reflexes hold and chase the high score. Power-ups, grid expansion, clean streak multiplier."),
             Entry(icon: "flag.fill", color: NeonTheme.cyan, name: "CAMPAIGN",
-                  text: "10 hand-tuned cores, each introducing one mechanic — the best place to learn."),
+                  text: "16 cores across 4 chapters — each chapter teaches one new mechanic, lets you practise it, then ends in a boss. The best place to learn."),
             Entry(icon: "scope", color: NeonTheme.magenta, name: "PROTOCOL",
                   text: "Objective-driven challenge. DAEMON SETs and DMZ PURGE objectives alternate — crack them or the grid fills. No power-ups. Real fail state."),
             Entry(icon: "calendar", color: NeonTheme.cyan, name: "DAILY HACK",
-                  text: "Endless rules on one shared seed per day — everyone races the same board. Power-ups active."),
+                  text: "Endless rules on one shared seed per day — everyone races the same board. Play each day to build a streak; share your result."),
         ]
     }
 
@@ -373,7 +375,7 @@ struct CodexView: View {
                         .fixedSize(horizontal: false, vertical: true)
 
                     section("// TARGETS", targets)
-                    section("// POWER-UPS  ·  Endless + Daily", powerUps)
+                    section("// POWER-UPS  ·  Endless, Daily + late campaign", powerUps)
                     section("// SYSTEMS", systems)
                     section("// PROTOCOL OBJECTIVES", protocolObjectives)
                     cyberdeckSection
