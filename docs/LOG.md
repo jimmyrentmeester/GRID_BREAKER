@@ -3,6 +3,13 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #109 — v1.3 release prep (2026-06-25)
+- Bumped `MARKETING_VERSION` → 1.3, `CURRENT_PROJECT_VERSION` → 6 (pbxproj).
+- Written `docs/RELEASE_NOTES_v1.3.md`: What's New copy (App Store), full description, submit-checklist.
+- Saved reference screenshots to `docs/screenshots/v1.3/` (menu + campaign-chapters; on-device screenshots to be taken by maintainer at final vereiste maat 1320×2868).
+- Release build verified: BUILD SUCCEEDED (generic/platform=iOS, Release).
+- Pending (maintainer): on-device feel pass → Xcode archive → App Store Connect submit.
+
 ## Run #108 — Grid taps now act on press, not release (Carmack's rule) (2026-06-24)
 A reflex game feels substantially crisper when the decode fires the instant the finger lands
 rather than on lift (Carmack's "act on press" — sub-100ms, but felt). Applied to the gameplay

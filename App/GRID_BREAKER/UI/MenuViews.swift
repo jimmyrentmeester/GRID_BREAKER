@@ -1626,16 +1626,6 @@ struct SettingsView: View {
                         }
                     }
 
-                    section("DISPLAY") {
-                        SettingToggleRow(label: "RAM BACKGROUND",
-                                         systemImage: "drop.fill",
-                                         isOn: store.ramBackgroundEnabled) {
-                            let on = !store.ramBackgroundEnabled
-                            store.setRamBackgroundEnabled(on)
-                            if store.soundEnabled { AudioEngine.shared.play(.uiTap) }
-                        }
-                    }
-
                     section("ACCESSIBILITY") {
                         SettingInfoRow(label: "REDUCE MOTION",
                                        value: reduceMotion ? "ON" : "OFF",

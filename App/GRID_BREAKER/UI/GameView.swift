@@ -309,9 +309,6 @@ struct GameView: View {
     /// Daily challenge: endless rules on a fixed, date-derived seed (everyone gets the
     /// same board). Replays reuse the seed so it stays "today's" board.
     let daily: Bool
-    /// Player preference: render the RAM clock as a draining screen-edge containment
-    /// frame on top of the slim top bar. See RAMPerimeterFrame.
-    let ramBackground: Bool
     /// Fixed RNG seed (daily challenge). nil → a fresh seed each run/replay.
     let fixedSeed: UInt64?
     /// New-mechanic briefing to show before the run (nil = skip, e.g. already cleared).
@@ -334,7 +331,6 @@ struct GameView: View {
          protocolMode: Bool = false,
          seed: UInt64? = nil,
          daily: Bool = false,
-         ramBackground: Bool = false,
          modifiers: [RunModifier] = [],
          briefing: CoreFeature? = nil,
          bestScore: Int = 0,
@@ -344,7 +340,6 @@ struct GameView: View {
         self.core = core
         self.protocolMode = protocolMode
         self.daily = daily
-        self.ramBackground = ramBackground
         self.fixedSeed = seed
         self.briefing = briefing
         self.bestScore = bestScore
@@ -525,11 +520,11 @@ struct GameView: View {
                     .accessibilityHidden(true)
             }
 
-            // RAM-as-environment (optional): the screen-edge containment frame is the RAM
-            // meter — it burns down as the clock drains, re-lights on decode, and pulses
-            // red at critical (pairing with the existing audio double-pulse). On-theme and
-            // out of the grid's way; the slim top bar stays as the precise readout.
-            if ramBackground && !model.snapshot.isGameOver {
+            // RAM-as-environment: the screen-edge containment frame is the RAM meter —
+            // it burns down as the clock drains, re-lights on decode, and pulses red at
+            // critical. On-theme and out of the grid's way; the slim top bar stays as the
+            // precise readout. Always on (the toggle was removed in v1.3).
+            if !model.snapshot.isGameOver {
                 // Approximate the device's display corner radius (no private API): iPad has
                 // gentle corners, notch/Dynamic-Island iPhones ~50, home-button iPhones are
                 // near-square. The frame insets 4pt, so this is roughly concentric.

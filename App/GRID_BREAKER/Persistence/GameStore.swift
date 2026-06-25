@@ -40,12 +40,6 @@ final class GameStore {
         persist()
     }
 
-    var ramBackgroundEnabled: Bool { save.ramBackgroundEnabled }
-    func setRamBackgroundEnabled(_ on: Bool) {
-        save.ramBackgroundEnabled = on
-        persist()
-    }
-
     // MARK: Endless run modifiers (harder run → more Credits)
 
     var enabledModifiers: [RunModifier] { RunModifier.from(ids: save.enabledModifierIDs) }
@@ -106,7 +100,6 @@ final class GameStore {
         fresh.hapticsEnabled = save.hapticsEnabled
         fresh.musicVolume = save.musicVolume
         fresh.sfxVolume = save.sfxVolume
-        fresh.ramBackgroundEnabled = save.ramBackgroundEnabled
         fresh.tutorialSeen = save.tutorialSeen
         // Onboarding state isn't "gameplay progress" — keep it so we don't re-grant CR.
         fresh.starterCreditsGranted = save.starterCreditsGranted
