@@ -15,9 +15,10 @@ CORE=(
   App/GRID_BREAKER/Core/Models/NodeType.swift
   App/GRID_BREAKER/Core/Models/Cyberdeck.swift
   App/GRID_BREAKER/Core/Models/Campaign.swift
+  App/GRID_BREAKER/Core/Models/RunModifier.swift
 )
 
-checks=("${@:-daemonset dmz ramp campaignboss stars}")
+checks=("${@:-daemonset dmz ramp campaignboss stars modifiers}")
 status=0
 for name in ${checks[@]}; do
   src="scripts/enginecheck/${name}.swift"

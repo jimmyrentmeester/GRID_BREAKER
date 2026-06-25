@@ -1401,6 +1401,96 @@ private struct CoreRow: View {
     }
 }
 
+// MARK: - Run modifiers (endless depth)
+
+/// Pick optional Endless challenges. Each makes the run harder and multiplies the Credits
+/// earned (never the leaderboard score — that stays fair). The choice persists.
+struct ModifiersView: View {
+    @Bindable var store: GameStore
+    let onBack: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Text("MODIFIERS")
+                    .font(.system(size: 24, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.magenta)
+                    .neonGlow(NeonTheme.magenta, radius: 8)
+                Spacer()
+                Text(String(format: "×%.2f CR", store.runCreditMultiplier))
+                    .font(.system(size: 16, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(NeonTheme.gold)
+            }
+            Text("Harder Endless run → more Credits. Never touches the leaderboard.")
+                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                .foregroundStyle(NeonTheme.textDim)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            ScrollView {
+                VStack(spacing: 12) {
+                    ForEach(RunModifier.allCases) { mod in
+                        ModifierRow(mod: mod, isOn: store.isModifierOn(mod.id)) {
+                            store.toggleModifier(mod.id)
+                            if store.soundEnabled { AudioEngine.shared.play(.uiTap) }
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+
+            TerminalButton(title: "BACK", color: NeonTheme.magenta, action: onBack)
+        }
+        .padding(24)
+    }
+}
+
+private struct ModifierRow: View {
+    let mod: RunModifier
+    let isOn: Bool
+    let onToggle: () -> Void
+    private var accent: Color { isOn ? NeonTheme.magenta : NeonTheme.textDim }
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: 12) {
+                Image(systemName: mod.symbol)
+                    .font(.system(size: 16)).foregroundStyle(accent).frame(width: 24)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 8) {
+                        Text(mod.label)
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundStyle(NeonTheme.textPrimary)
+                        Text(String(format: "+%.0f%%", mod.creditBonus * 100))
+                            .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                            .foregroundStyle(NeonTheme.gold)
+                    }
+                    Text(mod.detail)
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textDim)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Text(isOn ? "ON" : "OFF")
+                    .font(.system(size: 12, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(isOn ? .white : NeonTheme.textDim)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .frame(minHeight: 36)
+                    .background(Capsule().fill(isOn ? NeonTheme.magenta : Color.clear)
+                        .overlay(Capsule().stroke(accent.opacity(0.6), lineWidth: 1.5)))
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(isOn ? 0.04 : 0.015))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent.opacity(0.4), lineWidth: 1)))
+        }
+        .buttonStyle(TerminalButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(mod.label). \(mod.detail). Plus \(Int(mod.creditBonus * 100)) percent credits")
+        .accessibilityValue(isOn ? "On" : "Off")
+        .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
 // MARK: - High scores
 
 struct HighScoresView: View {

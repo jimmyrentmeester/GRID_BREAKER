@@ -24,6 +24,7 @@
 		GB000000000000000000001E /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000100 /* AudioEngine.swift */; };
 		GB000000000000000000001F /* Music in Resources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000101 /* Music */; };
 		GB0000000000000000000103 /* Campaign.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000102 /* Campaign.swift */; };
+		GB0000000000000000000202 /* RunModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000201 /* RunModifier.swift */; };
 		GB0000000000000000000105 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000104 /* LaunchScreen.storyboard */; };
 		GB0000000000000000000108 /* GameCenterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = GB0000000000000000000106 /* GameCenterService.swift */; };
 /* End PBXBuildFile section */
@@ -47,6 +48,7 @@
 		GB0000000000000000000100 /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
 		GB0000000000000000000101 /* Music */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Music; sourceTree = "<group>"; };
 		GB0000000000000000000102 /* Campaign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Campaign.swift; sourceTree = "<group>"; };
+		GB0000000000000000000201 /* RunModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunModifier.swift; sourceTree = "<group>"; };
 		GB0000000000000000000104 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		GB0000000000000000000106 /* GameCenterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterService.swift; sourceTree = "<group>"; };
 		GB0000000000000000000107 /* GRID_BREAKER.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GRID_BREAKER.entitlements; sourceTree = "<group>"; };
@@ -114,6 +116,7 @@
 				GB0000000000000000000009 /* GameConfig.swift */,
 				GB000000000000000000000D /* SaveData.swift */,
 				GB0000000000000000000102 /* Campaign.swift */,
+				GB0000000000000000000201 /* RunModifier.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -248,6 +251,7 @@
 				GB000000000000000000001D /* MenuViews.swift in Sources */,
 				GB000000000000000000001E /* AudioEngine.swift in Sources */,
 				GB0000000000000000000103 /* Campaign.swift in Sources */,
+				GB0000000000000000000202 /* RunModifier.swift in Sources */,
 				GB0000000000000000000108 /* GameCenterService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

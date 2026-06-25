@@ -54,12 +54,16 @@ struct SaveData: Codable, Sendable {
     /// slim top bar — easier to track without looking away from the grid. Preference,
     /// not progress.
     var ramBackgroundEnabled: Bool = true
+    /// Endless run-modifier IDs currently enabled (harder run → more Credits). Persisted
+    /// so the choice carries between runs.
+    var enabledModifierIDs: [String] = []
 
     enum CodingKeys: String, CodingKey {
         case version, cyberdeck, highScores, soundEnabled, hapticsEnabled, campaignProgress, tutorialSeen
         case musicVolume, sfxVolume, dailyBestScore, dailyBestDay, dailyStreak, dailyStreakDay
         case ownedPaletteIDs, equippedPaletteID, ownedTrailIDs, equippedTrailID
         case starterCreditsGranted, campaignBests, campaignStars, ramBackgroundEnabled
+        case enabledModifierIDs
     }
 
     static let empty = SaveData()
@@ -138,5 +142,6 @@ extension SaveData {
         if !ownedTrailIDs.contains("comet") { ownedTrailIDs.append("comet") }
         equippedTrailID = try c.decodeIfPresent(String.self, forKey: .equippedTrailID) ?? equippedTrailID
         ramBackgroundEnabled = try c.decodeIfPresent(Bool.self, forKey: .ramBackgroundEnabled) ?? ramBackgroundEnabled
+        enabledModifierIDs = try c.decodeIfPresent([String].self, forKey: .enabledModifierIDs) ?? enabledModifierIDs
     }
 }

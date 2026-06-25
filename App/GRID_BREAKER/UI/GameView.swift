@@ -324,12 +324,18 @@ struct GameView: View {
     /// Best across replays this screen-visit, so a replay must beat the *new* record.
     @State private var sessionBest = 0
 
+    /// Endless run modifiers (harder run → more Credits). Empty in other modes.
+    let modifiers: [RunModifier]
+    /// Credit multiplier from those modifiers (for the game-over badge).
+    let creditMultiplier: Double
+
     init(core: DataCore? = nil,
          deck: Cyberdeck,
          protocolMode: Bool = false,
          seed: UInt64? = nil,
          daily: Bool = false,
          ramBackground: Bool = false,
+         modifiers: [RunModifier] = [],
          briefing: CoreFeature? = nil,
          bestScore: Int = 0,
          onExit: @escaping () -> Void,
@@ -343,6 +349,10 @@ struct GameView: View {
         self.briefing = briefing
         self.bestScore = bestScore
         self.onNext = onNext
+        // Modifiers only apply to plain Endless (not campaign/daily/protocol).
+        let mods = (core == nil && !daily && !protocolMode) ? modifiers : []
+        self.modifiers = mods
+        self.creditMultiplier = RunModifier.creditMultiplier(mods)
         let model: GameViewModel
         if protocolMode {
             model = GameViewModel(config: .protocolMode(), deck: deck, seed: seed ?? GameView.freshSeed())
@@ -351,8 +361,11 @@ struct GameView: View {
                                   deck: deck, seed: seed ?? GameView.freshSeed(),
                                   targetScore: core.targetScore, difficultyBias: core.difficultyBias)
         } else {
-            // Endless (JACK IN) and the Daily challenge share the tuned endless config.
-            model = GameViewModel(config: .endless(), deck: deck, seed: seed ?? GameView.freshSeed())
+            // Endless (JACK IN) and the Daily challenge share the tuned endless config;
+            // run modifiers (Endless only) tweak it for a harder, more-Credits run.
+            var cfg = GameConfig.endless()
+            RunModifier.apply(mods, to: &cfg)
+            model = GameViewModel(config: cfg, deck: deck, seed: seed ?? GameView.freshSeed())
         }
         _model = State(initialValue: model)
         _showBriefing = State(initialValue: briefing != nil)
@@ -649,6 +662,7 @@ struct GameView: View {
                                 core: core,
                                 daily: daily,
                                 outcome: outcome,
+                                creditMultiplier: creditMultiplier,
                                 isFinalCore: core.map { $0.id >= Campaign.count } ?? false,
                                 onReplay: { outcome = nil; pbFired = false; showPB = false
                                             model.restart(seed: fixedSeed ?? GameView.freshSeed()); startCountdown() },
@@ -1554,6 +1568,7 @@ private struct GameOverOverlay: View {
     let core: DataCore?
     var daily: Bool = false
     let outcome: SessionOutcome?
+    var creditMultiplier: Double = 1
     let isFinalCore: Bool
     let onReplay: () -> Void
     let onNext: (() -> Void)?
@@ -1661,6 +1676,13 @@ private struct GameOverOverlay: View {
                     Label("+\(earned) CR", systemImage: "bitcoinsign.circle.fill")
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                         .foregroundStyle(NeonTheme.gold)
+                    // Endless run-modifier credit boost — the risk/reward payoff.
+                    if creditMultiplier > 1.001 {
+                        Text(String(format: "MODIFIERS ×%.2f", creditMultiplier))
+                            .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                            .foregroundStyle(NeonTheme.magenta)
+                            .neonGlow(NeonTheme.magenta, radius: 4)
+                    }
                 }
 
                 VStack(spacing: 12) {

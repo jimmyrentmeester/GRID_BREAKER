@@ -46,6 +46,18 @@ final class GameStore {
         persist()
     }
 
+    // MARK: Endless run modifiers (harder run → more Credits)
+
+    var enabledModifiers: [RunModifier] { RunModifier.from(ids: save.enabledModifierIDs) }
+    /// Credit multiplier from the currently-enabled modifiers (1.0 = none).
+    var runCreditMultiplier: Double { RunModifier.creditMultiplier(enabledModifiers) }
+    func isModifierOn(_ id: String) -> Bool { save.enabledModifierIDs.contains(id) }
+    func toggleModifier(_ id: String) {
+        if let i = save.enabledModifierIDs.firstIndex(of: id) { save.enabledModifierIDs.remove(at: i) }
+        else { save.enabledModifierIDs.append(id) }
+        persist()
+    }
+
     var musicVolume: Double { save.musicVolume }
     func setMusicVolume(_ v: Double) {
         save.musicVolume = min(1, max(0, v))
@@ -192,10 +204,12 @@ final class GameStore {
     func isHighScore(_ score: Int) -> Bool { save.isHighScore(score) }
 
     /// Record a finished session: pay credits once and update the leaderboard.
+    /// `creditMultiplier` (>1 with endless run modifiers) boosts the Credits only — the
+    /// raw `score` still goes to the leaderboard so the global board stays fair.
     /// Returns the credits awarded (for the game-over screen).
     @discardableResult
-    func recordSession(score: Int, on date: Date) -> Int {
-        let earned = salvaged(forScore: score)
+    func recordSession(score: Int, on date: Date, creditMultiplier: Double = 1) -> Int {
+        let earned = Int((Double(salvaged(forScore: score)) * creditMultiplier).rounded())
         save.cyberdeck.credits += earned
         save.insertScore(score, on: date)
         persist()

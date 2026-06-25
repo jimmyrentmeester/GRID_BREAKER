@@ -3,6 +3,26 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #105 — Endless run modifiers / mutators (2026-06-24)
+Slice 5 (final of the Campaign 2.0 + growth build) — roguelite-style depth from existing systems
+(`docs/CAMPAIGN_REDESIGN.md` §4.2). Optional Endless challenges that make the run harder and
+multiply the **Credits** earned (never the leaderboard score → the global board stays fair; no
+pay-to-win).
+- **`Core/Models/RunModifier.swift`** (new): enum of 4 modifiers (No Fever, Double Firewalls,
+  Sudden Drain, Blitz), each with a credit bonus + a `GameConfig` tweak; `creditMultiplier(_:)`
+  + `apply(_:to:)`. Added to the Xcode project + the enginecheck CORE set.
+- **Persistence**: `SaveData.enabledModifierIDs`; `GameStore` modifier getters + `toggleModifier`
+  + `runCreditMultiplier`; `recordSession(…, creditMultiplier:)` boosts only the Credits.
+- **`GameView`**: a `modifiers` param applied to the Endless config in init (Endless-only);
+  `creditMultiplier` shown as a "MODIFIERS ×N.NN" badge by the +CR on game-over.
+- **UI**: a `ModifiersView` (toggle rows + live ×CR total); a menu MODIFIERS button under JACK IN
+  showing "n ON · ×N.NN"; routing. Fixed a real bug: the menu button's stroke-only background made
+  its middle untappable → added `.contentShape(Rectangle())` (caught live in the sim).
+- **Verified**: Debug build succeeds; deterministic `scripts/enginecheck/modifiers.swift` (in the
+  default run.sh set) 9/9 — multiplier math + each config tweak + stacking. Live (iPhone 16 sim):
+  the MODIFIERS screen toggles, the total updates to ×1.70 (No Fever + Sudden Drain), and the menu
+  reflects "2 ON · ×1.70".
+
 ## Run #104 — Daily-share card + streak (growth/retention) (2026-06-24)
 Slice 4 — the Wordle-style daily loop (`docs/GROWTH_AND_INCOME.md` §3C / CAMPAIGN_REDESIGN §4.1).
 The single highest-ROI growth+retention feature: a reason to open the app daily + an organic

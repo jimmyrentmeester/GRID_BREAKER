@@ -12,7 +12,7 @@ struct RootView: View {
     @State private var guidedTour: GuidedStep = .none   // meta-loop guided shop tour
     @State private var showBoot = true            // animated boot splash on cold launch
 
-    private enum Screen { case menu, endless, daily, protocolMode, campaign, core, cyberdeck, cosmetics, scores, tutorial, codex, settings }
+    private enum Screen { case menu, endless, daily, protocolMode, campaign, core, cyberdeck, cosmetics, scores, tutorial, codex, settings, modifiers }
     /// The guided onboarding tour through the shops (Phase C): buy → equip → done.
     private enum GuidedStep { case none, cyberdeck, cosmetics }
 
@@ -44,11 +44,13 @@ struct RootView: View {
             case .endless:
                 GameView(deck: store.cyberdeck,
                          ramBackground: store.ramBackgroundEnabled,
+                         modifiers: store.enabledModifiers,
                          bestScore: store.highScores.first?.score ?? 0,
                          onExit: { screen = .menu },
                          recordSession: { score, _, _ in
                              let isHigh = store.isHighScore(score)
-                             let earned = store.recordSession(score: score, on: Date())
+                             let earned = store.recordSession(score: score, on: Date(),
+                                                              creditMultiplier: store.runCreditMultiplier)
                              return SessionOutcome(creditsEarned: earned, isHighScore: isHigh)
                          })
                     .transition(.opacity)
@@ -139,6 +141,8 @@ struct RootView: View {
                              onTutorial: { tap(); onboardingPayday = false; screen = .tutorial },
                              onCodex: { tap(); screen = .codex },
                              onBack: { screen = .menu }).playColumn().transition(.opacity)
+            case .modifiers:
+                ModifiersView(store: store, onBack: { screen = .menu }).playColumn().transition(.opacity)
             }
 
             // Animated neon boot splash on cold launch (covers the menu until done).
@@ -227,6 +231,26 @@ struct RootView: View {
                 .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(NeonTheme.cyan.opacity(0.16))
                     .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(NeonTheme.cyan, lineWidth: 2)))
                 .neonGlow(NeonTheme.cyan, radius: 8)
+            }
+            .buttonStyle(TerminalButtonStyle())
+
+            // Endless run modifiers (harder run → more Credits). Shows the active boost.
+            Button { tap(); screen = .modifiers } label: {
+                let mult = store.runCreditMultiplier
+                let count = store.enabledModifiers.count
+                HStack(spacing: 8) {
+                    Image(systemName: "slider.horizontal.3").font(.system(size: 12, weight: .bold))
+                    Text("MODIFIERS").font(.system(size: 12, weight: .bold, design: .monospaced))
+                    Spacer()
+                    Text(count == 0 ? "OFF" : String(format: "%d ON · ×%.2f", count, mult))
+                        .font(.system(size: 12, weight: .heavy, design: .monospaced))
+                }
+                .foregroundStyle(count == 0 ? NeonTheme.textDim : NeonTheme.magenta)
+                .padding(.horizontal, 16).padding(.vertical, 10)
+                .frame(maxWidth: .infinity)
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke((count == 0 ? NeonTheme.gridLineDim : NeonTheme.magenta).opacity(0.6), lineWidth: 1))
+                .contentShape(Rectangle())   // whole row tappable (stroke-only bg is transparent)
             }
             .buttonStyle(TerminalButtonStyle())
 
