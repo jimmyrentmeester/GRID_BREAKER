@@ -31,6 +31,9 @@ struct SaveData: Codable, Sendable {
     /// Best score per campaign core, indexed by `core.id - 1` (grows as needed).
     /// Gives a cleared core a reason to be replayed.
     var campaignBests: [Int] = []
+    /// Best star rating (0–3) per campaign core, indexed by `core.id - 1`. The replay
+    /// mastery layer (★ clear / ★★ flawless-or-fast / ★★★ flawless-and-fast).
+    var campaignStars: [Int] = []
     /// Whether the how-to-play explainer has been shown once.
     var tutorialSeen: Bool = false
     /// Whether the one-time starter-CR "payday" has been granted (during onboarding).
@@ -52,7 +55,7 @@ struct SaveData: Codable, Sendable {
         case version, cyberdeck, highScores, soundEnabled, hapticsEnabled, campaignProgress, tutorialSeen
         case musicVolume, sfxVolume, dailyBestScore, dailyBestDay
         case ownedPaletteIDs, equippedPaletteID, ownedTrailIDs, equippedTrailID
-        case starterCreditsGranted, campaignBests, ramBackgroundEnabled
+        case starterCreditsGranted, campaignBests, campaignStars, ramBackgroundEnabled
     }
 
     static let empty = SaveData()
@@ -118,6 +121,7 @@ extension SaveData {
         dailyBestDay = try c.decodeIfPresent(String.self, forKey: .dailyBestDay) ?? dailyBestDay
         campaignProgress = try c.decodeIfPresent(Int.self, forKey: .campaignProgress) ?? campaignProgress
         campaignBests = try c.decodeIfPresent([Int].self, forKey: .campaignBests) ?? campaignBests
+        campaignStars = try c.decodeIfPresent([Int].self, forKey: .campaignStars) ?? campaignStars
         tutorialSeen = try c.decodeIfPresent(Bool.self, forKey: .tutorialSeen) ?? tutorialSeen
         starterCreditsGranted = try c.decodeIfPresent(Bool.self, forKey: .starterCreditsGranted) ?? starterCreditsGranted
         ownedPaletteIDs = try c.decodeIfPresent([String].self, forKey: .ownedPaletteIDs) ?? ownedPaletteIDs

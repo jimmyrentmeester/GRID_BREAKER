@@ -270,6 +270,10 @@ final class GameViewModel {
 struct SessionOutcome: Equatable {
     let creditsEarned: Int
     let isHighScore: Bool
+    /// Campaign star rating earned this attempt (0–3); nil outside campaign.
+    var stars: Int? = nil
+    /// True when this attempt set a new best star rating for the core (for a celebration).
+    var newBestStars: Bool = false
 }
 
 struct GameView: View {
@@ -294,7 +298,7 @@ struct GameView: View {
     /// Advance to the next campaign core (nil in endless / on the last core).
     let onNext: (() -> Void)?
     /// Persist the finished session exactly once; returns what it yielded.
-    let recordSession: (_ score: Int, _ won: Bool) -> SessionOutcome
+    let recordSession: (_ score: Int, _ won: Bool, _ snapshot: SessionSnapshot) -> SessionOutcome
 
     /// PROTOCOL mode: objective-driven challenge (replaces Flow). Real fail state.
     let protocolMode: Bool
@@ -326,7 +330,7 @@ struct GameView: View {
          bestScore: Int = 0,
          onExit: @escaping () -> Void,
          onNext: (() -> Void)? = nil,
-         recordSession: @escaping (_ score: Int, _ won: Bool) -> SessionOutcome) {
+         recordSession: @escaping (_ score: Int, _ won: Bool, _ snapshot: SessionSnapshot) -> SessionOutcome) {
         self.core = core
         self.protocolMode = protocolMode
         self.daily = daily
@@ -670,7 +674,7 @@ struct GameView: View {
         .onChange(of: reduceMotion) { _, new in model.reduceMotion = new }
         .onChange(of: model.snapshot.isGameOver) { _, over in
             if over, outcome == nil {
-                outcome = recordSession(model.snapshot.score, model.snapshot.didWin)
+                outcome = recordSession(model.snapshot.score, model.snapshot.didWin, model.snapshot)
                 sessionBest = max(sessionBest, model.snapshot.score)
                 // Game Center mirror (report-only): same funnel, same final
                 // snapshot the recap renders. Flow is skipped inside.
@@ -1586,7 +1590,7 @@ private struct GameOverOverlay: View {
                     .multilineTextAlignment(.center)
 
                 if isFinale {
-                    Text("◆ ALL 10 CORES CRACKED ◆")
+                    Text("◆ ALL \(Campaign.count) CORES CRACKED ◆")
                         .font(.system(size: 14, weight: .heavy, design: .monospaced))
                         .foregroundStyle(NeonTheme.cyan)
                         .neonGlow(NeonTheme.cyan, radius: 8)
@@ -1609,9 +1613,29 @@ private struct GameOverOverlay: View {
                     .padding(.top, 2)
                 // Campaign win margin: how close was it? Makes a clear replay goal.
                 if didWin, core != nil {
-                    Text("\(Int(ceil(max(0, snapshot.ramRemaining))))s TO SPARE")
+                    Text("\(Int(ceil(max(0, snapshot.ramRemaining))))s TO SPARE"
+                         + (snapshot.mistakes == 0 ? "  ·  FLAWLESS" : ""))
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundStyle(NeonTheme.gold.opacity(0.85))
+                }
+                // Mastery stars earned this run (campaign win) — the replay hook.
+                if didWin, core != nil, let st = outcome?.stars {
+                    HStack(spacing: 10) {
+                        ForEach(0..<3, id: \.self) { i in
+                            Image(systemName: i < st ? "star.fill" : "star")
+                                .font(.system(size: 24))
+                                .foregroundStyle(i < st ? NeonTheme.gold : NeonTheme.textDim.opacity(0.5))
+                                .neonGlow(i < st ? NeonTheme.gold : .clear, radius: 6)
+                        }
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(st) of 3 stars" + (outcome?.newBestStars == true ? ", new best" : ""))
+                    if outcome?.newBestStars == true {
+                        Text("◆ NEW BEST ◆")
+                            .font(.system(size: 12, weight: .heavy, design: .monospaced))
+                            .foregroundStyle(NeonTheme.gold)
+                            .neonGlow(NeonTheme.gold, radius: 6)
+                    }
                 }
                 // Run recap (endless/daily): the story of the run in one line —
                 // deaths sting less when you can see what you built (Part 1.4).
@@ -1673,6 +1697,6 @@ struct TerminalButton: View {
 #Preview {
     GameView(deck: .starter,
              onExit: {},
-             recordSession: { _, _ in SessionOutcome(creditsEarned: 0, isHighScore: false) })
+             recordSession: { _, _, _ in SessionOutcome(creditsEarned: 0, isHighScore: false) })
         .preferredColorScheme(.dark)
 }

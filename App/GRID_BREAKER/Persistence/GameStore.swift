@@ -154,16 +154,24 @@ final class GameStore {
         return idx >= 0 && idx < save.campaignBests.count ? save.campaignBests[idx] : 0
     }
 
+    /// Best star rating (0–3) earned on this core.
+    func stars(for core: DataCore) -> Int {
+        let idx = core.id - 1
+        return idx >= 0 && idx < save.campaignStars.count ? save.campaignStars[idx] : 0
+    }
+
     /// Record a campaign attempt: always pay Credits for the decodes (shared
-    /// economy → progress never fully stalls), track the per-core best, and
-    /// advance the campaign if this win cleared the next locked core.
+    /// economy → progress never fully stalls), track the per-core best score + best
+    /// stars, and advance the campaign if this win cleared the next locked core.
     /// Returns Credits earned.
     @discardableResult
-    func recordCore(_ core: DataCore, won: Bool, score: Int, on date: Date) -> Int {
+    func recordCore(_ core: DataCore, won: Bool, score: Int, stars: Int = 0, on date: Date) -> Int {
         let earned = salvaged(forScore: score)
         save.cyberdeck.credits += earned
         while save.campaignBests.count < core.id { save.campaignBests.append(0) }
         save.campaignBests[core.id - 1] = max(save.campaignBests[core.id - 1], score)
+        while save.campaignStars.count < core.id { save.campaignStars.append(0) }
+        save.campaignStars[core.id - 1] = max(save.campaignStars[core.id - 1], stars)
         if won && core.id == save.campaignProgress + 1 {
             save.campaignProgress = core.id
         }

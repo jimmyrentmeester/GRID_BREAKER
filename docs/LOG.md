@@ -3,6 +3,23 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #103 — Campaign 2.0 slice 3: star / mastery objectives (2026-06-24)
+Per-core 3-star mastery — the replay layer (`docs/CAMPAIGN_REDESIGN.md` §3).
+- **`Core/Engine/GridEngine.swift`**: new `mistakes` counter (snapshot field) incremented on
+  every player error — mistap (even when a shield absorbs it, so "flawless" stays pure skill),
+  expired daemon, firewall defused by shield, wrong DAEMON-SET order.
+- **`Core/Models/Campaign.swift`**: `DataCore.stars(ramRemaining:mistakes:won:)` — cumulative
+  ★ clear / ★★ flawless-OR-fast / ★★★ flawless-AND-fast (fast = ≥25% RAM left). Stars only
+  ever unlock cosmetics later, never access/power (no pay-to-win).
+- **Persistence**: `SaveData.campaignStars` (tolerant-decoded) + `GameStore.stars(for:)` and
+  `recordCore(…, stars:)` keeping the best. `recordSession` closure now passes the final
+  snapshot so the campaign call computes + stores stars; `SessionOutcome` gains `stars`/`newBestStars`.
+- **UI**: 3-star pips on cleared cores in the level select; the campaign win screen shows the
+  stars earned + "FLAWLESS" + "◆ NEW BEST ◆"; finale text now reads `\(Campaign.count)` cores.
+- **Verified:** Debug build succeeds; new deterministic check `scripts/enginecheck/stars.swift`
+  (added to the default run.sh set) — 7/7 pass: star thresholds correct, mistap → mistakes 0→1,
+  expired daemon → mistakes counted.
+
 ## Run #102 — Campaign 2.0 slice 2: PROTOCOL bosses as chapter finales (2026-06-24)
 Each chapter's boss core now runs a PROTOCOL objective during the time-attack fight.
 - **`Core/Models/Campaign.swift`**: `BossObjective` enum (none/daemonSet/dmz/both) +

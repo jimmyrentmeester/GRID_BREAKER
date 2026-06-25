@@ -155,3 +155,16 @@ enum Campaign {
     static func chapter(id: Int) -> Chapter? { chapters.first { $0.id == id } }
     static func cores(inChapter chapterID: Int) -> [DataCore] { cores.filter { $0.chapter == chapterID } }
 }
+
+extension DataCore {
+    /// Mastery rating (0–3) for a finished attempt. Time-attack-friendly + cumulative:
+    /// ★ clear · ★★ clear flawless OR fast · ★★★ clear flawless AND fast. "Flawless" =
+    /// zero mistakes (pure skill — a shield can't buy it); "fast" = cleared with ≥25% of
+    /// the RAM clock still left. Stars only ever unlock cosmetics, never access or power.
+    func stars(ramRemaining: TimeInterval, mistakes: Int, won: Bool) -> Int {
+        guard won else { return 0 }
+        let flawless = mistakes == 0
+        let fast = ramRemaining >= timeBudget * 0.25
+        return 1 + ((flawless || fast) ? 1 : 0) + ((flawless && fast) ? 1 : 0)
+    }
+}

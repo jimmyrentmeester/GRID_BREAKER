@@ -39,7 +39,7 @@ struct RootView: View {
                          ramBackground: store.ramBackgroundEnabled,
                          bestScore: store.highScores.first?.score ?? 0,
                          onExit: { screen = .menu },
-                         recordSession: { score, _ in
+                         recordSession: { score, _, _ in
                              let isHigh = store.isHighScore(score)
                              let earned = store.recordSession(score: score, on: Date())
                              return SessionOutcome(creditsEarned: earned, isHighScore: isHigh)
@@ -52,7 +52,7 @@ struct RootView: View {
                          ramBackground: store.ramBackgroundEnabled,
                          bestScore: store.dailyBest(forDay: today.key),
                          onExit: { screen = .menu },
-                         recordSession: { score, _ in store.recordDaily(score: score, day: today.key) })
+                         recordSession: { score, _, _ in store.recordDaily(score: score, day: today.key) })
                     .transition(.opacity)
             case .protocolMode:
                 // PROTOCOL — objective-driven challenge mode (replaces Flow). Pays Credits
@@ -60,7 +60,7 @@ struct RootView: View {
                 GameView(deck: store.cyberdeck, protocolMode: true,
                          ramBackground: store.ramBackgroundEnabled,
                          onExit: { screen = .menu },
-                         recordSession: { score, _ in
+                         recordSession: { score, _, _ in
                              let earned = store.recordProtocolRun(score: score)
                              return SessionOutcome(creditsEarned: earned, isHighScore: false)
                          })
@@ -78,9 +78,14 @@ struct RootView: View {
                              briefing: store.isCleared(core) ? nil : core.briefing,
                              onExit: { screen = .campaign },
                              onNext: Campaign.core(id: core.id + 1).map { next in { activeCore = next } },
-                             recordSession: { score, won in
-                                 let earned = store.recordCore(core, won: won, score: score, on: Date())
-                                 return SessionOutcome(creditsEarned: earned, isHighScore: false)
+                             recordSession: { score, won, snap in
+                                 let st = core.stars(ramRemaining: snap.ramRemaining,
+                                                     mistakes: snap.mistakes, won: won)
+                                 let prev = store.stars(for: core)
+                                 let earned = store.recordCore(core, won: won, score: score,
+                                                              stars: st, on: Date())
+                                 return SessionOutcome(creditsEarned: earned, isHighScore: false,
+                                                       stars: st, newBestStars: won && st > prev)
                              })
                         .id(core.id)          // fresh session when advancing cores
                         .transition(.opacity)

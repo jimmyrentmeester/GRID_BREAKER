@@ -1269,6 +1269,7 @@ struct CampaignView: View {
                                         cleared: store.isCleared(core),
                                         unlocked: store.isUnlocked(core),
                                         best: store.bestScore(for: core),
+                                        stars: store.stars(for: core),
                                         action: { if store.isUnlocked(core) { onPlay(core) } })
                             }
                         }
@@ -1327,6 +1328,8 @@ private struct CoreRow: View {
     let unlocked: Bool
     /// Best score ever decoded on this core (0 = none) — the replay hook.
     var best: Int = 0
+    /// Best star rating (0–3) — the mastery/replay layer.
+    var stars: Int = 0
     let action: () -> Void
 
     private var accent: Color {
@@ -1362,6 +1365,16 @@ private struct CoreRow: View {
                          + (best > 0 ? "  ·  BEST \(best)" : ""))
                         .font(.system(size: 11, weight: .regular, design: .monospaced))
                         .foregroundStyle(NeonTheme.textDim)
+                    if cleared {
+                        HStack(spacing: 3) {
+                            ForEach(0..<3, id: \.self) { i in
+                                Image(systemName: i < stars ? "star.fill" : "star")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(i < stars ? NeonTheme.gold : NeonTheme.textDim.opacity(0.5))
+                            }
+                        }
+                        .padding(.top, 1)
+                    }
                 }
                 Spacer()
                 if unlocked && !cleared {

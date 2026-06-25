@@ -80,6 +80,7 @@ struct SessionSnapshot: Sendable {
     var gameOverReason: GameOverReason?
     var elapsed: TimeInterval          // session clock (run recap)
     var bestCleanStreak: Int           // longest clean chain this run (run recap)
+    var mistakes: Int                  // player mistakes this run (campaign flawless star)
     var feversTriggered: Int           // fevers this run (run recap)
     var nextMilestone: Int?            // next score landmark (nil = none/disabled)
     var dmzZone: Set<Int>              // PROTOCOL: cells outlined as the active DMZ (empty = none)
@@ -150,6 +151,9 @@ struct GridEngine {
     private(set) var cleanStreak: Int = 0
     /// Longest clean chain this session (run recap).
     private(set) var bestCleanStreak: Int = 0
+    /// Player mistakes this session (mistap / expired daemon / wrong set order) — drives
+    /// the campaign "flawless" star. A firewall hit ends the run, so it isn't counted here.
+    private(set) var mistakes: Int = 0
     /// Whether the low-RAM warning has fired for the current dip (hysteresis:
     /// re-arms once RAM recovers above the re-arm line, so it never spams).
     private var ramWarned = false
@@ -208,6 +212,7 @@ struct GridEngine {
             gameOverReason: gameOverReason,
             elapsed: clock,
             bestCleanStreak: bestCleanStreak,
+            mistakes: mistakes,
             feversTriggered: feversTriggered,
             nextMilestone: nextMilestoneIndex < config.milestoneScores.count
                 ? config.milestoneScores[nextMilestoneIndex] : nil,
@@ -302,6 +307,7 @@ struct GridEngine {
             ramRemaining -= config.penaltyExpiredDaemon
             combo = 0
             cleanStreak = 0       // falling behind breaks the streak multiplier
+            mistakes += 1         // expired daemon = a mistake (campaign flawless star)
             events.append(.nodeExpired(node.type, cell: node.cellIndex))
         }
         if !expired.isEmpty {
@@ -431,6 +437,7 @@ struct GridEngine {
                 return [decode(at: wormIdx)] + checkFever() + checkTarget() + checkGridEscalation() + checkMilestone()
             }
             // Empty cell — a miss, unless the shield absorbs it.
+            mistakes += 1         // a mistap counts even if absorbed → flawless stays pure skill
             if shieldCharges > 0 {
                 shieldCharges -= 1
                 return [.missAbsorbed(cell: cellIndex)]
@@ -458,6 +465,7 @@ struct GridEngine {
             // The Failsafe Shield eats a bomb tap (your worst mistake), no game over.
             if shieldCharges > 0 {
                 shieldCharges -= 1
+                mistakes += 1     // tapping a firewall is a mistake even when defused
                 return [.firewallDefused(cell: cell)]
             }
             return [.firewallExploded(cell: cell), endGame(.firewallHit)]
@@ -491,6 +499,7 @@ struct GridEngine {
             let cell = nodes[idx].cellIndex
             combo = 0
             cleanStreak = 0
+            mistakes += 1         // wrong set order = a mistake (flawless star)
             ramRemaining -= config.penaltyMiss
             var events: [GameEvent] = [.daemonSetWrongOrder(cell: cell)]
             events += checkRAMWarning()
