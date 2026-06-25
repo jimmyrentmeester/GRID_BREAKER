@@ -25,9 +25,12 @@ All five slices from `docs/CAMPAIGN_REDESIGN.md` are built + verified (build + d
 
 Strategy docs: `docs/CAMPAIGN_REDESIGN.md`, `docs/GROWTH_AND_INCOME.md` (marketing/income plan).
 
+**Curve validated** (Run #106): `scripts/enginecheck/campaignsim.swift` — a multi-skill
+reaction-time player-sim. STRONG/GOOD clear all 16; CASUAL clears through core 15, the finale
+is a real wall. Cores 1–14 comfortable for everyone → the gentler pacing landed; challenge sits
+in the finale + the ★ stars. Re-run after any `Campaign.cores` retune.
+
 **Pending before the next App Store version:**
-- **Sim-validate the 16-core curve** — the new ladder is hand-tuned gentler; there's no full
-  player-sim yet (only engine-checks). Build one to confirm the pacing across skill levels.
 - On-device feel pass of the whole update; bump version; submit.
 - Execute the growth plan (the priority lever — installs are dipping): the daily-share loop +
   short-form video + an Apple featuring nomination.

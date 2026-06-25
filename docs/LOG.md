@@ -3,6 +3,20 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #106 — Campaign player-sim: 16-core curve validated (2026-06-24)
+The pending validation for Campaign 2.0's gentler ladder. New headless multi-skill player-sim
+`scripts/enginecheck/campaignsim.swift` (run on demand via `run.sh campaignsim`; not in the
+default fast set). A reaction-time bot plays every core at 3 skill levels (STRONG/GOOD/CASUAL =
+reaction + tap-speed) on a starter deck over 6 seeds, tapping only valid targets (never a
+firewall), handling armored / caches / worms / power-ups + DAEMON SET (in order) + DMZ PURGE
+(clear the zone). Falling behind → expiries → RAM drain + streak break = the curve's pressure.
+- **Result (validated):** STRONG + GOOD clear all 16; CASUAL clears through core 15 and the
+  finale (The Monolith) is a real wall (3/6). Cores 1–14 are comfortable for everyone (28–46s
+  spare) — confirms the "introduces things too fast" fix landed gentle; the challenge sits in
+  the finale, with the skill ceiling in the ★ stars (flawless/fast). Asserts pass: strong clears
+  all, casual clears ≥ chapter 1, difficulty monotone (casual ≤ good ≤ strong).
+- Reusable: re-run after any `Campaign.cores` retune to re-validate before shipping.
+
 ## Run #105 — Endless run modifiers / mutators (2026-06-24)
 Slice 5 (final of the Campaign 2.0 + growth build) — roguelite-style depth from existing systems
 (`docs/CAMPAIGN_REDESIGN.md` §4.2). Optional Endless challenges that make the run harder and
