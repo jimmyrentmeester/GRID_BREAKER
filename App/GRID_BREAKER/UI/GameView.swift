@@ -1152,8 +1152,12 @@ private struct GridBoard: View {
                                          isZone: snapshot.dmzZone.contains(index))
                                     // Whole cell is tappable → hitbox is generously
                                     // larger than the sprite (brief §10.7 tolerance).
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { onTap(index) }
+                                    // Act on PRESS (touch-down), not release — a reflex
+                                    // game feels noticeably crisper when the decode fires
+                                    // the instant the finger lands (Carmack's "act on
+                                    // press"). The grid isn't in a scroll view, so there's
+                                    // no scroll/drag conflict to lose.
+                                    .actOnPress { onTap(index) }
                             }
                         }
                     }
@@ -1171,6 +1175,36 @@ private struct GridBoard: View {
         }
         .aspectRatio(1, contentMode: .fit)
     }
+}
+
+/// Fires `action` on touch-DOWN (press) instead of touch-up (release), so a tap feels
+/// substantially more responsive — the right default for a reflex game's hot controls
+/// (Carmack's "act on press"; do NOT use it for menu/confirm buttons, where sliding the
+/// finger off to cancel is the point). `DragGesture(minimumDistance: 0)` is SwiftUI's
+/// act-on-press primitive; the flag fires the action once on the down edge and resets on
+/// lift, and `.onChanged` is a side-effect-safe callback (runs on the touch event, not in
+/// a view update). Apply only outside scroll views, where there's no drag to lose.
+private struct ActOnPress: ViewModifier {
+    let action: () -> Void
+    @State private var fired = false
+
+    func body(content: Content) -> some View {
+        content
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        guard !fired else { return }   // once per press, not per move
+                        fired = true
+                        action()
+                    }
+                    .onEnded { _ in fired = false }
+            )
+    }
+}
+
+private extension View {
+    func actOnPress(_ action: @escaping () -> Void) -> some View { modifier(ActOnPress(action: action)) }
 }
 
 private struct CellView: View {

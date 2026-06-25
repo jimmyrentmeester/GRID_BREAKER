@@ -3,6 +3,20 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #108 — Grid taps now act on press, not release (Carmack's rule) (2026-06-24)
+A reflex game feels substantially crisper when the decode fires the instant the finger lands
+rather than on lift (Carmack's "act on press" — sub-100ms, but felt). Applied to the gameplay
+grid only.
+- **`UI/GameView.swift`**: new `ActOnPress` ViewModifier — `DragGesture(minimumDistance: 0)`
+  (SwiftUI's act-on-press primitive) fires `action` once on the touch-DOWN edge (`.onChanged`
+  guard) and resets on lift (`.onEnded`); the grid cell now uses `.actOnPress { onTap(index) }`
+  instead of `.onTapGesture`. The grid isn't in a scroll view, so there's no drag/scroll to
+  lose (Carmack's one caveat). Deliberately NOT applied to menu/confirm buttons — there, sliding
+  off to cancel is the point, and act-on-press would make a brush an accidental commit.
+- Engine/determinism untouched (`handleTap` unchanged; only WHEN it's called moves from up→down).
+- **Verified** (iPhone 16 sim): builds; tapping a daemon decodes live (SCORE 0→1, burst + RAM
+  refill); a firewall left untapped. Engine-check suite unaffected.
+
 ## Run #107 — Polish pass: Codex truth-up + boss briefing + small fixes (2026-06-24)
 Walked the app screen-by-screen (code review + simctl captures; the interactive UI pass was cut
 short by a degraded computer-use/screen-recording session). Findings + fixes:
