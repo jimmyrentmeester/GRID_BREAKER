@@ -14,14 +14,23 @@ PROTOCOL ramp numbers on main (tune in `GameConfig.protocolMode()` if play revea
 - DAEMON SET size: always 2 at score 0; 2–3 at score 15; 2–4 at score 30.
 - DMZ zone size: always 2 at score 0; 2–3 at score 20; 2–4 at score 40.
 
-## ▶ NEXT — Campaign 2.0 + growth (planning, 2026-06-24)
-Two strategy docs drive the next phase:
-- **`docs/CAMPAIGN_REDESIGN.md`** — chapters + slower mechanic pacing + PROTOCOL-as-boss +
-  star/mastery objectives + retention features (the campaign feedback: "introduces new
-  things too fast").
-- **`docs/GROWTH_AND_INCOME.md`** — marketing plan (ASO, short-form video, daily-share
-  hook, Apple featuring) + the cosmetic-only path to a real side income. Installs are
-  dipping; this is the priority lever.
+## ✅ Campaign 2.0 + growth features — BUILT (Runs #101–105, on main, not yet released)
+All five slices from `docs/CAMPAIGN_REDESIGN.md` are built + verified (build + deterministic
+`scripts/enginecheck/*`, on-device where visual):
+1. **Chapters + slower pacing** — 16 cores / 4 chapters, one new mechanic per chapter.
+2. **PROTOCOL bosses** — each chapter finale runs a DAEMON SET / DMZ PURGE objective.
+3. **Star/mastery** — per-core ★/★★/★★★ (flawless = pure skill), shown on level select + win.
+4. **Daily-share card + streak** — Wordle-style ShareLink + consecutive-day streak (growth loop).
+5. **Endless run modifiers** — optional challenges → more Credits (leaderboard stays fair).
+
+Strategy docs: `docs/CAMPAIGN_REDESIGN.md`, `docs/GROWTH_AND_INCOME.md` (marketing/income plan).
+
+**Pending before the next App Store version:**
+- **Sim-validate the 16-core curve** — the new ladder is hand-tuned gentler; there's no full
+  player-sim yet (only engine-checks). Build one to confirm the pacing across skill levels.
+- On-device feel pass of the whole update; bump version; submit.
+- Execute the growth plan (the priority lever — installs are dipping): the daily-share loop +
+  short-form video + an Apple featuring nomination.
 
 ## ✅ M0 — Scaffold + docs (done)
 - New repo, hand-authored Xcode project (iOS 17, portrait, dark).
