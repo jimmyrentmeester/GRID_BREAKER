@@ -26,6 +26,10 @@ struct SaveData: Codable, Sendable {
     /// to — a new day resets the comparison.
     var dailyBestScore: Int = 0
     var dailyBestDay: String = ""
+    /// Consecutive-day streak on the Daily Hack, and the day key it was last counted on
+    /// — the retention ritual (a reason to open the app every day).
+    var dailyStreak: Int = 0
+    var dailyStreakDay: String = ""
     /// Number of campaign cores cleared (core N is unlocked when this >= N-1).
     var campaignProgress: Int = 0
     /// Best score per campaign core, indexed by `core.id - 1` (grows as needed).
@@ -53,7 +57,7 @@ struct SaveData: Codable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case version, cyberdeck, highScores, soundEnabled, hapticsEnabled, campaignProgress, tutorialSeen
-        case musicVolume, sfxVolume, dailyBestScore, dailyBestDay
+        case musicVolume, sfxVolume, dailyBestScore, dailyBestDay, dailyStreak, dailyStreakDay
         case ownedPaletteIDs, equippedPaletteID, ownedTrailIDs, equippedTrailID
         case starterCreditsGranted, campaignBests, campaignStars, ramBackgroundEnabled
     }
@@ -119,6 +123,8 @@ extension SaveData {
         sfxVolume = try c.decodeIfPresent(Double.self, forKey: .sfxVolume) ?? sfxVolume
         dailyBestScore = try c.decodeIfPresent(Int.self, forKey: .dailyBestScore) ?? dailyBestScore
         dailyBestDay = try c.decodeIfPresent(String.self, forKey: .dailyBestDay) ?? dailyBestDay
+        dailyStreak = try c.decodeIfPresent(Int.self, forKey: .dailyStreak) ?? dailyStreak
+        dailyStreakDay = try c.decodeIfPresent(String.self, forKey: .dailyStreakDay) ?? dailyStreakDay
         campaignProgress = try c.decodeIfPresent(Int.self, forKey: .campaignProgress) ?? campaignProgress
         campaignBests = try c.decodeIfPresent([Int].self, forKey: .campaignBests) ?? campaignBests
         campaignStars = try c.decodeIfPresent([Int].self, forKey: .campaignStars) ?? campaignStars

@@ -3,6 +3,25 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #104 — Daily-share card + streak (growth/retention) (2026-06-24)
+Slice 4 — the Wordle-style daily loop (`docs/GROWTH_AND_INCOME.md` §3C / CAMPAIGN_REDESIGN §4.1).
+The single highest-ROI growth+retention feature: a reason to open the app daily + an organic
+acquisition loop.
+- **Persistence**: `SaveData.dailyStreak` + `dailyStreakDay` (tolerant-decoded). `GameStore`:
+  `recordDaily(score:day:yesterday:)` advances the consecutive-day streak (once/day; +1 if
+  yesterday was played, reset to 1 after a gap); `dailyStreak(today:yesterday:)` getter (lapses
+  after a missed day); static `dailyShareText(...)` builds the share string; `shareURL` constant
+  (marketing page — swap to the direct App Store URL when known).
+- **`RootView`**: `dayKey(daysAgo:)` helper; the daily `recordSession` closure updates the streak
+  + builds the share text into the outcome. Menu stat row shows a `STREAK n🔥` chip (else DAILY
+  best). `SessionOutcome` gains `dailyStreak`/`shareText`.
+- **`GameOverView`**: daily run shows a "n-DAY STREAK" line + a native `ShareLink` "SHARE RESULT"
+  button.
+- **Verified** (iPhone 16 sim): Debug build succeeds; played a daily → game-over shows
+  "🔥 1-DAY STREAK" + SHARE RESULT; the iOS share sheet opens with the correctly formatted text
+  ("GRID_BREAKER ▦ Daily Hack · 2026-06-25 …"). Multi-day increment logic is build-verified
+  (can't advance the clock in the sim).
+
 ## Run #103 — Campaign 2.0 slice 3: star / mastery objectives (2026-06-24)
 Per-core 3-star mastery — the replay layer (`docs/CAMPAIGN_REDESIGN.md` §3).
 - **`Core/Engine/GridEngine.swift`**: new `mistakes` counter (snapshot field) incremented on

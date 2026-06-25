@@ -220,18 +220,46 @@ final class GameStore {
         save.dailyBestDay == day ? save.dailyBestScore : 0
     }
 
-    /// Record a finished daily run: pays Credits (shared economy) and updates the
-    /// day's best. `isHighScore` in the outcome means "new daily best".
+    /// The current Daily-Hack streak (consecutive days played), valid only relative to
+    /// `today`/`yesterday`: today keeps it, yesterday means it's still alive, an older day
+    /// means it has lapsed (shown as broken). The menu uses this for the streak chip.
+    func dailyStreak(today: String, yesterday: String) -> Int {
+        (save.dailyStreakDay == today || save.dailyStreakDay == yesterday) ? save.dailyStreak : 0
+    }
+
+    /// Record a finished daily run: pays Credits, updates the day's best, and advances the
+    /// consecutive-day streak (once per day; +1 if yesterday was played, reset to 1 after a
+    /// gap). `isHighScore` means "new daily best". Returns the streak in the outcome.
     @discardableResult
-    func recordDaily(score: Int, day: String) -> SessionOutcome {
+    func recordDaily(score: Int, day: String, yesterday: String) -> SessionOutcome {
         let earned = salvaged(forScore: score)
         save.cyberdeck.credits += earned
         let prev = dailyBest(forDay: day)
         let isBest = score > prev
         if isBest { save.dailyBestDay = day; save.dailyBestScore = score }
+        // Streak: count once per day; consecutive if the last counted day was yesterday.
+        if save.dailyStreakDay != day {
+            save.dailyStreak = (save.dailyStreakDay == yesterday) ? save.dailyStreak + 1 : 1
+            save.dailyStreakDay = day
+        }
         persist()
-        return SessionOutcome(creditsEarned: earned, isHighScore: isBest)
+        return SessionOutcome(creditsEarned: earned, isHighScore: isBest, dailyStreak: save.dailyStreak)
     }
+
+    /// Build the Wordle-style shareable result text for a finished daily run.
+    static func dailyShareText(day: String, score: Int, bestStreak: Int, fevers: Int, dayStreak: Int) -> String {
+        let n = NumberFormatter(); n.numberStyle = .decimal
+        let scoreStr = n.string(from: NSNumber(value: score)) ?? "\(score)"
+        var lines = ["GRID_BREAKER ▦ Daily Hack · \(day)",
+                     "◆ SCORE \(scoreStr)   🔥 ×\(bestStreak)   ⚡ \(fevers)"]
+        if dayStreak > 1 { lines.append("📆 \(dayStreak)-day streak") }
+        lines.append(GameStore.shareURL)
+        return lines.joined(separator: "\n")
+    }
+
+    /// Public link for shares. Points at the marketing page (stable, redirects to the App
+    /// Store); swap to the direct App Store URL once the numeric app ID is known.
+    static let shareURL = "https://jimmyrentmeester.github.io/gridbreaker/"
 
     /// Attempt to buy one level of an upgrade. Returns true on success.
     @discardableResult

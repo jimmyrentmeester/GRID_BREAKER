@@ -274,6 +274,10 @@ struct SessionOutcome: Equatable {
     var stars: Int? = nil
     /// True when this attempt set a new best star rating for the core (for a celebration).
     var newBestStars: Bool = false
+    /// Daily-challenge consecutive-day streak after this run (nil outside the daily).
+    var dailyStreak: Int? = nil
+    /// Pre-built shareable result text for the daily (nil outside the daily).
+    var shareText: String? = nil
 }
 
 struct GameView: View {
@@ -1645,6 +1649,14 @@ private struct GameOverOverlay: View {
                         .foregroundStyle(NeonTheme.textDim)
                         .accessibilityLabel("Run lasted \(Int(snapshot.elapsed)) seconds, best streak \(snapshot.bestCleanStreak), \(snapshot.feversTriggered) fevers")
                 }
+                // Daily-Hack consecutive-day streak — the retention ritual.
+                if daily, let streak = outcome?.dailyStreak, streak > 0 {
+                    Label("\(streak)-DAY STREAK", systemImage: "flame.fill")
+                        .font(.system(size: 14, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(NeonTheme.gold)
+                        .neonGlow(NeonTheme.gold, radius: 6)
+                        .accessibilityLabel("\(streak) day daily streak")
+                }
                 if let earned = outcome?.creditsEarned, earned > 0 {
                     Label("+\(earned) CR", systemImage: "bitcoinsign.circle.fill")
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
@@ -1654,6 +1666,22 @@ private struct GameOverOverlay: View {
                 VStack(spacing: 12) {
                     if let onNext {
                         TerminalButton(title: "NEXT CORE", color: NeonTheme.gold, action: onNext)
+                    }
+                    // Daily: a Wordle-style share of today's result (organic growth loop).
+                    if daily, let share = outcome?.shareText {
+                        ShareLink(item: share) {
+                            Label("SHARE RESULT", systemImage: "square.and.arrow.up")
+                                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                .foregroundStyle(NeonTheme.gold)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .stroke(NeonTheme.gold, lineWidth: 1.5)
+                                        .background(RoundedRectangle(cornerRadius: 10).fill(NeonTheme.gold.opacity(0.10)))
+                                )
+                        }
+                        .accessibilityLabel("Share today's daily result")
                     }
                     HStack(spacing: 14) {
                         TerminalButton(title: core != nil ? "RETRY" : "RECONNECT",

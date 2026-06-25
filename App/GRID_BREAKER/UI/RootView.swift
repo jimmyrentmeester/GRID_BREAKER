@@ -26,6 +26,13 @@ struct RootView: View {
         return (String(format: "%04d-%02d-%02d", y, m, d), UInt64(y * 10000 + m * 100 + d))
     }
 
+    /// The "yyyy-MM-dd" key `daysAgo` days before today — for the daily-streak check.
+    private static func dayKey(daysAgo: Int) -> String {
+        let date = Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date()) ?? Date()
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", c.year ?? 2000, c.month ?? 1, c.day ?? 1)
+    }
+
     var body: some View {
         ZStack {
             NeonTheme.background.ignoresSafeArea()
@@ -52,7 +59,17 @@ struct RootView: View {
                          ramBackground: store.ramBackgroundEnabled,
                          bestScore: store.dailyBest(forDay: today.key),
                          onExit: { screen = .menu },
-                         recordSession: { score, _, _ in store.recordDaily(score: score, day: today.key) })
+                         recordSession: { score, _, snap in
+                             let out = store.recordDaily(score: score, day: today.key,
+                                                         yesterday: Self.dayKey(daysAgo: 1))
+                             let share = GameStore.dailyShareText(
+                                 day: today.key, score: score,
+                                 bestStreak: snap.bestCleanStreak, fevers: snap.feversTriggered,
+                                 dayStreak: out.dailyStreak ?? 0)
+                             return SessionOutcome(creditsEarned: out.creditsEarned,
+                                                   isHighScore: out.isHighScore,
+                                                   dailyStreak: out.dailyStreak, shareText: share)
+                         })
                     .transition(.opacity)
             case .protocolMode:
                 // PROTOCOL — objective-driven challenge mode (replaces Flow). Pays Credits
@@ -189,8 +206,10 @@ struct RootView: View {
             // Stat chips (at-a-glance progress).
             HStack(spacing: 10) {
                 if let best = store.highScores.first { statChip("BEST", "\(best.score)", NeonTheme.cyan) }
+                let streak = store.dailyStreak(today: Self.today().key, yesterday: Self.dayKey(daysAgo: 1))
                 let db = store.dailyBest(forDay: Self.today().key)
-                if db > 0 { statChip("DAILY", "\(db)", NeonTheme.magenta) }
+                if streak > 0 { statChip("STREAK", "\(streak)🔥", NeonTheme.gold) }
+                else if db > 0 { statChip("DAILY", "\(db)", NeonTheme.magenta) }
                 statChip("CREDITS", "\(store.cyberdeck.credits)", NeonTheme.gold)
             }
 
