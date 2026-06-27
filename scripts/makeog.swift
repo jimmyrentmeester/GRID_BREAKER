@@ -46,7 +46,7 @@ ctx.setFillColor(col(magenta)); ctx.fillPath(); ctx.restoreGState()
 
 text("GRID_BREAKER", font: "Menlo-Bold", size: 132, cyan, x: 0, y: 232, glow: 40, center: true)
 text("// NEON REFLEX GRID-HACKING", font: "Menlo-Bold", size: 40, magenta, x: 0, y: 150, glow: 20, center: true)
-text("ENDLESS · CAMPAIGN · FLOW · DAILY   —   NO ADS · NO TRACKING", font: "Menlo", size: 26, gold, x: 0, y: 84, glow: 12, center: true)
+text("ENDLESS · CAMPAIGN · PROTOCOL · DAILY   —   NO ADS · NO TRACKING", font: "Menlo", size: 26, gold, x: 0, y: 84, glow: 12, center: true)
 
 // vignette
 let v = CGGradient(colorsSpace: cs, colors: [col((0, 0, 0), 0), col((0, 0, 0), 0.5)] as CFArray, locations: [0.5, 1])!
