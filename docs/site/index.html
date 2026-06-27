@@ -35,6 +35,10 @@
           box-shadow:0 0 24px rgba(51,242,255,.4); }
   .badge.soon{ background:transparent; color:var(--cyan); border:1.6px solid var(--cyan); }
   .sub{ color:var(--dim); font-size:13px; margin-top:12px; }
+  /* preview video */
+  .video{ display:flex; justify-content:center; padding:30px 0 6px; }
+  .video video{ width:min(78%,304px); border-radius:30px; border:1px solid rgba(51,242,255,.28);
+                box-shadow:0 0 50px rgba(51,242,255,.22),0 18px 60px rgba(0,0,0,.6); background:#05060c; }
   /* shots */
   .shots{ display:flex; gap:16px; justify-content:center; flex-wrap:wrap; padding:26px 0 8px; }
   .shots img{ width:min(30%,220px); border-radius:18px; border:1px solid rgba(51,242,255,.18); box-shadow:0 10px 40px rgba(0,0,0,.5); }
@@ -60,14 +64,19 @@
     <div>
       <a class="badge" href="https://apps.apple.com/app/id6779888720">▼ Download on the App Store</a>
     </div>
-    <div class="sub">iPhone · Free · No ads · No tracking</div>
+    <div class="sub">iPhone &amp; iPad · Free · No ads · No tracking</div>
   </header>
 
   <div class="wrap">
+    <div class="video">
+      <video src="assets/preview.mp4" poster="assets/preview-poster.png"
+             autoplay muted loop playsinline preload="metadata"></video>
+    </div>
+
     <div class="shots">
-      <img src="assets/01-menu.png" alt="GRID_BREAKER main menu">
-      <img src="assets/02-fever.png" alt="Fever mode gameplay">
-      <img src="assets/03-campaign.png" alt="Campaign cores">
+      <img src="assets/shot-menu.png" alt="GRID_BREAKER main menu">
+      <img src="assets/shot-campaign.png" alt="Campaign 2.0 — 16 cores across 4 chapters">
+      <img src="assets/shot-modifiers.png" alt="Endless run modifiers">
     </div>
 
     <section>
@@ -80,8 +89,8 @@
       <h2>// FOUR MODES</h2>
       <div class="grid">
         <div class="card"><h3>ENDLESS</h3><p>Survive as long as your reflexes hold and chase the high score.</p></div>
-        <div class="card"><h3>CAMPAIGN</h3><p>10 hand-tuned data cores, each teaching one new mechanic, ramping to a real finale.</p></div>
-        <div class="card"><h3>FLOW</h3><p>A calm, no-fail mode to just tap and unwind.</p></div>
+        <div class="card"><h3>CAMPAIGN</h3><p>16 hand-tuned data cores across 4 chapters, each teaching one new mechanic and ending in a chapter boss.</p></div>
+        <div class="card"><h3>PROTOCOL</h3><p>Objective-driven endurance — DAEMON SETs and DMZ PURGEs with no relief and no power-ups.</p></div>
         <div class="card"><h3>DAILY HACK</h3><p>One shared board per day — everyone races the same seed.</p></div>
       </div>
     </section>
