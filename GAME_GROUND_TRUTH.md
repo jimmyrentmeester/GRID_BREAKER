@@ -585,6 +585,16 @@ simplifying choice when the brief doesn't need it (Part 4.1 is a *choice*, not a
   URL**, live on any static host. Reusable pattern: a `<username>.github.io` **user-site
   repo, one subfolder per app** (future apps = new subfolder, one Pages site). Use a
   **dedicated support email**, never your personal one; whatever's on these pages is public.
+- **The repo copy of the site is not the live site — close the deploy gap.** With the
+  user-site-repo pattern the *project* repo holds only a **source** copy (e.g. `docs/site/`);
+  the live page is a **separate** repo (`<username>.github.io`, the app in a subfolder).
+  Editing + pushing the source does **nothing** to the live site — you must sync the files
+  into the hub repo and push *that*. We once edited the source, pushed, and reported the
+  site "live" while the public still saw the old version. **Write a one-command deploy
+  script** (rsync source → hub subfolder with `--delete`, commit, push, wait for the Pages
+  build) so "updated the source" can never be mistaken for "deployed," and record the split
+  in a memory note. Verify the **live URL** (cache-busted) — never the local file; GitHub
+  Pages + browsers cache ~10 min, so hard-refresh (⌘⇧R) after a deploy.
 - **Pre-answer export compliance in the build**: `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption
   = NO` (when true) → the submit flow never prompts.
 - **Asset specs that bite**: screenshots **6.9" = 1320×2868** (the one required size; Apple
@@ -658,9 +668,19 @@ simplifying choice when the brief doesn't need it (Part 4.1 is a *choice*, not a
   1080×1920). One generator with flags (`soon|now`, optional screenshot) beats hand-editing.
 - **Know each surface's crop/spec and verify it** (GC = circle → ring; OG = 1200×630) by
   *rendering* a cropped contact sheet, not assuming.
-- **Video without ffmpeg**: AVFoundation — `AVAssetExportSession` to trim a clip,
-  `AVAssetImageGenerator` + ImageIO to build an **animated GIF**; capture the App Preview
-  itself via `simctl io recordVideo` (mind the fps/size spec).
+- **Video without ffmpeg**: AVFoundation — `AVAssetExportSession` to trim *or* **remux**
+  (the **passthrough** preset re-containers `.mov`→web-friendly `.mp4` with **no re-encode**,
+  no quality loss), `AVMutableVideoComposition` + `AVVideoCompositionCoreAnimationTool` for
+  captioned promos, `AVAssetImageGenerator` + ImageIO for poster frames / an **animated GIF**;
+  capture the App Preview itself via `simctl io recordVideo` (mind the fps/size spec).
+  **Headless-render gotchas that cost real debugging time**: (1) `CATextLayer` does **not**
+  rasterize text in an offline render → **pre-render each caption to a transparent PNG**
+  (CoreText/CGContext) and composite it as an *image* layer (image layers work, text layers
+  don't); (2) layer `beginTime` is **wall-clock-relative** in an offline render → schedule
+  with **`AVCoreAnimationBeginTimeAtZero + t`**, not raw `t`, or the animation holds its end
+  keyframe. **Parameterize the render size** (one script, `W H` args) to emit every device
+  spec from one pipeline (iPhone **886×1920**, iPad 13" **1200×1600**) and scale caption
+  font/glow by width.
 - **All audio synthesized in code** (AVAudioEngine PCM) — no licensed SFX, no licensing
   risk, tiny bundle.
 - **Reusable marketing kit**: a neon **landing page** (with OG/Twitter meta) on the
@@ -670,6 +690,21 @@ simplifying choice when the brief doesn't need it (Part 4.1 is a *choice*, not a
   LinkedIn, X, Reddit, PH/HN), and a tiered **promo-channels** plan. **Tailor copy to the
   real audience** (wide/personal family-and-friends → drop the jargon). **Localize the
   listing** to the core market's language.
+- **Apple featuring is a free, high-leverage channel with a real application form.** App
+  Store Connect ▸ your app ▸ **"Nominate your app"** (types: App Launch / App Enhancement /
+  New Content; submit **≥3 weeks ahead**, ideally timed to a content drop). Editorial scores
+  on **UX, UI, innovation, uniqueness, accessibility, localization, product-page quality** —
+  so **pitch the *story*, not the changelog**: "we rebuilt X around Y for players who Z," not
+  "shipped v1.3 with a redesign" (editors feature stories, not roadmaps; describe what
+  *shipped*, not what's planned). Lead the **Helpful Details** field with the personal /
+  behind-the-scenes angle (solo dev, code-synthesized audio & art, privacy-by-constraint,
+  Reduce-Motion support — accessibility is an explicit criterion), and drop the **landing
+  page + preview video** in **Supplemental Materials** (editorial opens it first → keep the
+  product page polished *before* nominating, and make sure the live page is actually deployed,
+  not just the source). **Caution: don't volunteer "built with AI"** in the pitch — post-2026
+  vibe-coding crackdown primes a reviewer to suspect low-effort; the work speaks for itself.
+  (Not Apple policy — reviewer perception. AI as a *build tool* is fine; only runtime
+  code-generation, guideline 2.5.2, is actually rejected.)
 
 ## Appendix E — QA for a deterministic real-time game
 > The mock-provider lesson (Part 5) generalizes: a deterministic core lets you test almost
