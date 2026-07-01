@@ -49,6 +49,11 @@ final class AudioEngine {
 
     // MARK: Lifecycle
 
+    /// One-time graph/buffer/observer setup done — kept separate from `isRunning` so a
+    /// failed `engine.start()` (e.g. launch during a phone call) retried later via
+    /// `resume()` → `start()` can't attach a second SFX pool or duplicate observers.
+    private var didSetup = false
+
     /// Configure the audio session, build buffers and start the engine. Idempotent.
     func start() {
         guard !isRunning else { return }
@@ -59,15 +64,18 @@ final class AudioEngine {
         try? AVAudioSession.sharedInstance().setActive(true)
         #endif
 
-        buildBuffers()
-
-        for _ in 0..<6 {                       // pool so rapid SFX overlap
-            let node = AVAudioPlayerNode()
-            engine.attach(node)
-            engine.connect(node, to: engine.mainMixerNode, format: format)
-            sfxPool.append(node)
+        if !didSetup {
+            didSetup = true
+            buildBuffers()
+            for _ in 0..<6 {                   // pool so rapid SFX overlap
+                let node = AVAudioPlayerNode()
+                engine.attach(node)
+                engine.connect(node, to: engine.mainMixerNode, format: format)
+                sfxPool.append(node)
+            }
+            engine.mainMixerNode.outputVolume = 0.9
+            registerObservers()
         }
-        engine.mainMixerNode.outputVolume = 0.9
         applySfxVolume()                       // per-channel SFX level
 
         engine.prepare()
@@ -83,8 +91,6 @@ final class AudioEngine {
         musicPlayer.loadTracks()
         musicPlayer.setVolume(musicVolume)
         musicPlayer.setEnabled(enabled)
-
-        registerObservers()
     }
 
     private var isResuming = false

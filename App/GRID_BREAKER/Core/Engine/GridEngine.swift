@@ -456,8 +456,11 @@ struct GridEngine {
 
         switch nodes[idx].type {
         case .intrusion:
-            // DMZ PURGE node (PROTOCOL): a defensive clear, outside the combo/fever system.
-            return clearIntrusion(at: idx)
+            // DMZ PURGE node (PROTOCOL): a defensive clear, outside the combo/fever system —
+            // but its score still counts, so the win / grid-escalation thresholds must be
+            // checked here too (a boss-core target crossed on an intrusion clear is a win
+            // NOW, not on the next daemon decode while the RAM clock keeps draining).
+            return clearIntrusion(at: idx) + checkTarget() + checkGridEscalation()
 
         case .firewallBomb:
             let cell = nodes[idx].cellIndex
@@ -651,6 +654,12 @@ struct GridEngine {
         for i in nodes.indices {                   // keep top-left layout as the grid grows
             nodes[i].cellIndex = (nodes[i].cellIndex / 3) * 4 + (nodes[i].cellIndex % 3)
         }
+        // Remap every other cell-index the engine holds, or they go stale against the
+        // remapped nodes. The Monolith runs DMZ + escalation together: an unmapped zone
+        // could never be purged (its indices no longer match any intrusion), which also
+        // kept normal spawns paused → an unwinnable, soft-locked run.
+        dmzZone = Set(dmzZone.map { ($0 / 3) * 4 + ($0 % 3) })
+        lastWormVacated = nil                      // its 3×3 index is stale; drop the grace
         return [.gridExpanded]
     }
 
