@@ -168,3 +168,46 @@ extension DataCore {
         return 1 + ((flawless || fast) ? 1 : 0) + ((flawless && fast) ? 1 : 0)
     }
 }
+
+/// An earn-only unlock condition for a prestige cosmetic (Cosmetics 2.0 —
+/// docs/MONETIZATION.md). This is where the "stars only ever unlock cosmetics"
+/// promise above is cashed in. Prestige cosmetics can NEVER be bought: money buys
+/// patronage, skill buys prestige — separate axes. Pure rule, no UI, no I/O.
+enum Prestige: Sendable, Equatable {
+    case stars(Int)          // total campaign stars ≥ n
+    case campaignComplete    // every core cleared
+    case allStars            // every core at 3★
+    case dailyStreak(Int)    // a counted Daily-Hack streak ≥ n days
+
+    /// Whether the requirement is met by this progress. `dailyStreak` is the last
+    /// *counted* streak — grants are permanent, so a streak lapsing later never
+    /// revokes anything (revoking an earned cosmetic would be a feel crime).
+    func met(totalStars: Int, campaignProgress: Int, dailyStreak: Int) -> Bool {
+        switch self {
+        case .stars(let n):       return totalStars >= n
+        case .campaignComplete:   return campaignProgress >= Campaign.count
+        case .allStars:           return totalStars >= Campaign.count * 3
+        case .dailyStreak(let n): return dailyStreak >= n
+        }
+    }
+
+    /// Shop label: what to do to earn it — a transparent goal, never a mystery.
+    var goal: String {
+        switch self {
+        case .stars(let n):       return "EARN \(n)★ IN CAMPAIGN"
+        case .campaignComplete:   return "CRACK ALL \(Campaign.count) CORES"
+        case .allStars:           return "EARN ALL \(Campaign.count * 3)★"
+        case .dailyStreak(let n): return "\(n)-DAY DAILY STREAK"
+        }
+    }
+
+    /// Progress chip for the shop row ("18/24★" style), clamped at the goal.
+    func progressLabel(totalStars: Int, campaignProgress: Int, dailyStreak: Int) -> String {
+        switch self {
+        case .stars(let n):       return "\(min(totalStars, n))/\(n)★"
+        case .allStars:           return "\(min(totalStars, Campaign.count * 3))/\(Campaign.count * 3)★"
+        case .campaignComplete:   return "\(min(campaignProgress, Campaign.count))/\(Campaign.count)"
+        case .dailyStreak(let n): return "\(min(dailyStreak, n))/\(n) DAYS"
+        }
+    }
+}

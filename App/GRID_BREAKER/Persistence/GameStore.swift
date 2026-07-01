@@ -112,6 +112,33 @@ final class GameStore {
     var equippedPaletteID: String { save.equippedPaletteID }
     func ownsPalette(_ id: String) -> Bool { save.ownedPaletteIDs.contains(id) }
 
+    // MARK: Prestige cosmetics (earn-only — Cosmetics 2.0)
+
+    /// Total campaign stars earned across all cores (0…48).
+    var totalStars: Int { save.campaignStars.reduce(0, +) }
+    /// The last *counted* Daily-Hack streak, regardless of whether it has lapsed
+    /// since — prestige grants are permanent, so "reached 7 at some point" counts.
+    var lastDailyStreak: Int { save.dailyStreak }
+
+    /// Grant an earn-only palette (idempotent, no Credits involved).
+    /// Returns true only when newly granted — the caller celebrates on true.
+    @discardableResult
+    func grantPalette(id: String) -> Bool {
+        guard !ownsPalette(id) else { return false }
+        save.ownedPaletteIDs.append(id)
+        persist()
+        return true
+    }
+
+    /// Grant an earn-only trail (same contract as `grantPalette`).
+    @discardableResult
+    func grantTrail(id: String) -> Bool {
+        guard !ownsTrail(id) else { return false }
+        save.ownedTrailIDs.append(id)
+        persist()
+        return true
+    }
+
     /// Buy a palette with Credits. Returns true on success.
     @discardableResult
     func buyPalette(id: String, cost: Int) -> Bool {

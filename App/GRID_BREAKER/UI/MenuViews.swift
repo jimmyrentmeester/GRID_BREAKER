@@ -487,7 +487,9 @@ struct CosmeticsView: View {
                             PaletteRow(palette: palette,
                                        owned: store.ownsPalette(palette.id),
                                        equipped: store.equippedPaletteID == palette.id,
-                                       affordable: store.cyberdeck.credits >= palette.cost) {
+                                       affordable: store.cyberdeck.credits >= palette.cost,
+                                       lockGoal: palette.prestige?.goal,
+                                       lockProgress: palette.prestige.map(progress)) {
                                 tapped(palette)
                             }
                         }
@@ -496,7 +498,9 @@ struct CosmeticsView: View {
                             TrailRow(skin: skin,
                                      owned: store.ownsTrail(skin.id),
                                      equipped: store.equippedTrailID == skin.id,
-                                     affordable: store.cyberdeck.credits >= skin.cost) {
+                                     affordable: store.cyberdeck.credits >= skin.cost,
+                                     lockGoal: skin.prestige?.goal,
+                                     lockProgress: skin.prestige.map(progress)) {
                                 tappedTrail(skin)
                             }
                         }
@@ -526,9 +530,17 @@ struct CosmeticsView: View {
         }
     }
 
+    /// Progress toward a prestige goal, for the lock chip ("18/24★").
+    private func progress(_ p: Prestige) -> String {
+        p.progressLabel(totalStars: store.totalStars,
+                        campaignProgress: store.campaignProgress,
+                        dailyStreak: store.lastDailyStreak)
+    }
+
     // MARK: Palettes
     private func tapped(_ palette: Palette) {
         if store.ownsPalette(palette.id) { equip(palette) }
+        else if palette.prestige != nil { return }   // earn-only: never enters the buy path
         else if store.cyberdeck.credits >= palette.cost { pending = palette }
     }
     private func equip(_ palette: Palette) {
@@ -545,6 +557,7 @@ struct CosmeticsView: View {
     // MARK: Tap trails
     private func tappedTrail(_ skin: TrailSkin) {
         if store.ownsTrail(skin.id) { equipTrail(skin) }
+        else if skin.prestige != nil { return }      // earn-only: never enters the buy path
         else if store.cyberdeck.credits >= skin.cost { pendingTrail = skin }
     }
     private func equipTrail(_ skin: TrailSkin) {
@@ -564,7 +577,12 @@ private struct TrailRow: View {
     let owned: Bool
     let equipped: Bool
     let affordable: Bool
+    /// Prestige goal + progress — same contract as `PaletteRow`.
+    var lockGoal: String? = nil
+    var lockProgress: String? = nil
     let action: () -> Void
+
+    private var locked: Bool { lockGoal != nil && !owned }
 
     var body: some View {
         Button(action: action) {
@@ -574,7 +592,7 @@ private struct TrailRow: View {
                     Text(skin.name)
                         .font(.system(size: 15, weight: .bold, design: .monospaced))
                         .foregroundStyle(NeonTheme.textPrimary)
-                    Text(equipped ? "EQUIPPED" : (owned ? "Owned" : "\(skin.cost) CR"))
+                    Text(equipped ? "EQUIPPED" : owned ? "Owned" : (lockGoal ?? "\(skin.cost) CR"))
                         .font(.system(size: 11, weight: .regular, design: .monospaced))
                         .foregroundStyle(equipped ? skin.color() : NeonTheme.textDim)
                 }
@@ -586,6 +604,8 @@ private struct TrailRow: View {
                         .foregroundStyle(NeonTheme.cyan)
                         .padding(.horizontal, 12).padding(.vertical, 8)
                         .background(RoundedRectangle(cornerRadius: 8).stroke(NeonTheme.cyan, lineWidth: 1.5))
+                } else if locked {
+                    LockChip(progress: lockProgress)
                 } else {
                     Text("\(skin.cost) CR").font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundStyle(affordable ? NeonTheme.gold : NeonTheme.textDim)
@@ -602,11 +622,12 @@ private struct TrailRow: View {
                             lineWidth: equipped ? 1.5 : 1)))
         }
         .buttonStyle(TerminalButtonStyle())
-        .disabled(equipped || (!owned && !affordable))
+        .disabled(equipped || locked || (!owned && !affordable))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(skin.name) trail")
         .accessibilityValue(equipped ? "Equipped" : owned ? "Owned, tap to equip"
-                                                          : "Costs \(skin.cost) credits")
+                            : locked ? "Locked. \(lockGoal ?? ""), progress \(lockProgress ?? "")"
+                                     : "Costs \(skin.cost) credits")
         .accessibilityAddTraits(equipped ? [.isButton, .isSelected] : .isButton)
     }
 
@@ -623,6 +644,25 @@ private struct TrailRow: View {
             }
         }
         .frame(width: 58, height: 34, alignment: .center)
+    }
+}
+
+/// Trailing chip for a locked prestige cosmetic: a lock + the progress toward the
+/// goal ("18/24★"). A transparent goal, deliberately styled unlike a price button.
+private struct LockChip: View {
+    let progress: String?
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "lock.fill").font(.system(size: 10, weight: .bold))
+            if let progress {
+                Text(progress).font(.system(size: 11, weight: .bold, design: .monospaced))
+            }
+        }
+        .foregroundStyle(NeonTheme.gold.opacity(0.75))
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .background(RoundedRectangle(cornerRadius: 8)
+            .stroke(NeonTheme.gold.opacity(0.35), lineWidth: 1.5))
     }
 }
 
@@ -668,7 +708,13 @@ private struct PaletteRow: View {
     let owned: Bool
     let equipped: Bool
     let affordable: Bool
+    /// Prestige goal + progress ("EARN 24★ IN CAMPAIGN", "18/24★") — non-nil while
+    /// an earn-only item is still locked. A transparent goal, never a price.
+    var lockGoal: String? = nil
+    var lockProgress: String? = nil
     let action: () -> Void
+
+    private var locked: Bool { lockGoal != nil && !owned }
 
     var body: some View {
         Button(action: action) {
@@ -683,7 +729,7 @@ private struct PaletteRow: View {
                     Text(palette.name)
                         .font(.system(size: 15, weight: .bold, design: .monospaced))
                         .foregroundStyle(NeonTheme.textPrimary)
-                    Text(equipped ? "EQUIPPED" : (owned ? "Owned" : "\(palette.cost) CR"))
+                    Text(equipped ? "EQUIPPED" : owned ? "Owned" : (lockGoal ?? "\(palette.cost) CR"))
                         .font(.system(size: 11, weight: .regular, design: .monospaced))
                         .foregroundStyle(equipped ? palette.primary : NeonTheme.textDim)
                 }
@@ -700,11 +746,12 @@ private struct PaletteRow: View {
             )
         }
         .buttonStyle(TerminalButtonStyle())
-        .disabled(equipped || (!owned && !affordable))
+        .disabled(equipped || locked || (!owned && !affordable))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(palette.name) palette")
         .accessibilityValue(equipped ? "Equipped" : owned ? "Owned, tap to equip"
-                                                          : "Costs \(palette.cost) credits")
+                            : locked ? "Locked. \(lockGoal ?? ""), progress \(lockProgress ?? "")"
+                                     : "Costs \(palette.cost) credits")
         .accessibilityAddTraits(equipped ? [.isButton, .isSelected] : .isButton)
     }
 
@@ -717,6 +764,8 @@ private struct PaletteRow: View {
                 .foregroundStyle(NeonTheme.cyan)
                 .padding(.horizontal, 12).padding(.vertical, 8)
                 .background(RoundedRectangle(cornerRadius: 8).stroke(NeonTheme.cyan, lineWidth: 1.5))
+        } else if locked {
+            LockChip(progress: lockProgress)
         } else {
             Text("\(palette.cost) CR")
                 .font(.system(size: 12, weight: .bold, design: .monospaced))

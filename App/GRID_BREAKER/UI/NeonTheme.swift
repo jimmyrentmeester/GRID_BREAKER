@@ -11,6 +11,9 @@ struct Palette: Identifiable, Sendable, Equatable {
     let secondary: Color     // was "magenta" — armored / secondary
     let accent: Color        // was "gold" — fever / credits / highlights
     let gridDim: Color       // was "gridLineDim" — terminal grid lines
+    /// Earn-only unlock (Cosmetics 2.0). Non-nil = prestige: never purchasable,
+    /// granted permanently by `PrestigeUnlocks.sync` once the feat is achieved.
+    var prestige: Prestige? = nil
 }
 
 enum Palettes {
@@ -66,6 +69,21 @@ enum Palettes {
                 secondary:  Color(red: 0.52, green: 0.60, blue: 0.72),
                 accent:     Color(red: 0.78, green: 1.00, blue: 1.00),
                 gridDim:    Color(red: 0.30, green: 0.34, blue: 0.42)),
+        // ── Prestige (earn-only — the aspirational shelf, listed last) ──────────
+        Palette(id: "circuit", name: "Circuit", cost: 0,
+                background: Color(red: 0.01, green: 0.045, blue: 0.025),
+                primary:    Color(red: 0.25, green: 1.00, blue: 0.55),   // PCB trace green
+                secondary:  Color(red: 1.00, green: 0.58, blue: 0.25),   // copper
+                accent:     Color(red: 0.90, green: 0.97, blue: 0.92),   // solder silver
+                gridDim:    Color(red: 0.12, green: 0.38, blue: 0.22),
+                prestige:   .stars(24)),
+        Palette(id: "monolithgold", name: "Monolith Gold", cost: 0,
+                background: Color(red: 0.05, green: 0.035, blue: 0.01),
+                primary:    Color(red: 1.00, green: 0.83, blue: 0.30),   // rich gold
+                secondary:  Color(red: 1.00, green: 0.95, blue: 0.75),   // champagne
+                accent:     Color(red: 1.00, green: 0.68, blue: 0.16),   // deep amber
+                gridDim:    Color(red: 0.42, green: 0.32, blue: 0.10),
+                prestige:   .allStars),
     ]
 
     static func byID(_ id: String) -> Palette { all.first { $0.id == id } ?? classic }
@@ -76,7 +94,9 @@ enum Palettes {
 /// tap-only game leaves a real trail. Colors resolve through the equipped palette.
 struct TrailSkin: Identifiable, Sendable, Equatable {
     enum Dot: Sendable { case circle, square, diamond }
-    enum Tint: Sendable { case primary, secondary, accent }
+    /// `chrome` is a fixed metallic silver-white — a prestige look that reads as
+    /// chrome under every equipped palette (the others resolve through the palette).
+    enum Tint: Sendable { case primary, secondary, accent, chrome }
     let id: String
     let name: String
     let cost: Int
@@ -85,6 +105,8 @@ struct TrailSkin: Identifiable, Sendable, Equatable {
     let size: CGFloat        // node size at each tap
     let lineWidth: CGFloat   // beam thickness connecting taps
     let dashed: Bool         // segmented beam (e.g. pixel) vs. solid
+    /// Earn-only unlock (Cosmetics 2.0) — same rule as `Palette.prestige`.
+    var prestige: Prestige? = nil
 
     var isOff: Bool { id == "none" }
     func color() -> Color {
@@ -92,6 +114,7 @@ struct TrailSkin: Identifiable, Sendable, Equatable {
         case .primary:   return NeonTheme.cyan
         case .secondary: return NeonTheme.magenta
         case .accent:    return NeonTheme.gold
+        case .chrome:    return Color(red: 0.93, green: 0.96, blue: 1.00)
         }
     }
 
@@ -130,10 +153,41 @@ enum TrailSkins {
         TrailSkin(id: "laser",  name: "Laser",      cost: 500, dot: .circle,  tint: .accent,    size: 4,  lineWidth: 2,   dashed: false),
         TrailSkin(id: "hexbits", name: "Hexbits",   cost: 650, dot: .square,  tint: .primary,   size: 10, lineWidth: 5,   dashed: true),
         TrailSkin(id: "void",   name: "Voidstream", cost: 1000, dot: .diamond, tint: .primary,  size: 12, lineWidth: 6.5, dashed: true),
+        // ── Prestige (earn-only — the aspirational shelf, listed last) ──────────
+        TrailSkin(id: "chrome",   name: "Chrome",   cost: 0, dot: .circle, tint: .chrome, size: 8,  lineWidth: 3.5, dashed: false, prestige: .stars(12)),
+        TrailSkin(id: "daybreak", name: "Daybreak", cost: 0, dot: .circle, tint: .accent, size: 11, lineWidth: 5.5, dashed: false, prestige: .dailyStreak(7)),
     ]
     static func byID(_ id: String) -> TrailSkin { all.first { $0.id == id } ?? none }
     /// Equipped skin — set at launch + on equip (mirrors `NeonTheme.current`).
     static var equipped: TrailSkin = none
+}
+
+/// The prestige-unlock sweep (Cosmetics 2.0). Lives in the UI layer because the UI
+/// owns the cosmetics catalog (GameStore is deliberately catalog-agnostic); the pure
+/// rule itself is `Prestige.met` in Core. Idempotent, retroactive (a player who
+/// already has 24★ is granted on the next sweep) and permanent (grants never revoke).
+enum PrestigeUnlocks {
+    /// Grant anything newly earned; returns display names for the celebration toast.
+    @MainActor
+    static func sync(store: GameStore) -> [String] {
+        var out: [String] = []
+        let stars = store.totalStars
+        func met(_ p: Prestige) -> Bool {
+            p.met(totalStars: stars, campaignProgress: store.campaignProgress,
+                  dailyStreak: store.lastDailyStreak)
+        }
+        for p in Palettes.all {
+            if let pr = p.prestige, met(pr), store.grantPalette(id: p.id) {
+                out.append("\(p.name.uppercased()) PALETTE")
+            }
+        }
+        for t in TrailSkins.all {
+            if let pr = t.prestige, met(pr), store.grantTrail(id: t.id) {
+                out.append("\(t.name.uppercased()) TRAIL")
+            }
+        }
+        return out
+    }
 }
 
 /// Centralized neon-cyberpunk design tokens. Colors come from the equipped

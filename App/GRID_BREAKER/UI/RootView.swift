@@ -16,7 +16,29 @@ struct RootView: View {
     /// The guided onboarding tour through the shops (Phase C): buy → equip → done.
     private enum GuidedStep { case none, cyberdeck, cosmetics }
 
+    /// Newly-earned prestige cosmetics awaiting their celebration toast (Cosmetics 2.0).
+    @State private var prestigeToast: [String] = []
+    @State private var prestigeToastTask: Task<Void, Never>?
+
     private func tap() { AudioEngine.shared.play(.uiTap) }
+
+    /// Sweep the prestige unlocks and celebrate anything new. Runs at launch
+    /// (retroactive: a player who already has the stars is granted immediately) and
+    /// on every return to the menu (a run may have just earned stars / streak days).
+    /// Grants are permanent and idempotent, so calling this often is safe.
+    private func syncPrestige() {
+        let new = PrestigeUnlocks.sync(store: store)
+        guard !new.isEmpty else { return }
+        AudioEngine.shared.play(.fever)          // the celebration sting
+        Haptics().success()
+        withAnimation(.easeOut(duration: 0.3)) { prestigeToast = new }
+        prestigeToastTask?.cancel()
+        prestigeToastTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.5)) { prestigeToast = [] }
+        }
+    }
 
     /// Today's deterministic daily challenge: a day key ("yyyy-MM-dd") shared by all
     /// players, and a seed derived from it (the engine's SplitMix64 mixes it well).
@@ -142,6 +164,12 @@ struct RootView: View {
             }
 
             // Animated neon boot splash on cold launch (covers the menu until done).
+            if !prestigeToast.isEmpty {
+                PrestigeUnlockToast(names: prestigeToast)
+                    .transition(.opacity)
+                    .zIndex(2)
+            }
+
             if showBoot {
                 BootSplash { withAnimation(.easeInOut(duration: 0.4)) { showBoot = false } }
                     .transition(.opacity)
@@ -178,6 +206,8 @@ struct RootView: View {
                     endlessBest: store.highScores.first?.score ?? 0,
                     dailyBest: store.dailyBest(forDay: Self.today().key))
             }
+            // Prestige cosmetics: grant anything already earned (retroactive sweep).
+            syncPrestige()
         }
         .onChange(of: screen) { _, new in
             // Apple's floating Game Center widget lives on the menu hub only —
@@ -186,6 +216,7 @@ struct RootView: View {
             if new == .menu {   // returning from a run/shop may have advanced meta
                 GameCenterService.shared.syncMeta(campaignProgress: store.campaignProgress,
                                                   deck: store.cyberdeck)
+                syncPrestige()  // a run may have just earned stars / streak days
             }
         }
     }
@@ -472,6 +503,35 @@ private struct BootSplash: View {
         guard !done else { return }
         done = true
         onDone()
+    }
+}
+
+/// Celebration banner for newly-earned prestige cosmetics (Cosmetics 2.0) — quiet,
+/// gold, top-of-screen, auto-dismissing. A pure opacity fade (reduce-motion-safe);
+/// never blocks input.
+private struct PrestigeUnlockToast: View {
+    let names: [String]
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Label("PRESTIGE UNLOCKED", systemImage: "star.fill")
+                .font(.system(size: 13, weight: .heavy, design: .monospaced))
+                .foregroundStyle(NeonTheme.gold)
+                .neonGlow(NeonTheme.gold, radius: 8)
+            Text(names.joined(separator: " · "))
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(NeonTheme.textPrimary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 18).padding(.vertical, 12)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(NeonTheme.background.opacity(0.92))
+            .overlay(RoundedRectangle(cornerRadius: 12)
+                .stroke(NeonTheme.gold.opacity(0.7), lineWidth: 1.5)))
+        .padding(.top, 10).padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .combine)
     }
 }
 

@@ -169,16 +169,23 @@ haptics, Canvas-free tap-trails/particles. Signed release APK/AAB build. **Pendi
 (maintainer):** Play Store Developer account + listing + on-device audio listen before
 publishing. Keystore is local + gitignored — back it up off-repo.
 
-## 📋 Cosmetics 2.0 — free update after the v1.3 release (next build work)
+## 🚧 Cosmetics 2.0 — free update after the v1.3 release
 Analysis 2026-06-27 (docs/MONETIZATION.md "Cosmetics 2.0"): the cosmetics layer is too
 thin as a retention layer and as a base for any later paid tier. Slices, in order:
-1. **Prestige unlocks** (earn-only, fulfils the `Campaign.swift` "stars only ever unlock
-   cosmetics" promise): 12★ Chrome trail · 24★ Circuit palette · 16/16 cores Monolith
-   alternate app icon · 48★ Monolith Gold animated palette · 7-day daily-streak Daybreak trail.
+1. ✅ **Prestige unlocks** (built 2026-07-01; earn-only, fulfils the `Campaign.swift`
+   "stars only ever unlock cosmetics" promise): 12★ Chrome trail · 24★ Circuit palette ·
+   48★ Monolith Gold palette · 7-day daily-streak Daybreak trail. Pure rule = `Prestige`
+   in `Campaign.swift` (checked by `enginecheck/prestige.swift`); sweep = `PrestigeUnlocks.
+   sync` on launch + every menu return (retroactive, permanent — a lapsed streak never
+   revokes); shop rows show a transparent goal + progress chip ("18/24★"); gold
+   auto-dismissing unlock toast. Deferred from this slice: the **Monolith alternate app
+   icon** (16/16 cores) — needs icon assets + Info.plist/pbxproj work — and the "animated"
+   ambition for Monolith Gold (an animated-palette system touches every view; shipped as a
+   rich static gold instead). 👤 on-device feel pass pending.
 2. **Live palette preview** in the shop (temporary `NeonTheme.current`, non-destructive)
    + "NEED n MORE CR" feedback on unaffordable rows (today a tap does nothing).
 3. **Node glyph sets** as a third CR category (Runes / Retro LCD / Katakana; render-only).
-4. Shop tabs + transparent "how to earn" on prestige items. No rarity tiers — ever.
+4. Shop tabs; **Monolith alternate app icon** (16/16 cores). No rarity tiers — ever.
 
 ## Monetization (planned — see docs/MONETIZATION.md + docs/GROWTH_AND_INCOME.md)
 Free, **no ads**, no pay-to-win ever. **Small Business Program: already enrolled** (15%).
