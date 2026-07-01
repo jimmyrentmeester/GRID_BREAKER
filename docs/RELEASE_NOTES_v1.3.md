@@ -29,34 +29,37 @@ Bug fixes and performance improvements.
 
 ---
 
-## App Store description (full · ~580 words)
+## App Store description (full)
 
 ```
-GRID_BREAKER — netrunner reflex hack
+GRID_BREAKER is a fast, neon reflex game. Jack into the grid, decode the daemons before they vanish, dodge the firewalls, and chain combos into Fever as the pace climbs.
 
-A fast, focused reflex game. Decode the grid before your RAM runs out — then chase a better run.
+Just thumbs. Pure reaction. No filler.
 
-── THE LOOP ──
-Daemons spawn on a 3×3 grid and count down to expiry. Tap them before they expire: each decode refills your RAM and adds to your score. Let one expire and your RAM takes a hit. Let too many expire and the connection drops.
+HOW IT PLAYS
+• Tap glowing daemons to decode them and refill your RAM clock.
+• Never tap a red firewall — let it expire.
+• Crack armored shells, grab gold data caches, chase hopping worms.
+• Chain clean hits to trigger FEVER: hazards clear and your score doubles.
+• Grab power-ups — Freeze, Overclock, Purge — for a burst of control.
+• Hold a clean streak to climb a rising score multiplier.
 
-As your score climbs, the grid grows to 4×4, daemons get meaner, and armored targets take two taps. Chain 8 clean decodes in a row to trigger FEVER — ×2 score, golden nodes, hazards cleared.
+FOUR MODES
+• ENDLESS — survive as long as your reflexes hold and chase the high score.
+• CAMPAIGN — 16 hand-tuned data cores across 4 chapters, each teaching one new mechanic and ending in a chapter boss.
+• PROTOCOL — objective-driven endurance. DAEMON SETs and DMZ PURGEs with no relief and no power-ups.
+• DAILY HACK — one shared board per day; everyone races the same seed.
 
-── CAMPAIGN ──
-4 chapters, 16 hand-tuned cores. Each chapter introduces one new mechanic, gives you room to learn it, then ends in a chapter boss — a brutal DAEMON SET or DMZ PURGE objective on top of the time-attack. Clear each core for ★; clear it flawless or fast for ★★; flawless and fast for ★★★. Pure skill.
+PROGRESS & STYLE
+• Earn Credits every run and spend them in the CYBERDECK on permanent upgrades — more RAM, faster decoding, a failsafe shield, longer Fever, bigger payouts.
+• Unlock COSMETICS — neon palettes that recolor the whole game and tap-trail styles that follow your finger.
 
-── PROTOCOL ──
-Objective-driven endurance. DAEMON SETs (tap numbered nodes in order) and DMZ PURGE zones (clear every intrusion before the overrun fills the board) alternate with no relief. No power-ups. A real fail state.
+BUILT RIGHT
+• 100% on-device. No accounts, no ads, no analytics, no tracking — nothing is collected.
+• Honors Reduce Motion; independent music & effects volume.
+• All sound is generated in code — tactile, rewarding, no bloat.
 
-── DAILY HACK ──
-One shared seed per day — everyone races the same board. Build a consecutive-day streak and share your result Wordle-style.
-
-── CYBERDECK ──
-Spend Credits on upgrades that change how you play: more RAM capacity, faster decodes, shield charges that absorb a single mistake. Then push further with run modifiers — harder challenges, bigger Credit multipliers.
-
-── NO ADS. NO PAY-TO-WIN. ──
-Free to play. Credits only buy upgrades and cosmetics — real money never touches your score or the leaderboard.
-
-Game Center leaderboards + 13 achievements. Universal (iPhone + iPad).
+Crack the grid. The Monolith is waiting.
 ```
 
 ---

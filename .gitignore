@@ -18,3 +18,8 @@ Package.resolved
 # Logs / temp
 *.log
 scripts/sfx_preview/
+
+# Raw simulator captures — large intermediates for the App Preview pipeline.
+# The finished, spec-sized promos (app-preview-*.mov) are committed; the raw
+# screen-grabs they're built from are not. Re-capture via simctl if needed.
+docs/preview/*-raw.mov
