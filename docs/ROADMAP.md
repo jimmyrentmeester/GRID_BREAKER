@@ -169,11 +169,25 @@ haptics, Canvas-free tap-trails/particles. Signed release APK/AAB build. **Pendi
 (maintainer):** Play Store Developer account + listing + on-device audio listen before
 publishing. Keystore is local + gitignored — back it up off-repo.
 
+## 📋 Cosmetics 2.0 — free update after the v1.3 release (next build work)
+Analysis 2026-06-27 (docs/MONETIZATION.md "Cosmetics 2.0"): the cosmetics layer is too
+thin as a retention layer and as a base for any later paid tier. Slices, in order:
+1. **Prestige unlocks** (earn-only, fulfils the `Campaign.swift` "stars only ever unlock
+   cosmetics" promise): 12★ Chrome trail · 24★ Circuit palette · 16/16 cores Monolith
+   alternate app icon · 48★ Monolith Gold animated palette · 7-day daily-streak Daybreak trail.
+2. **Live palette preview** in the shop (temporary `NeonTheme.current`, non-destructive)
+   + "NEED n MORE CR" feedback on unaffordable rows (today a tap does nothing).
+3. **Node glyph sets** as a third CR category (Runes / Retro LCD / Katakana; render-only).
+4. Shop tabs + transparent "how to earn" on prestige items. No rarity tiers — ever.
+
 ## Monetization (planned — see docs/MONETIZATION.md + docs/GROWTH_AND_INCOME.md)
-Free, **no ads**, no pay-to-win ever. **Small Business Program: already enrolled** (15%
-commission locked in before the first sale). Phase 1: in-fiction tip jar (consumable IAPs).
-Phase 2: cosmetic theme packs (non-consumable, render-layer only). Build the store only
-once installs/retention justify it — the growth plan comes first.
+Free, **no ads**, no pay-to-win ever. **Small Business Program: already enrolled** (15%).
+Revised sequencing (2026-06-27): **no IAP in or right after v1.3** (featuring window +
+the DSA trader switch publishes a permanent public address — a €120–360/yr virtual-office
+cost that dwarfs realistic tip revenue; that address gate decides the timing). Then:
+Phase 1 tip jar (consumables, SPONSOR tag only — the reinstall rule) once there are real
+actives and an address answer; Phase 2 = ONE restorable **Supporter Pack** (€4.99,
+patronage model) instead of loose theme packs, only if tips show signal.
 
 ## Later (out of current scope)
 Web-WASM demo + backend proxy for high-score sync. Optional balance follow-up: reduced

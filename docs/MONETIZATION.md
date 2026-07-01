@@ -42,31 +42,100 @@ interrupt a session, never prompt after game-over (that's where desperation
 monetization lives). Note: tips inside an app **must** go through Apple IAP —
 "Buy Me a Coffee" links out of the app are rejected in review.
 
-### 2. Cosmetic packs (Phase 2)
+**The reinstall rule (2026-06-27).** Consumables are not restorable, so the
+`hasTippedEver` flag (and the SPONSOR tag) is lost on a reinstall. For a tag
+that's acceptable; for anything *permanent* it is not. Hard rule: **a tip
+grants only the SPONSOR tag — anything lasting (palettes, trails, icons) must
+be a restorable non-consumable** (the Phase 2 Supporter Pack). And the SPONSOR
+tag shows on the **menu only, never on leaderboards** — otherwise it becomes a
+status marker and thus soft pressure to buy.
 
-Non-consumable IAPs (~€1.99–2.99 each), purely visual/audio:
+### 2. One Supporter Pack, not loose packs (Phase 2 — revised 2026-06-27)
 
-- **Theme packs**: alternate `NeonTheme` palettes — e.g. AMBER TERMINAL
-  (retro phosphor), ICE (white/blue), BLOOD NET (red), VAPOR (pink/teal).
-  Tokens are already centralized in `UI/NeonTheme.swift`, so a theme is a
-  palette struct + a picker; contrast-safety rules still apply.
-- **Node skin packs**: alternate daemon/bomb sprite sets (glyphs, runes,
-  retro-LCD). Pure sprite swap; hitboxes and lifespans untouched.
-- **Synth packs**: alternate `AudioEngine` music loops + SFX voicings
-  (e.g. a chiptune set, a darker industrial set). Asset-free synth means
-  no licensing cost.
-- **Supporter bundle**: all current + future cosmetics, one price (~€6.99).
-  The Path-of-Exile-style supporter pack is the accepted ethical pattern:
-  cosmetic-only, priced as patronage.
+Loose €1.99 theme packs create exactly the shop dynamic to avoid: many SKUs,
+per-drop buying pressure, FOMO-adjacent catalog churn. The honest pattern is
+**patronage** — one purchase, everything in it:
 
-One default theme stays free and complete — cosmetics are for people who
-*want* to pay, not people who feel they have to. Tie new packs to update
-moments, not to scarcity.
+> **SUPPORTER PACK — €4.99, non-consumable, one SKU.** Contents: 2–3
+> exclusive palettes (their own family — e.g. animated "LIVING NEON"
+> variants), 1 exclusive trail, the SPONSOR tag, and an alternate app icon.
+> With a **Restore Purchases** button (required for non-consumables, and the
+> fix for the reinstall problem above). Standing promise: future
+> supporter-tier cosmetics land *inside* the pack — you buy patronage, not a
+> product line.
+
+Guardrails that keep it non-predatory:
+- The free tier stays complete **and keeps growing** — every paid drop is
+  paired with a free drop.
+- Paid items are *different*, never *better* — the free tier gets the same
+  glow/animation budget.
+- Purchased and earned cosmetics are separate axes: the prestige unlocks
+  (Cosmetics 2.0 below) can **only** be earned, never bought. Money buys
+  patronage; skill buys prestige. Neither substitutes for the other.
+- The determinism sim stays the regression test (same seed → bit-identical
+  snapshots, pack owned or not).
+
+Ideas that stay on the shelf until the pack proves demand: node glyph sets as
+paid items (better as CR items — see below), synth voicing packs (chiptune /
+industrial — the code-synth makes them licensing-free but they're real build
+effort).
 
 ### Explicitly out
 
 Ads (all forms), selling Credits/upgrades, subscriptions, battle pass,
 loot boxes/gacha, timed exclusives, web high-score backend perks.
+Also out: **rarity tiers/colors** on cosmetics ("epic/legendary") — that's
+psychological pressure architecture. The catalog stays flat and honest:
+price, preview, done.
+
+## Cosmetics 2.0 — the free layer first (pre-monetization, 2026-06-27)
+
+The current cosmetics layer is too thin to ever carry a paid tier — and too
+thin as a retention layer, which is the prerequisite for *any* monetization.
+Today: 7 purchasable palettes (pure color swaps, 500–1500 CR) and 6 trails
+(parameter variants of one beam). Four upgrades, all free/CR-driven, all
+render-layer only:
+
+### 2.0a — Prestige cosmetics (the unfulfilled promise) ⭐ biggest impact
+`Campaign.swift` already states: *"Stars only ever unlock cosmetics, never
+access or power"* — but the 48 earnable stars unlock **nothing** today.
+Proposal (earn-only, never purchasable):
+
+| Achievement | Unlock |
+|---|---|
+| 12★ | **"Chrome"** trail |
+| 24★ | **"Circuit"** palette |
+| All 16 cores cleared | **"Monolith"** alternate app icon |
+| 48★ (all flawless+fast) | **"Monolith Gold"** palette — animated, the rarest item in the game |
+| 7-day Daily streak | **"Daybreak"** trail |
+
+This gives the replay layer (stars, streak) a *visible* reward at zero cost,
+and creates the honest contrast with the Supporter Pack later: earning and
+buying are separate axes.
+
+### 2.0b — Live preview (the biggest UX gap)
+You currently buy blind off a ~30 pt swatch. Tapping an unowned palette
+should re-theme the whole menu chrome temporarily (non-destructive, a
+"PREVIEW" badge, until dismissed) — technically trivial: set
+`NeonTheme.current` without `store.equipPalette`. Bonus fix: an
+unaffordable row currently does *nothing* on tap (`MenuViews.swift`
+`tapped(_:)` has no else branch) — show "NEED 240 MORE CR" feedback.
+
+### 2.0c — New cosmetic surfaces
+- **Node glyph sets** (daemon/bomb draw styles: "Runes", "Retro LCD",
+  "Katakana") — a third CR category next to palettes/trails, 600–1000 CR,
+  drawn in code like everything else. Hitboxes/lifespans untouched.
+- **Alternate app icons** (`setAlternateIconName`) — cheap to build (the
+  icon generator exists), high delight; partly tied to prestige (2.0a).
+- **Synth voicing packs** — Phase 3 / Supporter Pack material (real effort).
+
+### 2.0d — Shop UX
+Tabs per category (PALETTES / TRAILS / GLYPHS / ICONS) once glyphs land;
+"how to earn" shown transparently on prestige items (a goal, not a mystery).
+
+**Sequencing:** Cosmetics 2.0 ships as a free update *before* any IAP — it
+improves retention, strengthens a "New Content" featuring nomination, and
+builds the catalog a Supporter Pack later slots into.
 
 ## Supporting engagement layer: Game Center (built — Run #75, D25)
 
@@ -76,26 +145,45 @@ web backend the brief wanted, without a server) and 13 achievements. All of it
 is earnable-only and report-only; nothing Game Center is ever for sale, and
 declining auth changes nothing. See `Services/GameCenterService.swift`.
 
-## Phases
+## Phases (revised 2026-06-27)
+
+**Two hard gates before ANY IAP:**
+
+1. **The DSA trader switch is a real cost, not a checkbox.** Enabling even one
+   IAP requires switching non-trader → trader, which **publishes an address +
+   phone + email on the product page permanently**. A virtual office runs
+   €10–30/mo = **€120–360/yr**, while realistic hobby-scale tip revenue is
+   *tens* of euros per year. Without a free address solution (e.g. a family
+   business address, with informed consent), day-one monetization is
+   **net-negative**. This gate — not the code — decides the timing.
+2. **The featuring window.** The moment an IAP goes live, the "In-App
+   Purchases" label appears on the product page — possibly right when Apple
+   editorial is looking at the nomination. "Free, no ads, nothing leaves the
+   device" is the stronger editorial story. **No IAP in or right after v1.3.**
 
 **Phase 0 — ship free, instrument nothing.** Release with zero monetization.
 Validate that anyone plays. Monetizing pre-audience costs effort and earns ~€0.
 
-**Phase 1 — tip jar (1–2 sessions).** Paid Apps agreement + banking in App
-Store Connect; **enroll in the App Store Small Business Program first** (15%
-commission instead of 30% under $1M/yr — enrollment is not retroactive, so do
-it before the first sale). StoreKit 2 consumables, a `TipJarView`, a `Store`
-service alongside `GameStore`. Persist a `hasTippedEver` flag for the SPONSOR
-tag. Test with StoreKit configuration files + sandbox.
+**Phase 0.5 — Cosmetics 2.0 (free update, right after release).** The
+prestige unlocks + live preview + (optionally) glyph sets, per the section
+above. Retention is the prerequisite for everything below — and it doubles as
+a "New Content" featuring hook.
 
-**Phase 2 — first cosmetic pack (2–3 sessions).** Theme engine: make
-`NeonTheme` instantiable per-palette, persist selection in `SaveData`
-(tolerant decoding already handles new fields), `ThemePickerView`, one
-non-consumable + restore-purchases flow (required by review). Ship one pack;
-add more only if anything sells.
+**Phase 1 — tip jar (1–2 sessions).** Gate: real actives (e.g. >100/week)
+AND the trader-address question settled. The business stack is otherwise
+ready (Paid Apps + banking + tax all Active; Small Business Program enrolled
+2026-06-14). StoreKit 2 consumables, a `TipJarView`, a `TipStore` service
+alongside `GameStore`. Persist a `hasTippedEver` flag for the SPONSOR tag
+(menu only — see the reinstall rule above). Test with StoreKit configuration
+files + sandbox.
 
-**Phase 3 — only if traction.** Supporter bundle, node skins, synth packs,
-seasonal free theme drops as goodwill.
+**Phase 2 — the Supporter Pack (2–3 sessions).** Gate: tips show any signal.
+One non-consumable SKU (€4.99) + the Restore Purchases flow (required by
+review). Contents per the revised section above. Ship it once; grow it with
+future supporter drops instead of adding SKUs.
+
+**Phase 3 — only if real traction.** Synth voicing packs (into the Supporter
+Pack), seasonal free theme drops as goodwill.
 
 ## Implementation design — Phase 1 tip jar (the "how")
 
