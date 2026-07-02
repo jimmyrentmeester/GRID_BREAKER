@@ -222,6 +222,26 @@ enum GlyphSets {
     static var equipped: GlyphSet = classic
 }
 
+/// An app-icon cosmetic. `iconName` is the alternate `.appiconset` name passed to
+/// `setAlternateIconName` (nil = the primary icon). Equipped state lives in iOS
+/// itself (`UIApplication.alternateIconName`), not in the save.
+struct AppIconStyle: Identifiable, Sendable, Equatable {
+    let id: String
+    let name: String
+    /// Asset-catalog name for `setAlternateIconName`; nil = primary icon.
+    let iconName: String?
+    var prestige: Prestige? = nil
+}
+
+enum AppIconStyles {
+    static let all: [AppIconStyle] = [
+        AppIconStyle(id: "classic", name: "Classic", iconName: nil),
+        // The prestige icon for cracking the whole campaign — the Monolith in gold.
+        AppIconStyle(id: "monolith", name: "Monolith Gold", iconName: "AppIconMonolith",
+                     prestige: .campaignComplete),
+    ]
+}
+
 /// The prestige-unlock sweep (Cosmetics 2.0). Lives in the UI layer because the UI
 /// owns the cosmetics catalog (GameStore is deliberately catalog-agnostic); the pure
 /// rule itself is `Prestige.met` in Core. Idempotent, retroactive (a player who
@@ -244,6 +264,11 @@ enum PrestigeUnlocks {
         for t in TrailSkins.all {
             if let pr = t.prestige, met(pr), store.grantTrail(id: t.id) {
                 out.append("\(t.name.uppercased()) TRAIL")
+            }
+        }
+        for i in AppIconStyles.all {
+            if let pr = i.prestige, met(pr), store.grantIcon(id: i.id) {
+                out.append("\(i.name.uppercased()) APP ICON")
             }
         }
         return out

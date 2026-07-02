@@ -194,6 +194,19 @@ final class GameStore {
         persist()
     }
 
+    // MARK: Cosmetics (app icons) — earn-only; equip state lives in iOS itself.
+
+    func ownsIcon(_ id: String) -> Bool { save.ownedIconIDs.contains(id) }
+
+    /// Grant an earn-only app icon (same contract as `grantPalette`).
+    @discardableResult
+    func grantIcon(id: String) -> Bool {
+        guard !ownsIcon(id) else { return false }
+        save.ownedIconIDs.append(id)
+        persist()
+        return true
+    }
+
     // MARK: Campaign
 
     var campaignProgress: Int { save.campaignProgress }

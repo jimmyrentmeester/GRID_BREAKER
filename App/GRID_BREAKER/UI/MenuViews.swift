@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 // MARK: - Confirm dialog (purchases)
 
@@ -455,6 +458,12 @@ struct CosmeticsView: View {
     @State private var notice: String?
     @State private var noticeTask: Task<Void, Never>?
 
+    /// The four cosmetic categories, one list at a time (the catalog outgrew one scroll).
+    enum Tab: String, CaseIterable { case palettes = "PALETTES", trails = "TRAILS", glyphs = "GLYPHS", icons = "ICONS" }
+    @State private var tab: Tab = .palettes
+    /// Which app icon iOS reports as active ("classic" when on the primary icon).
+    @State private var equippedIconID: String = "classic"
+
     private var previewingPalette: Palette? {
         previewPaletteID.map(Palettes.byID)
     }
@@ -501,37 +510,51 @@ struct CosmeticsView: View {
                     PreviewStrip(text: notice, accent: NeonTheme.gold, onEnd: nil)
                 }
 
+                ShopTabs(selected: $tab)
+
                 ScrollView {
                     VStack(spacing: 12) {
-                        sectionLabel("NEON PALETTES")
-                        ForEach(Palettes.all) { palette in
-                            PaletteRow(palette: palette,
-                                       owned: store.ownsPalette(palette.id),
-                                       equipped: store.equippedPaletteID == palette.id,
-                                       affordable: store.cyberdeck.credits >= palette.cost,
-                                       lockGoal: palette.prestige?.goal,
-                                       lockProgress: palette.prestige.map(progress)) {
-                                tapped(palette)
+                        switch tab {
+                        case .palettes:
+                            ForEach(Palettes.all) { palette in
+                                PaletteRow(palette: palette,
+                                           owned: store.ownsPalette(palette.id),
+                                           equipped: store.equippedPaletteID == palette.id,
+                                           affordable: store.cyberdeck.credits >= palette.cost,
+                                           lockGoal: palette.prestige?.goal,
+                                           lockProgress: palette.prestige.map(progress)) {
+                                    tapped(palette)
+                                }
                             }
-                        }
-                        sectionLabel("TAP TRAILS").padding(.top, 6)
-                        ForEach(TrailSkins.all) { skin in
-                            TrailRow(skin: skin,
-                                     owned: store.ownsTrail(skin.id),
-                                     equipped: store.equippedTrailID == skin.id,
-                                     affordable: store.cyberdeck.credits >= skin.cost,
-                                     lockGoal: skin.prestige?.goal,
-                                     lockProgress: skin.prestige.map(progress)) {
-                                tappedTrail(skin)
+                        case .trails:
+                            ForEach(TrailSkins.all) { skin in
+                                TrailRow(skin: skin,
+                                         owned: store.ownsTrail(skin.id),
+                                         equipped: store.equippedTrailID == skin.id,
+                                         affordable: store.cyberdeck.credits >= skin.cost,
+                                         lockGoal: skin.prestige?.goal,
+                                         lockProgress: skin.prestige.map(progress)) {
+                                    tappedTrail(skin)
+                                }
                             }
-                        }
-                        sectionLabel("NODE GLYPHS").padding(.top, 6)
-                        ForEach(GlyphSets.all) { set in
-                            GlyphRow(set: set,
-                                     owned: store.ownsGlyphs(set.id),
-                                     equipped: store.equippedGlyphID == set.id,
-                                     affordable: store.cyberdeck.credits >= set.cost) {
-                                tappedGlyphs(set)
+                        case .glyphs:
+                            ForEach(GlyphSets.all) { set in
+                                GlyphRow(set: set,
+                                         owned: store.ownsGlyphs(set.id),
+                                         equipped: store.equippedGlyphID == set.id,
+                                         affordable: store.cyberdeck.credits >= set.cost) {
+                                    tappedGlyphs(set)
+                                }
+                            }
+                        case .icons:
+                            ForEach(AppIconStyles.all) { style in
+                                IconRow(style: style,
+                                        owned: store.ownsIcon(style.id),
+                                        equipped: equippedIconID == style.id,
+                                        lockGoal: style.prestige?.goal,
+                                        lockProgress: style.prestige.map(progress)) {
+                                    tappedIcon(style)
+                                }
                             }
                         }
                     }
@@ -565,6 +588,7 @@ struct CosmeticsView: View {
             }
             if let bought { PurchaseFlash(name: bought) }
         }
+        .onAppear { refreshEquippedIcon() }
         .onDisappear {
             endPreview()                 // leaving the shop always restores the equipped look
             noticeTask?.cancel()
@@ -647,6 +671,28 @@ struct CosmeticsView: View {
         else {                                       // the swatch IS the preview; explain the gap
             showNotice("NEED \(skin.cost - store.cyberdeck.credits) MORE CR FOR \(skin.name.uppercased())")
         }
+    }
+
+    // MARK: App icons (earn-only; the equip lives in iOS itself)
+    private func tappedIcon(_ style: AppIconStyle) {
+        if store.ownsIcon(style.id) {
+            guard UIApplication.shared.supportsAlternateIcons else {
+                showNotice("APP ICONS NOT SUPPORTED ON THIS DEVICE"); return
+            }
+            let previous = equippedIconID
+            equippedIconID = style.id                       // optimistic; revert on failure
+            UIApplication.shared.setAlternateIconName(style.iconName) { error in
+                if error != nil { Task { @MainActor in equippedIconID = previous } }
+            }
+        } else if let pr = style.prestige {                 // earn-only: show the goal
+            showNotice("\(style.name.uppercased()) ICON — \(pr.goal) · \(progress(pr))")
+        }
+    }
+
+    /// Read which icon iOS currently has active (nil = the primary "classic").
+    private func refreshEquippedIcon() {
+        let active = UIApplication.shared.alternateIconName
+        equippedIconID = AppIconStyles.all.first { $0.iconName == active }?.id ?? "classic"
     }
 
     // MARK: Node glyphs
@@ -749,6 +795,114 @@ private struct TrailRow: View {
             }
         }
         .frame(width: 58, height: 34, alignment: .center)
+    }
+}
+
+/// Category tabs for the cosmetics shop (the catalog outgrew a single scroll).
+private struct ShopTabs: View {
+    @Binding var selected: CosmeticsView.Tab
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(CosmeticsView.Tab.allCases, id: \.self) { t in
+                Button {
+                    selected = t
+                    AudioEngine.shared.play(.uiTap)
+                } label: {
+                    Text(t.rawValue)
+                        .font(.system(size: 10.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(selected == t ? NeonTheme.background : NeonTheme.textDim)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity)
+                        .background(RoundedRectangle(cornerRadius: 8)
+                            .fill(selected == t ? NeonTheme.cyan : Color.white.opacity(0.05)))
+                        .overlay(RoundedRectangle(cornerRadius: 8)
+                            .stroke(selected == t ? NeonTheme.cyan : Color.white.opacity(0.12), lineWidth: 1))
+                }
+                .accessibilityAddTraits(selected == t ? [.isButton, .isSelected] : .isButton)
+            }
+        }
+    }
+}
+
+/// Shop row for an app-icon style. Earn-only (no CR price ever) — locked rows show
+/// the transparent goal + progress; owned rows equip via `setAlternateIconName`.
+private struct IconRow: View {
+    let style: AppIconStyle
+    let owned: Bool
+    let equipped: Bool
+    var lockGoal: String? = nil
+    var lockProgress: String? = nil
+    let action: () -> Void
+
+    private var locked: Bool { lockGoal != nil && !owned }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                MiniIconPreview(gold: style.id == "monolith")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(style.name)
+                        .font(.system(size: 15, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textPrimary)
+                    Text(equipped ? "EQUIPPED" : owned ? "Owned" : (lockGoal ?? "Owned"))
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                        .foregroundStyle(equipped ? NeonTheme.cyan : NeonTheme.textDim)
+                }
+                Spacer(minLength: 0)
+                if equipped {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(NeonTheme.cyan)
+                } else if owned {
+                    Text("EQUIP").font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.cyan)
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                        .background(RoundedRectangle(cornerRadius: 8).stroke(NeonTheme.cyan, lineWidth: 1.5))
+                } else {
+                    LockChip(progress: lockProgress)
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(0.03))
+                .overlay(RoundedRectangle(cornerRadius: 12)
+                    .stroke((equipped ? NeonTheme.cyan : NeonTheme.gridLineDim).opacity(equipped ? 0.9 : 0.4),
+                            lineWidth: equipped ? 1.5 : 1)))
+        }
+        .buttonStyle(TerminalButtonStyle())
+        .disabled(equipped)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(style.name) app icon")
+        .accessibilityValue(equipped ? "Equipped" : owned ? "Owned, tap to equip"
+                            : "Locked. \(lockGoal ?? ""), progress \(lockProgress ?? "")")
+        .accessibilityAddTraits(equipped ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
+/// A small vector rendition of the app icon (chevron + cursor block) — the real
+/// appiconset PNGs aren't loadable by name, and a crisp vector reads better anyway.
+/// Colors are the icon's own (palette-independent, like the icon itself).
+private struct MiniIconPreview: View {
+    let gold: Bool
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(gold ? Color(red: 0.07, green: 0.05, blue: 0.015)
+                           : Color(red: 0.035, green: 0.04, blue: 0.085))
+            HStack(spacing: 3.5) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .heavy))
+                    .foregroundStyle(gold ? Color(red: 1.00, green: 0.83, blue: 0.30)
+                                          : Color(red: 0.20, green: 0.95, blue: 1.00))
+                RoundedRectangle(cornerRadius: 2.5)
+                    .fill(gold ? Color(red: 1.00, green: 0.95, blue: 0.75)
+                               : Color(red: 1.00, green: 0.20, blue: 0.80))
+                    .frame(width: 9, height: 9)
+            }
+        }
+        .frame(width: 40, height: 40)
+        .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+            .stroke(Color.white.opacity(0.16), lineWidth: 1))
     }
 }
 

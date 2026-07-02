@@ -54,6 +54,9 @@ struct SaveData: Codable, Sendable {
     var ownedGlyphIDs: [String] = ["classic"]
     /// Currently equipped node glyph set.
     var equippedGlyphID: String = "classic"
+    /// App-icon style IDs owned ("classic" is always owned). Which icon is *equipped*
+    /// lives in iOS itself (`UIApplication.alternateIconName`), not here.
+    var ownedIconIDs: [String] = ["classic"]
     /// Endless run-modifier IDs currently enabled (harder run → more Credits). Persisted
     /// so the choice carries between runs.
     var enabledModifierIDs: [String] = []
@@ -62,7 +65,7 @@ struct SaveData: Codable, Sendable {
         case version, cyberdeck, highScores, soundEnabled, hapticsEnabled, campaignProgress, tutorialSeen
         case musicVolume, sfxVolume, dailyBestScore, dailyBestDay, dailyStreak, dailyStreakDay
         case ownedPaletteIDs, equippedPaletteID, ownedTrailIDs, equippedTrailID
-        case ownedGlyphIDs, equippedGlyphID
+        case ownedGlyphIDs, equippedGlyphID, ownedIconIDs
         case starterCreditsGranted, campaignBests, campaignStars
         case enabledModifierIDs
     }
@@ -145,6 +148,8 @@ extension SaveData {
         ownedGlyphIDs = try c.decodeIfPresent([String].self, forKey: .ownedGlyphIDs) ?? ownedGlyphIDs
         if !ownedGlyphIDs.contains("classic") { ownedGlyphIDs.append("classic") }
         equippedGlyphID = try c.decodeIfPresent(String.self, forKey: .equippedGlyphID) ?? equippedGlyphID
+        ownedIconIDs = try c.decodeIfPresent([String].self, forKey: .ownedIconIDs) ?? ownedIconIDs
+        if !ownedIconIDs.contains("classic") { ownedIconIDs.append("classic") }
         enabledModifierIDs = try c.decodeIfPresent([String].self, forKey: .enabledModifierIDs) ?? enabledModifierIDs
     }
 }
