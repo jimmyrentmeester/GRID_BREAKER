@@ -19,8 +19,12 @@ resolution live in `GridEngine`; the view only renders snapshots + dresses `Game
 - Order shown by filled pips on each tile (1 → N).
 - Tapping the correct next one advances the set; tapping a later one (out of order) is a miss
   (no advance; standard miss penalty) — the set is NOT failed, you just have to hit the right one.
-- Completing the set: a one-time **×4 multiplier on the next decode**. If completing it pushes
-  the combo to the Fever threshold, Fever lasts **×4** as long.
+- Completing the set: a one-time **×4 multiplier on the next decode** (`daemonSetReward`).
+  - **Fever duration:** a set-triggered Fever lasts `setFeverDurationMult × base`. In PROTOCOL
+    this is **×1** (base window) — sets are the *core loop* here, and the old ×4 chained
+    near-permanent Fever (59% uptime under perfect play; a 16 s continuous block that read as
+    "Fever never depletes", fixed 2026-07-02). The ×4 climactic set-Fever lives on for
+    **campaign bosses**, where sets are rare. See `enginecheck/feverdur.swift`.
 - Deterministic: the set's cells + order are chosen by the seeded RNG at spawn.
 
 ### DMZ PURGE (issue #4)

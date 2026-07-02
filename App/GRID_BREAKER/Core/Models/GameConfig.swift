@@ -164,9 +164,15 @@ struct GameConfig: Sendable {
     /// daemonSetMinSize at score 0, reaching daemonSetMaxSize when score ≥
     /// (maxSize − minSize) × this value). 0 = no ramp (max is always daemonSetMaxSize).
     var daemonSetSizeRampScore: Int = 15
-    /// Completing a set grants ×N on the *next* decode; if the completion triggers
-    /// Fever, that Fever lasts ×N as long.
+    /// Completing a set grants ×N on the *next* decode (a score reward).
     var daemonSetReward: Int = 4
+    /// How much longer a Fever lasts when a DAEMON SET *completion* is what triggers
+    /// it (×N of the base window). A rare, climactic reward in campaign bosses (where
+    /// sets are infrequent). Kept separate from `daemonSetReward` because in PROTOCOL
+    /// sets are the *core loop*: a large value there chained near-permanent Fever
+    /// (59% uptime), so `protocolMode()` sets this to 1 — the set still pays its ×N
+    /// score reward, but no longer inflates Fever into a steady state.
+    var setFeverDurationMult: Int = 4
 
     // MARK: DMZ PURGE objective (PROTOCOL mode, issue #4)
     /// Whether DMZ PURGE zones spawn (off everywhere except PROTOCOL).
@@ -326,6 +332,10 @@ struct GameConfig: Sendable {
         c.daemonSetEnabled = true        // ordered-chain objective (issue #3)
         c.dmzEnabled = true              // zone-purge objective (issue #4) — alternates with sets
         c.powerUpSpawnChance = 0         // no random relief valves — objectives are the pressure
+        // Sets are PROTOCOL's core loop, so the ×4 set-Fever duration bonus chained
+        // near-permanent Fever (59% uptime). Here a set-triggered Fever lasts the
+        // normal window; the set still pays its ×daemonSetReward score bonus.
+        c.setFeverDurationMult = 1
         return c
     }
 

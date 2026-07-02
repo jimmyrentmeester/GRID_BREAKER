@@ -672,8 +672,10 @@ struct GridEngine {
             return []
         }
         feverActive = true
-        // A set completion that triggers this Fever makes it last ×daemonSetReward (issue #3).
-        let durationMult = pendingFeverBonus ? Double(config.daemonSetReward) : 1
+        // A set completion that triggers this Fever lengthens it by setFeverDurationMult
+        // (a rare climactic reward in campaign; 1 = no bonus in PROTOCOL, where sets are
+        // constant and the bonus otherwise chained near-permanent Fever). issue #3 / fever fix.
+        let durationMult = pendingFeverBonus ? Double(config.setFeverDurationMult) : 1
         pendingFeverBonus = false
         feverRemaining = feverDurationEff * durationMult
         combo = 0

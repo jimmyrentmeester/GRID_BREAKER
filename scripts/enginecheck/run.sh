@@ -18,7 +18,7 @@ CORE=(
   App/GRID_BREAKER/Core/Models/RunModifier.swift
 )
 
-checks=("${@:-daemonset dmz escalation ramp campaignboss stars prestige modifiers}")
+checks=("${@:-daemonset dmz escalation ramp campaignboss stars prestige feverdur modifiers}")
 status=0
 for name in ${checks[@]}; do
   src="scripts/enginecheck/${name}.swift"

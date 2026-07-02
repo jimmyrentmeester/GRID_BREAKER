@@ -120,7 +120,9 @@ do {
     } else { check(false, "needed a tappable node to test the ×4 reward") }
 }
 
-// MARK: 5 — completion that triggers Fever makes it last ×4
+// MARK: 5 — in PROTOCOL, a set-triggered Fever is the BASE window, not ×4
+// (the fever-never-depletes fix: setFeverDurationMult=1 in PROTOCOL because sets are
+// the core loop; the ×4 climactic set-Fever lives on for campaign — see feverdur.swift).
 do {
     var c = GameConfig.protocolMode()
     c.objectiveInterval = 0.1
@@ -131,7 +133,7 @@ do {
     c.feverThresholdRampPerFever = 0
     c.daemonSetMinSize = 2
     c.daemonSetMaxSize = 2               // a 2-set completes at combo 2 = the threshold
-    c.daemonSetReward = 4
+    c.daemonSetReward = 4                // still a ×4 SCORE reward on the next decode…
     var engine = GridEngine(config: c, deck: .starter, seed: 55)
     let set = spawnSet(&engine)
     let n = set.count
@@ -141,8 +143,9 @@ do {
         _ = engine.handleTap(cellIndex: node.cellIndex)
     }
     check(engine.snapshot.feverActive, "completing the set triggered Fever")
-    // feverFraction = remaining / baseDuration; ×4 reward → ~4.0 (no cap in the snapshot).
-    check(engine.snapshot.feverFraction > 3.5, "set-triggered Fever lasts ~×4 (fraction \(String(format: "%.2f", engine.snapshot.feverFraction)))")
+    // …but NOT a ×4 duration: PROTOCOL's set-Fever is the base window (fraction ≈ 1.0).
+    check(engine.snapshot.feverFraction <= 1.05,
+          "PROTOCOL set-Fever is the base window, not ×4 (fraction \(String(format: "%.2f", engine.snapshot.feverFraction)))")
 }
 
 print(failures == 0 ? "\n🎉 ALL DAEMON SET CHECKS PASSED" : "\n💥 \(failures) CHECK(S) FAILED")
