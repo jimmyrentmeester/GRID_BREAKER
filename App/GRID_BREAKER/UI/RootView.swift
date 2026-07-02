@@ -19,6 +19,9 @@ struct RootView: View {
     /// Newly-earned prestige cosmetics awaiting their celebration toast (Cosmetics 2.0).
     @State private var prestigeToast: [String] = []
     @State private var prestigeToastTask: Task<Void, Never>?
+    /// Palette being live-previewed in the shop (transient, never persisted). Owned
+    /// here so the full-screen backdrop below re-renders when the preview changes.
+    @State private var shopPreviewPaletteID: String?
 
     private func tap() { AudioEngine.shared.play(.uiTap) }
 
@@ -57,6 +60,11 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
+            // NeonTheme's statics aren't observable — these tracked reads make the
+            // full-screen backdrop re-theme LIVE on an equip or a shop preview
+            // (without them it only re-rendered on the next screen change).
+            let _ = store.equippedPaletteID
+            let _ = shopPreviewPaletteID
             NeonTheme.background.ignoresSafeArea()
             GridBackdrop().ignoresSafeArea().accessibilityHidden(true)
 
@@ -134,6 +142,7 @@ struct RootView: View {
                               onBack: { guidedTour = .none; screen = .menu }).playColumn().transition(.opacity)
             case .cosmetics:
                 CosmeticsView(store: store,
+                              previewPaletteID: $shopPreviewPaletteID,
                               guided: guidedTour == .cosmetics,
                               onGuidedDone: { guidedTour = .none; screen = .menu },
                               onBack: { guidedTour = .none; screen = .menu }).playColumn().transition(.opacity)

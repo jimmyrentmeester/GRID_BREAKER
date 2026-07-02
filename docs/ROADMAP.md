@@ -182,8 +182,14 @@ thin as a retention layer and as a base for any later paid tier. Slices, in orde
    icon** (16/16 cores) — needs icon assets + Info.plist/pbxproj work — and the "animated"
    ambition for Monolith Gold (an animated-palette system touches every view; shipped as a
    rich static gold instead). 👤 on-device feel pass pending.
-2. **Live palette preview** in the shop (temporary `NeonTheme.current`, non-destructive)
-   + "NEED n MORE CR" feedback on unaffordable rows (today a tap does nothing).
+2. ✅ **Live palette preview** (built + sim-verified 2026-07-02): tapping any unowned
+   palette re-themes the WHOLE screen (incl. RootView backdrop — also fixed the latent
+   staleness where even an equip didn't recolor the backdrop until a screen change);
+   a PreviewStrip explains the gap ("NEED 240 MORE CR" / prestige goal + progress) with
+   an END control; affordable rows get the confirm dialog ON TOP of the live preview
+   (informed purchase); trail rows give the same feedback via a transient notice.
+   Preview always reverts on cancel/end/back (verified in simulator: Inferno preview +
+   dialog + cancel-restore, Circuit prestige preview + goal strip + end-restore).
 3. **Node glyph sets** as a third CR category (Runes / Retro LCD / Katakana; render-only).
 4. Shop tabs; **Monolith alternate app icon** (16/16 cores). No rarity tiers — ever.
 

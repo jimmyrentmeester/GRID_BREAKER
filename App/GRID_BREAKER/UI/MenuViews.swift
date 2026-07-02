@@ -440,6 +440,9 @@ struct CodexView: View {
 
 struct CosmeticsView: View {
     @Bindable var store: GameStore
+    /// The palette being live-previewed (owned by RootView so the full-screen
+    /// backdrop re-themes too). Transient — never persisted, ends on any exit.
+    @Binding var previewPaletteID: String?
     /// When true (entered from the onboarding meta-loop intro), nudges the player to
     /// equip a look, then wraps up the guided tour.
     var guided: Bool = false
@@ -447,6 +450,13 @@ struct CosmeticsView: View {
     let onBack: () -> Void
     @State private var pending: Palette?
     @State private var pendingTrail: TrailSkin?
+    /// Transient feedback strip for trails ("NEED 240 MORE CR…"); auto-clears.
+    @State private var notice: String?
+    @State private var noticeTask: Task<Void, Never>?
+
+    private var previewingPalette: Palette? {
+        previewPaletteID.map(Palettes.byID)
+    }
     @State private var bought: String?
     @State private var guidedDone = false
 
@@ -478,6 +488,16 @@ struct CosmeticsView: View {
                         done: guidedDone,
                         actionLabel: guidedDone ? "DONE" : nil,
                         action: onGuidedDone)
+                }
+
+                // Live-preview strip (palette being tried on) or a transient notice
+                // (trail affordability/goal feedback). Preview wins when both exist.
+                if let p = previewingPalette {
+                    PreviewStrip(text: previewText(for: p), accent: p.primary) {
+                        endPreview()
+                    }
+                } else if let notice {
+                    PreviewStrip(text: notice, accent: NeonTheme.gold, onEnd: nil)
                 }
 
                 ScrollView {
@@ -517,7 +537,7 @@ struct CosmeticsView: View {
                               message: "\(p.name) palette\n\(p.cost) CR",
                               confirmLabel: "BUY & EQUIP",
                               onConfirm: { purchaseAndEquip(p); pending = nil },
-                              onCancel: { pending = nil })
+                              onCancel: { pending = nil; endPreview() })
             }
             if let t = pendingTrail {
                 ConfirmDialog(title: "CONFIRM PURCHASE",
@@ -528,6 +548,10 @@ struct CosmeticsView: View {
             }
             if let bought { PurchaseFlash(name: bought) }
         }
+        .onDisappear {
+            endPreview()                 // leaving the shop always restores the equipped look
+            noticeTask?.cancel()
+        }
     }
 
     /// Progress toward a prestige goal, for the lock chip ("18/24★").
@@ -537,11 +561,53 @@ struct CosmeticsView: View {
                         dailyStreak: store.lastDailyStreak)
     }
 
+    // MARK: Live palette preview (try-before-you-buy/earn — Cosmetics 2.0)
+
+    /// Why the previewed palette isn't equipped yet — an honest, actionable line.
+    private func previewText(for p: Palette) -> String {
+        if let pr = p.prestige { return "PREVIEW: \(p.name.uppercased()) — \(pr.goal) · \(progress(pr))" }
+        let short = p.cost - store.cyberdeck.credits
+        if short > 0 { return "PREVIEW: \(p.name.uppercased()) — NEED \(short) MORE CR" }
+        return "PREVIEW: \(p.name.uppercased())"
+    }
+
+    /// Re-theme the whole screen in `palette`, without owning/equipping anything.
+    private func preview(_ palette: Palette) {
+        NeonTheme.current = palette
+        withAnimation(.easeOut(duration: 0.25)) { previewPaletteID = palette.id }
+    }
+
+    /// Restore the equipped palette (no-op when not previewing).
+    private func endPreview() {
+        guard previewPaletteID != nil else { return }
+        NeonTheme.current = Palettes.byID(store.equippedPaletteID)
+        withAnimation(.easeOut(duration: 0.25)) { previewPaletteID = nil }
+    }
+
+    /// Show a short trail-feedback notice ("NEED 240 MORE CR…"); auto-clears.
+    private func showNotice(_ text: String) {
+        notice = text
+        noticeTask?.cancel()
+        noticeTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_800_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.3)) { notice = nil }
+        }
+    }
+
     // MARK: Palettes
     private func tapped(_ palette: Palette) {
-        if store.ownsPalette(palette.id) { equip(palette) }
-        else if palette.prestige != nil { return }   // earn-only: never enters the buy path
-        else if store.cyberdeck.credits >= palette.cost { pending = palette }
+        if store.ownsPalette(palette.id) {
+            endPreview()
+            equip(palette)
+        } else if previewPaletteID == palette.id {
+            endPreview()                             // tap the previewed one again → off
+        } else {
+            preview(palette)                         // locked/unaffordable: SEE it anyway
+            if palette.prestige == nil && store.cyberdeck.credits >= palette.cost {
+                pending = palette                    // affordable: informed confirm on top
+            }
+        }
     }
     private func equip(_ palette: Palette) {
         NeonTheme.current = palette          // apply before the store mutation re-renders
@@ -550,6 +616,7 @@ struct CosmeticsView: View {
     }
     private func purchaseAndEquip(_ palette: Palette) {
         guard store.buyPalette(id: palette.id, cost: palette.cost) else { return }
+        endPreview()
         equip(palette)
         celebratePurchase($bought, "\(palette.name) palette")
     }
@@ -557,8 +624,12 @@ struct CosmeticsView: View {
     // MARK: Tap trails
     private func tappedTrail(_ skin: TrailSkin) {
         if store.ownsTrail(skin.id) { equipTrail(skin) }
-        else if skin.prestige != nil { return }      // earn-only: never enters the buy path
-        else if store.cyberdeck.credits >= skin.cost { pendingTrail = skin }
+        else if let pr = skin.prestige {             // earn-only: show the goal, no buy path
+            showNotice("\(skin.name.uppercased()) TRAIL — \(pr.goal) · \(progress(pr))")
+        } else if store.cyberdeck.credits >= skin.cost { pendingTrail = skin }
+        else {                                       // the swatch IS the preview; explain the gap
+            showNotice("NEED \(skin.cost - store.cyberdeck.credits) MORE CR FOR \(skin.name.uppercased())")
+        }
     }
     private func equipTrail(_ skin: TrailSkin) {
         TrailSkins.equipped = skin
@@ -622,7 +693,7 @@ private struct TrailRow: View {
                             lineWidth: equipped ? 1.5 : 1)))
         }
         .buttonStyle(TerminalButtonStyle())
-        .disabled(equipped || locked || (!owned && !affordable))
+        .disabled(equipped)              // locked/unaffordable rows still tap → goal/CR feedback
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(skin.name) trail")
         .accessibilityValue(equipped ? "Equipped" : owned ? "Owned, tap to equip"
@@ -644,6 +715,44 @@ private struct TrailRow: View {
             }
         }
         .frame(width: 58, height: 34, alignment: .center)
+    }
+}
+
+/// Slim status strip above the cosmetics list: the live palette preview ("PREVIEW:
+/// SUNSET DRIVE — NEED 240 MORE CR", with an END control) or a transient trail
+/// notice. One line, honest and actionable — never a nag.
+private struct PreviewStrip: View {
+    let text: String
+    let accent: Color
+    let onEnd: (() -> Void)?
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "eye.fill")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(accent)
+            Text(text)
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(NeonTheme.textPrimary)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if let onEnd {
+                Button(action: onEnd) {
+                    Text("END")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundStyle(accent)
+                        .padding(.horizontal, 8).padding(.vertical, 5)
+                        .background(RoundedRectangle(cornerRadius: 6).stroke(accent.opacity(0.6), lineWidth: 1))
+                }
+                .accessibilityLabel("End preview")
+            }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(accent.opacity(0.08))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(accent.opacity(0.45), lineWidth: 1)))
+        .transition(.opacity)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -746,12 +855,12 @@ private struct PaletteRow: View {
             )
         }
         .buttonStyle(TerminalButtonStyle())
-        .disabled(equipped || locked || (!owned && !affordable))
+        .disabled(equipped)              // everything else is tappable: equip, buy, or PREVIEW
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(palette.name) palette")
         .accessibilityValue(equipped ? "Equipped" : owned ? "Owned, tap to equip"
-                            : locked ? "Locked. \(lockGoal ?? ""), progress \(lockProgress ?? "")"
-                                     : "Costs \(palette.cost) credits")
+                            : locked ? "Locked. \(lockGoal ?? ""), progress \(lockProgress ?? ""). Tap to preview"
+                                     : "Costs \(palette.cost) credits. Tap to preview")
         .accessibilityAddTraits(equipped ? [.isButton, .isSelected] : .isButton)
     }
 
