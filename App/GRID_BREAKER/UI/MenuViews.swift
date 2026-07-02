@@ -450,7 +450,8 @@ struct CosmeticsView: View {
     let onBack: () -> Void
     @State private var pending: Palette?
     @State private var pendingTrail: TrailSkin?
-    /// Transient feedback strip for trails ("NEED 240 MORE CR…"); auto-clears.
+    @State private var pendingGlyphs: GlyphSet?
+    /// Transient feedback strip for trails/glyphs ("NEED 240 MORE CR…"); auto-clears.
     @State private var notice: String?
     @State private var noticeTask: Task<Void, Never>?
 
@@ -524,6 +525,15 @@ struct CosmeticsView: View {
                                 tappedTrail(skin)
                             }
                         }
+                        sectionLabel("NODE GLYPHS").padding(.top, 6)
+                        ForEach(GlyphSets.all) { set in
+                            GlyphRow(set: set,
+                                     owned: store.ownsGlyphs(set.id),
+                                     equipped: store.equippedGlyphID == set.id,
+                                     affordable: store.cyberdeck.credits >= set.cost) {
+                                tappedGlyphs(set)
+                            }
+                        }
                     }
                     .padding(.vertical, 2)
                 }
@@ -545,6 +555,13 @@ struct CosmeticsView: View {
                               confirmLabel: "BUY & EQUIP",
                               onConfirm: { purchaseAndEquipTrail(t); pendingTrail = nil },
                               onCancel: { pendingTrail = nil })
+            }
+            if let g = pendingGlyphs {
+                ConfirmDialog(title: "CONFIRM PURCHASE",
+                              message: "\(g.name) glyphs\n\(g.cost) CR",
+                              confirmLabel: "BUY & EQUIP",
+                              onConfirm: { purchaseAndEquipGlyphs(g); pendingGlyphs = nil },
+                              onCancel: { pendingGlyphs = nil })
             }
             if let bought { PurchaseFlash(name: bought) }
         }
@@ -631,6 +648,23 @@ struct CosmeticsView: View {
             showNotice("NEED \(skin.cost - store.cyberdeck.credits) MORE CR FOR \(skin.name.uppercased())")
         }
     }
+
+    // MARK: Node glyphs
+    private func tappedGlyphs(_ set: GlyphSet) {
+        if store.ownsGlyphs(set.id) {
+            GlyphSets.equipped = set
+            store.equipGlyphs(set.id)
+        } else if store.cyberdeck.credits >= set.cost { pendingGlyphs = set }
+        else {                                       // the swatch IS the preview; explain the gap
+            showNotice("NEED \(set.cost - store.cyberdeck.credits) MORE CR FOR \(set.name.uppercased())")
+        }
+    }
+    private func purchaseAndEquipGlyphs(_ set: GlyphSet) {
+        guard store.buyGlyphs(id: set.id, cost: set.cost) else { return }
+        GlyphSets.equipped = set
+        store.equipGlyphs(set.id)
+        celebratePurchase($bought, "\(set.name) glyphs")
+    }
     private func equipTrail(_ skin: TrailSkin) {
         TrailSkins.equipped = skin
         store.equipTrail(skin.id)
@@ -715,6 +749,65 @@ private struct TrailRow: View {
             }
         }
         .frame(width: 58, height: 34, alignment: .center)
+    }
+}
+
+/// Shop row for a node glyph set: the swatch shows the ACTUAL daemon / armored /
+/// firewall glyphs in their in-game colors — the swatch is the preview.
+private struct GlyphRow: View {
+    let set: GlyphSet
+    let owned: Bool
+    let equipped: Bool
+    let affordable: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                HStack(spacing: 7) {
+                    GlyphMark(mark: set.standard, size: 15, color: NeonTheme.cyan)
+                    GlyphMark(mark: set.armored, size: 15, color: NeonTheme.magenta)
+                    GlyphMark(mark: set.firewall, size: 15, color: NeonTheme.danger)
+                }
+                .frame(width: 74, alignment: .center)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(set.name)
+                        .font(.system(size: 15, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.textPrimary)
+                    Text(equipped ? "EQUIPPED" : (owned ? "Owned" : "\(set.cost) CR"))
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                        .foregroundStyle(equipped ? NeonTheme.cyan : NeonTheme.textDim)
+                }
+                Spacer(minLength: 0)
+                if equipped {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(NeonTheme.cyan)
+                } else if owned {
+                    Text("EQUIP").font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundStyle(NeonTheme.cyan)
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                        .background(RoundedRectangle(cornerRadius: 8).stroke(NeonTheme.cyan, lineWidth: 1.5))
+                } else {
+                    Text("\(set.cost) CR").font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundStyle(affordable ? NeonTheme.gold : NeonTheme.textDim)
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                        .background(RoundedRectangle(cornerRadius: 8)
+                            .stroke(affordable ? NeonTheme.gold : Color.white.opacity(0.15), lineWidth: 1.5))
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(0.03))
+                .overlay(RoundedRectangle(cornerRadius: 12)
+                    .stroke((equipped ? NeonTheme.cyan : NeonTheme.gridLineDim).opacity(equipped ? 0.9 : 0.4),
+                            lineWidth: equipped ? 1.5 : 1)))
+        }
+        .buttonStyle(TerminalButtonStyle())
+        .disabled(equipped)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(set.name) node glyphs")
+        .accessibilityValue(equipped ? "Equipped" : owned ? "Owned, tap to equip"
+                                                          : "Costs \(set.cost) credits")
+        .accessibilityAddTraits(equipped ? [.isButton, .isSelected] : .isButton)
     }
 }
 

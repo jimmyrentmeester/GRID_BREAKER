@@ -174,6 +174,26 @@ final class GameStore {
         persist()
     }
 
+    // MARK: Cosmetics (node glyph sets) — same contract as palettes/trails.
+
+    var equippedGlyphID: String { save.equippedGlyphID }
+    func ownsGlyphs(_ id: String) -> Bool { save.ownedGlyphIDs.contains(id) }
+
+    @discardableResult
+    func buyGlyphs(id: String, cost: Int) -> Bool {
+        guard !ownsGlyphs(id), save.cyberdeck.credits >= cost else { return false }
+        save.cyberdeck.credits -= cost
+        save.ownedGlyphIDs.append(id)
+        persist()
+        return true
+    }
+
+    func equipGlyphs(_ id: String) {
+        guard ownsGlyphs(id) else { return }
+        save.equippedGlyphID = id
+        persist()
+    }
+
     // MARK: Campaign
 
     var campaignProgress: Int { save.campaignProgress }

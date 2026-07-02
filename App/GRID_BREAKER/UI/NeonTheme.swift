@@ -162,6 +162,66 @@ enum TrailSkins {
     static var equipped: TrailSkin = none
 }
 
+/// A purchasable node glyph set (cosmetic): alternate glyphs for the daemons and
+/// hazards on the grid. Render-layer only — colors, rings, hitboxes, lifespans and
+/// the functional signage (fever bolt, power-up icons, DAEMON SET numbers) never
+/// change, so every set stays as learnable as Classic. The firewall glyph must keep
+/// reading as "danger" in every set (it's the one node you must never tap).
+struct GlyphSet: Identifiable, Sendable, Equatable {
+    /// One node glyph: an SF Symbol, or a text character drawn in the mono font
+    /// (runes / kanji / box-drawing — all system-font, no assets).
+    enum Glyph: Sendable, Equatable {
+        case symbol(String)
+        case text(String)
+    }
+    let id: String
+    let name: String
+    let cost: Int
+    let standard: Glyph
+    let armored: Glyph      // shell intact
+    let breached: Glyph     // shell cracked (one hit left)
+    let firewall: Glyph
+    let cache: Glyph
+    let worm: Glyph
+    let intrusion: Glyph
+}
+
+enum GlyphSets {
+    static let classic = GlyphSet(
+        id: "classic", name: "Classic", cost: 0,
+        standard: .symbol("circle.grid.cross.fill"),
+        armored:  .symbol("lock.shield.fill"),
+        breached: .symbol("lock.open.fill"),
+        firewall: .symbol("exclamationmark.triangle.fill"),
+        cache:    .symbol("square.stack.3d.up.fill"),
+        worm:     .symbol("scribble.variable"),
+        intrusion: .symbol("hexagon.fill"))
+
+    static let all: [GlyphSet] = [
+        classic,
+        // Blocky segment glyphs — an old handheld's LCD. The firewall stays a triangle.
+        GlyphSet(id: "lcd", name: "Retro LCD", cost: 700,
+                 standard: .text("▦"), armored: .text("▣"), breached: .text("▢"),
+                 firewall: .text("▲"), cache: .text("◆"), worm: .text("∿"),
+                 intrusion: .text("▓")),
+        // Elder futhark — arcane sigils in the machine. Algiz (ᛉ) spikes = hazard.
+        GlyphSet(id: "runes", name: "Runes", cost: 800,
+                 standard: .text("ᚠ"), armored: .text("ᛟ"), breached: .text("ᚢ"),
+                 firewall: .text("ᛉ"), cache: .text("ᛜ"), worm: .text("ᛋ"),
+                 intrusion: .text("ᛞ")),
+        // Cyberpunk signage: 閉/開 = closed/open shell, 危 = danger, 宝 = treasure,
+        // 虫 = worm/bug, 敵 = enemy. Meaning-bearing, on-theme.
+        GlyphSet(id: "neotokyo", name: "Neo-Tokyo", cost: 900,
+                 standard: .text("デ"), armored: .text("閉"), breached: .text("開"),
+                 firewall: .text("危"), cache: .text("宝"), worm: .text("虫"),
+                 intrusion: .text("敵")),
+    ]
+
+    static func byID(_ id: String) -> GlyphSet { all.first { $0.id == id } ?? classic }
+    /// Equipped set — applied at launch + on equip (mirrors `NeonTheme.current`).
+    static var equipped: GlyphSet = classic
+}
+
 /// The prestige-unlock sweep (Cosmetics 2.0). Lives in the UI layer because the UI
 /// owns the cosmetics catalog (GameStore is deliberately catalog-agnostic); the pure
 /// rule itself is `Prestige.met` in Core. Idempotent, retroactive (a player who

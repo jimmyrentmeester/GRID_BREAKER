@@ -190,7 +190,14 @@ thin as a retention layer and as a base for any later paid tier. Slices, in orde
    (informed purchase); trail rows give the same feedback via a transient notice.
    Preview always reverts on cancel/end/back (verified in simulator: Inferno preview +
    dialog + cancel-restore, Circuit prestige preview + goal strip + end-restore).
-3. **Node glyph sets** as a third CR category (Runes / Retro LCD / Katakana; render-only).
+3. ✅ **Node glyph sets** (built + sim-verified 2026-07-02): a third CR category. A
+   `GlyphSet` maps node type → glyph (SF Symbol or a mono-font text character — no
+   assets); colors/rings/behavior and functional signage (fever bolt, power-ups,
+   set numbers) never reskin, and the firewall glyph stays danger-shaped in every set.
+   Catalog: Classic (free) · Retro LCD 700 CR (▦▣▲) · Runes 800 CR (ᚠᛟᛉ) · Neo-Tokyo
+   900 CR (デ閉危 — 閉/開 closed/open shell, 危 danger). Shop swatch shows the real
+   glyphs in-color. Verified in-sim: bought + equipped Neo-Tokyo, board renders デ/閉
+   nodes in a live run; runes/kanji render in system font (no fallback boxes).
 4. Shop tabs; **Monolith alternate app icon** (16/16 cores). No rarity tiers — ever.
 
 ## Monetization (planned — see docs/MONETIZATION.md + docs/GROWTH_AND_INCOME.md)

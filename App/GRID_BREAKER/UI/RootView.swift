@@ -188,6 +188,7 @@ struct RootView: View {
         .onAppear {
             NeonTheme.current = Palettes.byID(store.equippedPaletteID)   // apply cosmetics
             TrailSkins.equipped = TrailSkins.byID(store.equippedTrailID)
+            GlyphSets.equipped = GlyphSets.byID(store.equippedGlyphID)
             Haptics.enabled = store.hapticsEnabled
             AudioEngine.shared.musicVolume = store.musicVolume
             AudioEngine.shared.sfxVolume = store.sfxVolume

@@ -50,6 +50,10 @@ struct SaveData: Codable, Sendable {
     var ownedTrailIDs: [String] = ["none", "comet"]
     /// Currently equipped tap-trail skin ID.
     var equippedTrailID: String = "comet"
+    /// Node glyph-set IDs owned ("classic" is always owned).
+    var ownedGlyphIDs: [String] = ["classic"]
+    /// Currently equipped node glyph set.
+    var equippedGlyphID: String = "classic"
     /// Endless run-modifier IDs currently enabled (harder run → more Credits). Persisted
     /// so the choice carries between runs.
     var enabledModifierIDs: [String] = []
@@ -58,6 +62,7 @@ struct SaveData: Codable, Sendable {
         case version, cyberdeck, highScores, soundEnabled, hapticsEnabled, campaignProgress, tutorialSeen
         case musicVolume, sfxVolume, dailyBestScore, dailyBestDay, dailyStreak, dailyStreakDay
         case ownedPaletteIDs, equippedPaletteID, ownedTrailIDs, equippedTrailID
+        case ownedGlyphIDs, equippedGlyphID
         case starterCreditsGranted, campaignBests, campaignStars
         case enabledModifierIDs
     }
@@ -137,6 +142,9 @@ extension SaveData {
         if !ownedTrailIDs.contains("none") { ownedTrailIDs.append("none") }
         if !ownedTrailIDs.contains("comet") { ownedTrailIDs.append("comet") }
         equippedTrailID = try c.decodeIfPresent(String.self, forKey: .equippedTrailID) ?? equippedTrailID
+        ownedGlyphIDs = try c.decodeIfPresent([String].self, forKey: .ownedGlyphIDs) ?? ownedGlyphIDs
+        if !ownedGlyphIDs.contains("classic") { ownedGlyphIDs.append("classic") }
+        equippedGlyphID = try c.decodeIfPresent(String.self, forKey: .equippedGlyphID) ?? equippedGlyphID
         enabledModifierIDs = try c.decodeIfPresent([String].self, forKey: .enabledModifierIDs) ?? enabledModifierIDs
     }
 }

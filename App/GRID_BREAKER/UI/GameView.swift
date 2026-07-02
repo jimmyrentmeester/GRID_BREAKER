@@ -1279,31 +1279,34 @@ private struct NodeSprite: View {
             // an objective never hides behind the bonus look.
             setSprite(order: order, of: n)
         } else if feverActive && node.type != .firewallBomb {
-            // Golden bonus node during Fever Mode.
-            sprite(color: NeonTheme.gold, symbol: "bolt.fill", ringed: true)
+            // Golden bonus node during Fever Mode — functional signage, never reskinned.
+            sprite(color: NeonTheme.gold, mark: .symbol("bolt.fill"), ringed: true)
         } else {
+            // Node glyphs resolve through the equipped GlyphSet (cosmetic). Colors,
+            // rings and behavior are the game's own language and never change.
+            let set = GlyphSets.equipped
             switch node.type {
             case .standardDaemon:
-                sprite(color: NeonTheme.cyan, symbol: "circle.grid.cross.fill")
+                sprite(color: NeonTheme.cyan, mark: set.standard)
             case .armoredDaemon:
                 sprite(color: node.isBreached ? NeonTheme.gold : NeonTheme.magenta,
-                       symbol: node.isBreached ? "lock.open.fill" : "lock.shield.fill",
+                       mark: node.isBreached ? set.breached : set.armored,
                        ringed: !node.isBreached)
             case .firewallBomb:
-                sprite(color: NeonTheme.danger, symbol: "exclamationmark.triangle.fill")
+                sprite(color: NeonTheme.danger, mark: set.firewall)
             case .dataCache:
-                // A bright golden prize — stacked data, ringed, to read as "grab me".
-                sprite(color: NeonTheme.gold, symbol: "square.stack.3d.up.fill", ringed: true)
+                // A bright golden prize — ringed, to read as "grab me".
+                sprite(color: NeonTheme.gold, mark: set.cache, ringed: true)
             case .wormDaemon:
-                // Acid-green squiggle that visibly squirms — a distinct, moving target.
-                WormNodeSprite(glyph: glyph, ring: ring)
+                // Acid-green glyph that visibly squirms — a distinct, moving target.
+                WormNodeSprite(glyph: glyph, ring: ring, mark: set.worm)
             case .powerUp:
-                // White "special pickup" — kind shown by its glyph.
-                sprite(color: NeonTheme.textPrimary, symbol: Self.powerSymbol(node.powerKind), ringed: true)
+                // White "special pickup" — functional signage, never reskinned.
+                sprite(color: NeonTheme.textPrimary, mark: .symbol(Self.powerSymbol(node.powerKind)), ringed: true)
             case .intrusion:
-                // A hostile DMZ infestation — a solid red hex to scrub away. Distinct from the
-                // firewall's warning triangle (and bombs never share the board with a DMZ).
-                sprite(color: NeonTheme.danger, symbol: "hexagon.fill", ringed: true)
+                // A hostile DMZ infestation to scrub away. Distinct from the firewall
+                // glyph (and bombs never share the board with a DMZ).
+                sprite(color: NeonTheme.danger, mark: set.intrusion, ringed: true)
             }
         }
     }
@@ -1317,17 +1320,14 @@ private struct NodeSprite: View {
         }
     }
 
-    private func sprite(color: Color, symbol: String, ringed: Bool = false) -> some View {
+    private func sprite(color: Color, mark: GlyphSet.Glyph, ringed: Bool = false) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(color.opacity(0.18))
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(color, lineWidth: ringed ? ring * 1.4 : ring)
                 .neonGlow(color, radius: 8)
-            Image(systemName: symbol)
-                .font(.system(size: glyph, weight: .bold))
-                .foregroundStyle(color)
-                .neonGlow(color, radius: 4)
+            GlyphMark(mark: mark, size: glyph, color: color)
         }
     }
 
@@ -1358,12 +1358,34 @@ private struct NodeSprite: View {
     }
 }
 
-/// The worm daemon's sprite: the acid-green squiggle with a gentle, continuous
+/// One node glyph, rendered from the equipped `GlyphSet`: an SF Symbol, or a text
+/// character (runes / kanji / box-drawing) in the mono font at a matched optical size.
+struct GlyphMark: View {
+    let mark: GlyphSet.Glyph
+    let size: CGFloat
+    let color: Color
+
+    var body: some View {
+        Group {
+            switch mark {
+            case .symbol(let s):
+                Image(systemName: s).font(.system(size: size, weight: .bold))
+            case .text(let t):
+                Text(t).font(.system(size: size * 1.2, weight: .bold, design: .monospaced))
+            }
+        }
+        .foregroundStyle(color)
+        .neonGlow(color, radius: 4)
+    }
+}
+
+/// The worm daemon's sprite: the acid-green glyph with a gentle, continuous
 /// squirm (rotate + sway) so it reads as a living, moving target at a glance —
 /// the visual counterpart to its distinct decode chirp. Snaps still for Reduce Motion.
 private struct WormNodeSprite: View {
     var glyph: CGFloat = 22
     var ring: CGFloat = 3
+    var mark: GlyphSet.Glyph = .symbol("scribble.variable")
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var wiggle = false
 
@@ -1374,10 +1396,7 @@ private struct WormNodeSprite: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(NeonTheme.worm, lineWidth: ring * 1.4)
                 .neonGlow(NeonTheme.worm, radius: 8)
-            Image(systemName: "scribble.variable")
-                .font(.system(size: glyph, weight: .bold))
-                .foregroundStyle(NeonTheme.worm)
-                .neonGlow(NeonTheme.worm, radius: 4)
+            GlyphMark(mark: mark, size: glyph, color: NeonTheme.worm)
                 .rotationEffect(.degrees(wiggle ? 7 : -7))
                 .offset(x: wiggle ? 2.5 : -2.5)
         }
