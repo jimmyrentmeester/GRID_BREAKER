@@ -1,5 +1,21 @@
 # v1.3 Release — App Store copy
 
+## Promotional text (≤170 chars · editable anytime without review · shown above the description)
+
+Sits at the top of the product page; does NOT affect search ranking, so it's a hook, not
+keywords. Spotlights the new content for returning users + the no-ads angle for editorial.
+
+```
+Tap fast, chain combos into Fever, outlast the rising grid. Now with a 16-core boss campaign, stackable run modifiers & a daily streak. No ads, no tracking — pure skill.
+```
+(169)
+
+Alternative — lead with the new content:
+```
+New: Campaign 2.0 — 16 cores across 4 chapters, each ending in a boss. Plus run modifiers and a daily streak. Jack in, chain Fever, crack the grid. No ads, all skill.
+```
+(166)
+
 ## What's New (App Store · max 4000 chars, keep it punchy)
 
 ```
