@@ -17,7 +17,18 @@ Alternatives if you prefer:
 `Jack in. Decode the neon grid before your RAM runs out, chain clean hits into Fever, and chase the high score. A pure reflex test — no ads, no tracking, all skill.`
 
 ## Keywords (≤100, comma-separated, no spaces)
-`reflex,arcade,neon,cyberpunk,tap,fast,combo,reaction,netrunner,score,whack,one-handed,addictive`
+`offline,tap,reaction,combo,score,fast,endless,cyberpunk,retro,synthwave,casual,hacker,dodge`  (91)
+
+> **Rule (Apple):** the title, subtitle AND category are already indexed — never repeat
+> those words in the keyword field. Already free for us: *grid, breaker* (name); *neon,
+> reflex, grid, hacking* (subtitle `Neon reflex grid-hacking`); *arcade, action, games*
+> (category). So `reflex`, `arcade`, `neon` were wasted, and `netrunner` (near-zero volume
+> + trademark risk) and `addictive` (subjective; nobody searches it) were dropped. Biggest
+> add: **`offline`** — huge, honest search term (100% on-device, no ads/tracking).
+>
+> **Swap bench** (~9 chars spare; pick by audience): `one handed` (accessibility/casual) ·
+> `whack a mole` (broad casual, lower relevance) · `relax,chill` (the FLOW mode; high volume,
+> off-core) · swap `hacker`→`timing`/`cyber` if worried about stem-overlap with "hacking".
 
 ## Description (≤4000)
 ```
@@ -67,8 +78,14 @@ Jack in. Kraak het neongrid voor je RAM op is, rijg foutloze tikken aaneen tot F
 
 **Keywords (≤100, geen spaties):**
 ```
-reflex,arcade,neon,cyberpunk,tikken,snel,combo,reactie,score,highscore,verslavend,eenhandig,hacken
+offline,tikken,reactie,combo,score,snel,verslavend,cyberpunk,retro,synthwave,spelletjes,eenhandig
 ```
+(97) — NL subtitel `Neon reflexen, hack het grid` indexeert al *neon, reflex, hack, grid*;
+categorie *arcade/actie* ook → die niet herhalen. NL-specifiek: **`spelletjes`** (de grootste
+NL casual-zoekterm, los van de categorienaam "Spellen") en **`verslavend`** blijft — anders dan
+het Engelse "addictive" zoeken Nederlanders hier wél op ("verslavende spelletjes"). Mix van NL +
+Engelse termen bewust: Nederlandse gamers zoeken games vaak in het Engels (`offline`, `cyberpunk`,
+`retro`, `combo`).
 
 **Description:**
 ```
