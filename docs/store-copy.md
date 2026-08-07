@@ -2,33 +2,43 @@
 
 Paste-ready content for App Store Connect (plan steps C3 / D5). Character limits noted.
 
-## App name (≤30)
-`GRID_BREAKER`
+> **v1.3.1 ASO overhaul (2026-08-07).** The name/subtitle/keywords below are the metadata
+> for the 1.3.1 release, chosen from `GRID_BREAKER_ASO_addendum_meetronde.docx` after the
+> measured funnel (883 impressions → 146 PDP views → 34 downloads / 90 days) confirmed a
+> **discovery/volume** problem — the 160 indexed chars were largely wasted. Decision: **Arcade
+> variant** (primary category switches Action → Arcade) + the reflex-game title. The old
+> merged/optimized keyword line is superseded by the ASO research below. On-device / icon /
+> in-game name **stays `GRID_BREAKER`** (underscore) — only the App Store *listing* name changes.
+
+## App name (≤30) — App Store listing only
+**`Grid Breaker: Neon Reflex Game`**  (30/30)
+
+Rationale: `GRID_BREAKER` (12 chars, brand-only) wasted 18 chars of the heaviest-weighted
+field and nobody searches the brand. The space form removes the tokenizer risk (Apple may
+read `GRID_BREAKER` as one token, not `grid`+`breaker`) and adds `reflex` + `game` + `neon`.
+The underscore stays everywhere else (icon, game, landing page).
 
 ## Subtitle (≤30) — describes the game
-**`Neon reflex grid-hacking`**  (24)
+**`Offline tapping, no ads or IAP`**  (30/30)
 
-Alternatives if you prefer:
-- `Fast neon grid-hack arcade` (26)
-- `Reflex hacking, pure neon` (25)
-- `Tap-fast neon grid hacker` (25)
+Puts the strongest differentiator (no ads/IAP — real search demand, few honest competitors)
+in the second-heaviest field, and captures `offline` + `tapping`. In the Action variant this
+would instead be `Offline arcade, no ads or IAP` (29). Never put "free"/"gratis" here — Apple
+rejects price references in metadata.
 
 ## Promotional text (≤170, editable anytime without review)
-`Jack in. Decode the neon grid before your RAM runs out, chain clean hits into Fever, and chase the high score. A pure reflex test — no ads, no tracking, all skill.`
+`Tap fast, chain combos into Fever, outlast the rising grid. Now with a 16-core boss campaign, stackable run modifiers & a daily streak. No ads, no tracking — pure skill.`  (169)
 
-## Keywords (≤100, comma-separated, no spaces)
-`offline,tap,reaction,combo,score,fast,endless,cyberpunk,retro,synthwave,casual,hacker,dodge`  (91)
+## Keywords (≤100, comma-separated, no spaces) — Arcade variant
+`cyberpunk,reaction,speed,hacker,synthwave,retro,endless,combo,timing,score,skill,hard,daily`  (91)
 
-> **Rule (Apple):** the title, subtitle AND category are already indexed — never repeat
-> those words in the keyword field. Already free for us: *grid, breaker* (name); *neon,
-> reflex, grid, hacking* (subtitle `Neon reflex grid-hacking`); *arcade, action, games*
-> (category). So `reflex`, `arcade`, `neon` were wasted, and `netrunner` (near-zero volume
-> + trademark risk) and `addictive` (subjective; nobody searches it) were dropped. Biggest
-> add: **`offline`** — huge, honest search term (100% on-device, no ads/tracking).
->
-> **Swap bench** (~9 chars spare; pick by audience): `one handed` (accessibility/casual) ·
-> `whack a mole` (broad casual, lower relevance) · `relax,chill` (the FLOW mode; high volume,
-> off-core) · swap `hacker`→`timing`/`cyber` if worried about stem-overlap with "hacking".
+> Already indexed (never repeat here): *grid, breaker, neon, reflex, game* (title) · *offline,
+> tapping, ads, IAP* (subtitle) · *arcade, games* (category). `cyberpunk`/`synthwave` = niche
+> terms with real-but-modest demand and thin competition (winnable for a no-download app);
+> `reaction`/`endless`/`skill`/`hard`/`tap(ping)` = genre standards players actually type;
+> `daily` hooks the real Daily Challenge mode. Deliberately OUT: `brain`/`puzzle`/`training`
+> (higher volume but off-genre → bad per-term conversion drags ranking) and any competitor name.
+> **Action variant** (if you'd stayed in Action): `cyberpunk,tap,reaction,speed,hacker,synthwave,retro,endless,combo,timing,score,skill,hard` (89).
 
 ## Description (≤4000)
 ```
@@ -126,6 +136,12 @@ GRID_BREAKER 1.0 — jack in. Vier modi, een campaign van 10 cores, power-ups, s
 
 ## Listing metadata
 - **Primary category:** Games → **Arcade** · **Secondary:** Action
+  - ⚠️ **v1.3.1 action:** the measured benchmark (`ASO_addendum`) shows the app is currently
+    surfacing as **"Action Apps"**, so the live primary is Action, not Arcade as this doc
+    assumed. In App Store Connect → **App Information**, set **Primary = Arcade** (Secondary
+    can stay Action or move to Casual). Reason: Action is dominated by big-budget shooters/
+    brawlers; a reflex tap game fits Arcade far better (thinner browse competition, relevant
+    peers). Verify whether the category edit needs the new version or is live-editable.
 - **Age rating:** answer the questionnaire honestly — the app has **no violence, no
   objectionable content** (abstract neon tapping), so it should land at **4+**.
 - **Privacy URL:** `https://jimmyrentmeester.github.io/gridbreaker/privacy.html`
