@@ -1,5 +1,12 @@
 # App Store Connect — v1.3.1 release (ASO metadata overhaul)
 
+> ✅ **SUBMITTED FOR REVIEW — 2026-08-07.** Name `Grid Breaker: Neon Reflex Game`, subtitle
+> `Offline arcade, no ads or IAP`, the Casual-set keywords, category → **Casual**, build 7.
+> **Measurement baseline (90 days pre-change): impressions 883 · PDP views 146 · downloads 34.**
+> Re-check App Analytics (Source Type = App Store Search) ~3–4 weeks after it goes live (early
+> Sept 2026) — rising *impressions* = the keyword change worked. Change only one field per
+> iteration after this.
+
 Paste-ready checklist for the 1.3.1 submission. Everything here is decided; the values are
 final. Tag: 👤 = only you can do it (login / your Mac / a signature), 🤖 = already done in
 the repo.
