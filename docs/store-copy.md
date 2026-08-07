@@ -19,26 +19,29 @@ read `GRID_BREAKER` as one token, not `grid`+`breaker`) and adds `reflex` + `gam
 The underscore stays everywhere else (icon, game, landing page).
 
 ## Subtitle (≤30) — describes the game
-**`Offline tapping, no ads or IAP`**  (30/30)
+**`Offline arcade, no ads or IAP`**  (29/30)
 
 Puts the strongest differentiator (no ads/IAP — real search demand, few honest competitors)
-in the second-heaviest field, and captures `offline` + `tapping`. In the Action variant this
-would instead be `Offline arcade, no ads or IAP` (29). Never put "free"/"gratis" here — Apple
-rejects price references in metadata.
+in the second-heaviest field, and captures `offline` + `arcade`. NB: **Arcade no longer
+exists as a game subcategory** (Apple retired it — it clashed with the Apple Arcade service),
+so we ship in **Casual**, which does NOT index "arcade" — hence we recapture that high-value
+word here in the subtitle. Never put "free"/"gratis" here — Apple rejects price references.
 
 ## Promotional text (≤170, editable anytime without review)
 `Tap fast, chain combos into Fever, outlast the rising grid. Now with a 16-core boss campaign, stackable run modifiers & a daily streak. No ads, no tracking — pure skill.`  (169)
 
-## Keywords (≤100, comma-separated, no spaces) — Arcade variant
-`cyberpunk,reaction,speed,hacker,synthwave,retro,endless,combo,timing,score,skill,hard,daily`  (91)
+## Keywords (≤100, comma-separated, no spaces) — Casual-category set
+`cyberpunk,tap,reaction,speed,hacker,synthwave,retro,endless,combo,timing,score,skill,hard,daily`  (95)
 
 > Already indexed (never repeat here): *grid, breaker, neon, reflex, game* (title) · *offline,
-> tapping, ads, IAP* (subtitle) · *arcade, games* (category). `cyberpunk`/`synthwave` = niche
-> terms with real-but-modest demand and thin competition (winnable for a no-download app);
-> `reaction`/`endless`/`skill`/`hard`/`tap(ping)` = genre standards players actually type;
-> `daily` hooks the real Daily Challenge mode. Deliberately OUT: `brain`/`puzzle`/`training`
-> (higher volume but off-genre → bad per-term conversion drags ranking) and any competitor name.
-> **Action variant** (if you'd stayed in Action): `cyberpunk,tap,reaction,speed,hacker,synthwave,retro,endless,combo,timing,score,skill,hard` (89).
+> arcade, ads, IAP* (subtitle) · *casual, games* (category). Because the category is Casual
+> (not Arcade/Action), neither "arcade" nor "tap" is category-covered, so we keep `tap` in the
+> keyword field AND `arcade` in the subtitle, and still fit `daily` — 14 terms, 95/100.
+> `cyberpunk`/`synthwave` = niche terms with real-but-modest demand and thin competition
+> (winnable for a no-download app); `tap`/`reaction`/`endless`/`skill`/`hard` = genre standards
+> players actually type; `daily` hooks the real Daily Challenge mode. Deliberately OUT:
+> `brain`/`puzzle`/`training` (higher volume but off-genre → bad per-term conversion drags
+> ranking) and any competitor name.
 
 ## Description (≤4000)
 ```
@@ -135,13 +138,14 @@ GRID_BREAKER 1.0 — jack in. Vier modi, een campaign van 10 cores, power-ups, s
 ```
 
 ## Listing metadata
-- **Primary category:** Games → **Arcade** · **Secondary:** Action
-  - ⚠️ **v1.3.1 action:** the measured benchmark (`ASO_addendum`) shows the app is currently
-    surfacing as **"Action Apps"**, so the live primary is Action, not Arcade as this doc
-    assumed. In App Store Connect → **App Information**, set **Primary = Arcade** (Secondary
-    can stay Action or move to Casual). Reason: Action is dominated by big-budget shooters/
-    brawlers; a reflex tap game fits Arcade far better (thinner browse competition, relevant
-    peers). Verify whether the category edit needs the new version or is live-editable.
+- **Primary category:** Games → **Casual** · **Secondary:** Action (or Puzzle)
+  - ⚠️ **v1.3.1 action:** live primary is currently **Action** (benchmark surfaces "Action
+    Apps"). **Arcade no longer exists as a game subcategory** (Apple retired it — clashed with
+    the Apple Arcade service), so the addendum's Arcade recommendation resolves to **Casual**,
+    the better fit anyway: Action is dominated by big-budget shooters/brawlers; a pick-up reflex
+    tapper belongs in Casual (thinner browse competition, relevant peers). In App Store Connect
+    → **App Information**, set **Primary = Casual**. Editing App Information also triggers the
+    new social-media age-rating questions — answer **None** (no social features).
 - **Age rating:** answer the questionnaire honestly — the app has **no violence, no
   objectionable content** (abstract neon tapping), so it should land at **4+**.
 - **Privacy URL:** `https://jimmyrentmeester.github.io/gridbreaker/privacy.html`

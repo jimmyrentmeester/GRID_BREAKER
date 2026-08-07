@@ -19,10 +19,10 @@ the repo.
 | Field | Value |
 |---|---|
 | **App Name** (30/30) | `Grid Breaker: Neon Reflex Game` |
-| **Subtitle** (30/30) | `Offline tapping, no ads or IAP` |
-| **Keywords** (91/100) | `cyberpunk,reaction,speed,hacker,synthwave,retro,endless,combo,timing,score,skill,hard,daily` |
+| **Subtitle** (29/30) | `Offline arcade, no ads or IAP` |
+| **Keywords** (95/100) | `cyberpunk,tap,reaction,speed,hacker,synthwave,retro,endless,combo,timing,score,skill,hard,daily` |
 | **Promotional Text** (169/170) | `Tap fast, chain combos into Fever, outlast the rising grid. Now with a 16-core boss campaign, stackable run modifiers & a daily streak. No ads, no tracking — pure skill.` |
-| **Primary Category** | Games → **Arcade** *(switch from Action)* |
+| **Primary Category** | Games → **Casual** *(switch from Action; Arcade was retired as a subcategory)* |
 | **Version** | `1.3.1` |
 
 **What's New** (paste from `docs/RELEASE_NOTES_v1.3.md` — this build carries the whole staged
@@ -38,11 +38,13 @@ appstoreconnect.apple.com → your developer Apple ID. (Free-app agreement stays
 banking needed — we're not enabling IAP in this release.)
 
 ### 2. Switch the category (App Information — not version-specific)
-My Apps ▸ GRID_BREAKER ▸ **App Information** (left sidebar) ▸ **Primary Category → Arcade**.
-Secondary can stay Action or move to Casual. Save.
-- ⚠️ The measured benchmark shows the app currently surfaces as **"Action Apps"**, so today's
-  live primary is Action. This is the switch. If ASC lets you save it now, great; if it says
-  it applies with the next version, that's fine — the next version is 1.3.1 anyway.
+My Apps ▸ GRID_BREAKER ▸ **App Information** (left sidebar) ▸ **Primary Category → Casual**.
+Secondary can stay Action (or move to Puzzle). Save.
+- **Arcade is gone** as a game subcategory (Apple retired it — clashed with Apple Arcade), so
+  the addendum's Arcade pick resolves to **Casual** — the better fit anyway (Action is all
+  big-budget shooters/brawlers).
+- Editing App Information triggers the new **social-media age-rating** questions — answer
+  **None** for all (no social features, chat, or UGC).
 
 ### 3. Create the 1.3.1 version
 **App Store** tab ▸ the **(+) Version or Platform** button (top-left of the version list) ▸
