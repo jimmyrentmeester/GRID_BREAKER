@@ -73,3 +73,13 @@ proves nothing about layout/feel/gestures (Part 0). Dev team `A652HSR4S9`.
 - `docs/CONCEPTS.md` — game-design vocabulary & mechanics reference.
 - `docs/QUESTIONS.md` — open questions for the maintainer.
 - `docs/UPDATES.md` — short changelog for the player/maintainer.
+
+
+## Projectgeheugen
+`memory/MEMORY.md` is de index op het opgebouwde geheugen van dit project —
+werkafspraken (budget, run-hygiëne, commit-prefix) en projectkennis (de v1.3.1
+ASO-release en de meting begin sept; het feit dat de landing page vanuit de
+aparte hub-repo deployt). Lees de index bij twijfel, niet alle bestanden.
+
+Dit geheugen stond eerder onder de gedeelde PeuterGames-werkmap en is per
+2026-08-22 losgetrokken naar dit project.
