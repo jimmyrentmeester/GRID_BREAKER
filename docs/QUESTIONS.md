@@ -25,6 +25,17 @@ Resolved questions move to `DECISIONS.md`.
   D23 pressure curve plays well on device; Run #69–72 build-verified. Approved.
 
 ## Open
+- **Q9 — No open engineering task on ROADMAP.md (2026-09-09).** Resume-check found a
+  clean-ish tree (only a stray untracked `CLAUDE.md.bak`, harmless — pre-edit copy of
+  `CLAUDE.md` from the memory-file split, not project code) and every ROADMAP milestone
+  through Cosmetics 2.0 marked ✅. The only remaining items are maintainer-only and
+  money/account-gated: (1) on-device feel pass for Campaign 2.0 + Cosmetics 2.0 before
+  the next store version, (2) Android Play Store account + listing to publish the
+  already-built port, (3) Monetization Phase 1 (tip jar) — blocked on the DSA
+  virtual-office address decision. Per memory, v1.3.1 ASO metadata was submitted
+  2026-08-07; the impressions measurement (vs. baseline 883/146/34) is due around now.
+  Nothing to build until one of these gets a maintainer decision — flagging instead of
+  inventing a task.
 - **Q8 — Game Center verification pass (Run #75).** Needs the maintainer's Mac +
   device: (1) Xcode build of the new `GameCenterService` + entitlement; (2) App
   Store Connect → Game Center: create 2 leaderboards + 13 achievements with the
