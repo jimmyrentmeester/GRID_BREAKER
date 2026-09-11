@@ -291,6 +291,19 @@ the IAP review screenshot once the view exists) is 🤖 build work. The human-on
      proof; it becomes public).
    - ⚠️ Avoid a **PO box** (DSA leans to a geographical address).
    - Email → `madebyjire@icloud.com`.
+
+   **Market check (2026-09-11, background research while Jimmy was asleep — no decision
+   made, just cheaper the "decide the address" step):** the cheapest Dutch KvK/business
+   address provider found is **Staete Vrijdaggevoel** at **€23,75/mo (~€285/yr)**, fully
+   automated, digitizes mail at no extra cost, address in Cuijk (near Nijmegen). Note: this
+   confirms the **upper** end of the earlier €120–360/yr estimate, not the lower end — €285/yr
+   is realistic, not €120/yr. One catch worth flagging: several providers (this one included)
+   require an **annual prepayment for sole proprietorships without a filed annual return
+   yet** — relevant since GRID_BREAKER is presumably registered as an eenmanszaak. Worth
+   comparing 2-3 quotes before committing (virtualoffice.nl started from €40/mo — more
+   expensive, not cheaper) but Vrijdaggevoel looks like the front-runner on price. This is
+   pure cost-research, not a recommendation to switch to trader — that's still gated on the
+   revenue-vs-cost judgment call only Jimmy can make.
 3. **Confirm the offer** — the 4 price points + in-fiction tier names (defaults suggested
    above; your call to change).
 4. **Create the 4 Consumable IAPs** in ASC (I'll hand you the exact IDs/prices/names to
