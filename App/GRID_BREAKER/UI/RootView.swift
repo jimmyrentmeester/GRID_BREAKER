@@ -193,7 +193,17 @@ struct RootView: View {
             AudioEngine.shared.musicVolume = store.musicVolume
             AudioEngine.shared.sfxVolume = store.sfxVolume
             AudioEngine.shared.enabled = store.soundEnabled
-            AudioEngine.shared.start()
+            // Debug-only escape hatch (Q10): the iOS 27.0 *simulator* has a CoreAudio
+            // AURemoteIO regression that aborts the process with an RPC timeout during
+            // AVAudioEngine init/cleanup (see docs/QUESTIONS.md Q10) — reproduced even
+            // with engine.start() deferred a runloop turn, so it's not a startup race
+            // in this code, it's the simulator's audio daemon. No effect on normal
+            // launches (device or simulator) since the env var is never set by
+            // default; only lets a maintainer skip audio to unblock UI-only checks
+            // (e.g. Liquid Glass) on an affected simulator without editing code.
+            if ProcessInfo.processInfo.environment["GB_SKIP_AUDIO_INIT"] != "1" {
+                AudioEngine.shared.start()
+            }
             // First launch: grant the starter Credits up front and leave the player on
             // the menu (Campaign is flagged START HERE — the learn-by-doing route). The
             // hands-on practice tutorial is no longer forced before real play; it stays

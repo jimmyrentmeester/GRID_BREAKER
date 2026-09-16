@@ -36,6 +36,37 @@ Resolved questions move to `DECISIONS.md`.
   2026-08-07; the impressions measurement (vs. baseline 883/146/34) is due around now.
   Nothing to build until one of these gets a maintainer decision — flagging instead of
   inventing a task.
+- **Q10 — Liquid Glass visuele check (iOS 27 simulator) — audio-crash root cause
+  gevonden + veilige workaround toegepast; Liquid-Glass-hoofdmenu-check nu WEL
+  gedaan (modals nog niet).** Root cause bevestigd (zie D25): een CoreAudio
+  `AURemoteIO`-RPC-timeout in de **iOS 27.0-simulatordaemon** zelf tijdens
+  `AVAudioEngine.start()`/cleanup, geen appbug. Reproductie-stappen: (1) build op
+  iOS 26.5-simulator (UDID B3D7624E-0643-4BB3-8EBF-3BF9D402B00F) crasht óók, maar
+  pas na ~11 s i.p.v. ~1–3 s — bevestigt een generieke maar iOS-27-verergerde
+  simulator-CoreAudio-regressie, geen Liquid-Glass/UI-oorzaak; (2) `engine.start()`
+  een runloop-tick uitstellen met `DispatchQueue.main.async` verandert niets (crasht
+  nog steeds op dezelfde stacktrace) — dus geen `.onAppear`-startrace, het is de
+  simulator's audiodaemon zelf; (3) `AudioEngine.shared.start()` volledig
+  overslaan → app blijft draaien (getest 16+ s zonder crash) en het hoofdmenu
+  rendert normaal. Op basis hiervan is een **veilige, reversibele workaround**
+  toegevoegd in `RootView.swift` (`onAppear`): een debug-only escape hatch die
+  `AudioEngine.shared.start()` overslaat wanneer de env var `GB_SKIP_AUDIO_INIT=1`
+  is gezet (`SIMCTL_CHILD_GB_SKIP_AUDIO_INIT=1` bij `simctl launch`). **Geen
+  gedragswijziging bij normale launches** (env var wordt nergens standaard gezet) —
+  puur een maintainer-tool om UI-checks op een getroffen simulator te doen zonder
+  codewijziging per keer. Geverifieerd: met de env var draait de app 18+ s door op
+  de iOS 27.0-simulator en toont het hoofdmenu — screenshot
+  `/tmp/gb_lg_screens/final_skip_real_10s.png`. **Liquid-Glass-conclusie
+  hoofdmenu:** geen glaseffecten of contrastbreuk zichtbaar op de
+  neon-cyberpunk-tegels (JACK IN, MODES, TERMINAL, TOP RUNS/CODEX/SETTINGS) — ziet
+  er identiek uit aan de bekende look. **Nog niet gedaan:** de shop/prestige/
+  cosmetics/game-over-modals in-app bekijken (vereist door de modals navigeren,
+  wat met audio uitgeschakeld gewoon zou moeten werken maar nog niet is getest) en
+  eventueel een Feedback Assistant-melding voor de onderliggende simulatorbug.
+  Aanbeveling: laat de escape hatch staan als permanente debug-tool (nul productie-
+  impact), en meld de generieke CoreAudio-RPC-timeout-regressie via Feedback
+  Assistant als hij op een verse iOS 27-simulatorinstall reproduceert.
+
 - **Q8 — Game Center verification pass (Run #75).** Needs the maintainer's Mac +
   device: (1) Xcode build of the new `GameCenterService` + entitlement; (2) App
   Store Connect → Game Center: create 2 leaderboards + 13 achievements with the

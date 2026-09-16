@@ -341,3 +341,19 @@ Cyberdeck section carry that weight instead. Migration is safe + a small fix: pl
 skipped the old tutorial (so never got the payday) now receive their 150 CR on next launch.
 Not done here (deliberate, larger): relocating the *guided shop tour* itself, and any
 rework of the practice scenes' content.
+
+## D25 — Q10 audio-crash: `GB_SKIP_AUDIO_INIT` debug escape hatch
+**2026-09-17.** Root-caused the GRID_BREAKER-2026-09-16 iOS-27-simulator crash
+(`EXC_CRASH`/`SIGABRT`, `abort()` → `_ReportRPCTimeout` → `AURemoteIO::Cleanup()`) as
+a CoreAudio AURemoteIO RPC-timeout **in the iOS 27.0 simulator's audio daemon**
+during `AVAudioEngine.start()`, not an app bug: reproduces (delayed, ~11 s vs ~1–3 s)
+on iOS 26.5 too, and persists even when `engine.start()` is deferred a runloop tick —
+ruling out a SwiftUI `.onAppear` race. Skipping `AudioEngine.shared.start()` entirely
+keeps the app alive indefinitely with no other symptoms. Added a debug-only escape
+hatch in `RootView.swift`'s `onAppear`: audio init is skipped only when the process
+env var `GB_SKIP_AUDIO_INIT=1` is set (e.g. `SIMCTL_CHILD_GB_SKIP_AUDIO_INIT=1` before
+`simctl launch`) — zero behavior change for normal launches since nothing sets that
+var by default. This unblocked the Q10 Liquid-Glass main-menu check (no glass/contrast
+issues found on the neon-cyberpunk tiles); modal-by-modal checks still pending. Kept
+as a permanent, harmless debug tool rather than reverted, since the underlying
+simulator regression isn't fixable from app code.
