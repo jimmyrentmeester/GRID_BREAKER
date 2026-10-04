@@ -1,0 +1,28 @@
+{
+  "en-US": {
+    "name": null,
+    "subtitle": null,
+    "keywords": null,
+    "description": null,
+    "promo": "Tap fast, chain combos into Fever, outlast the rising grid. Now with a 16-core boss campaign, stackable run modifiers & a daily streak. No ads, no tracking — pure skill.",
+    "whatsNew": "Stability fixes and polish."
+  },
+  "en-GB": {
+    "name": "Grid Breaker: Neon Reflex Game",
+    "subtitle": "Offline arcade, no ads or IAP",
+    "keywords": "cyberpunk,tap,reaction,speed,hacker,synthwave,retro,endless,combo,timing,score,whack,mole,daily",
+    "promo": "Tap fast, chain combos into Fever, outlast the rising grid. Now with a 16-core boss campaign, stackable run modifiers & a daily streak. No ads, no tracking — pure skill.",
+    "description": "GRID_BREAKER is a fast, neon reflex game. Jack into the grid, decode the daemons before they vanish, dodge the firewalls, and chain combos into Fever as the pace climbs.\n\nJust thumbs. Pure reaction. No filler.\n\nHOW IT PLAYS\n• Tap glowing daemons to decode them and refill your RAM clock.\n• Never tap a red firewall — let it expire.\n• Crack armoured shells, grab gold data caches, chase hopping worms.\n• Chain clean hits to trigger FEVER: hazards clear and your score doubles.\n• Grab power-ups — Freeze, Overclock, Purge — for a burst of control.\n• Hold a clean streak to climb a rising score multiplier.\n\nFOUR MODES\n• ENDLESS — survive as long as your reflexes hold and chase the high score.\n• CAMPAIGN — 16 hand-tuned data cores across 4 chapters, each teaching one new mechanic and ending in a chapter boss.\n• PROTOCOL — objective-driven endurance. DAEMON SETs and DMZ PURGEs with no relief and no power-ups.\n• DAILY HACK — one shared board per day; everyone races the same seed.\n\nPROGRESS & STYLE\n• Earn Credits every run and spend them in the CYBERDECK on permanent upgrades — more RAM, faster decoding, a failsafe shield, longer Fever, bigger payouts.\n• Unlock COSMETICS — neon palettes that recolour the whole game and tap-trail styles that follow your finger.\n\nBUILT RIGHT\n• 100% on-device. No accounts, no ads, no analytics, no tracking — nothing is collected.\n• Honours Reduce Motion; independent music & effects volume.\n• All sound is generated in code — tactile, rewarding, no bloat.\n\nCrack the grid. The Monolith is waiting.",
+    "new": true,
+    "whatsNew": "Stability fixes and polish."
+  },
+  "nl-NL": {
+    "name": "Grid Breaker: Neon Reflex Spel",
+    "subtitle": "Offline tikspel zonder reclame",
+    "keywords": "spelletjes,reactie,snel,tikken,verslavend,dagelijks,mol,meppen,reflexen,uitdaging,moeilijk,highscore",
+    "promo": "Tik snel, rijg combo's aaneen tot Fever en overleef het oplopende grid. Met een campaign van 16 cores, run-modifiers en een dagelijkse streak. Geen reclame, puur skill.",
+    "description": "GRID_BREAKER is een razendsnel neon reflexspel. Jack in op het grid, kraak de daemons voordat ze verdwijnen, ontwijk de firewalls en rijg combo's aaneen tot Fever terwijl het tempo oploopt.\n\nAlleen je duimen. Pure reactie. Geen opvulling.\n\nZO SPEEL JE\n• Tik op oplichtende daemons om ze te kraken en je RAM-klok bij te vullen.\n• Tik nooit op een rode firewall — laat 'm verlopen.\n• Breek gepantserde schillen, pak gouden datacaches, jaag op springende worms.\n• Rijg foutloze tikken aaneen voor FEVER: gevaren verdwijnen en je score verdubbelt.\n• Pak power-ups — Freeze, Overclock, Purge — voor een moment van controle.\n• Houd een foutloze reeks vast en klim in een oplopende score-multiplier.\n\nVIER MODI\n• ENDLESS — overleef zolang je reflexen het houden en jaag op de highscore.\n• CAMPAIGN — 16 zorgvuldig afgestelde datacores in 4 hoofdstukken, elk met een nieuwe mechaniek en een eindbaas per hoofdstuk.\n• PROTOCOL — uithoudingsvermogen met doelen. DAEMON SETs en DMZ PURGEs, zonder adempauze en zonder power-ups.\n• DAILY HACK — elke dag één gedeeld bord; iedereen speelt dezelfde seed.\n\nVOORTGANG & STIJL\n• Verdien Credits met elke run en besteed ze in de CYBERDECK aan permanente upgrades — meer RAM, sneller kraken, een failsafe-schild, langere Fever, hogere uitbetalingen.\n• Ontgrendel COSMETICS — neonpaletten die het hele spel herkleuren en tap-trails die je vinger volgen.\n\nGOED GEBOUWD\n• 100% op je toestel. Geen account, geen reclame, geen analytics, geen tracking — er wordt niets verzameld.\n• Respecteert Verminder beweging; aparte volumes voor muziek en effecten.\n• Al het geluid wordt in code gegenereerd — tactiel en belonend, zonder ballast.\n\nDe app is Engelstalig.\n\nKraak het grid. De Monolith wacht.",
+    "new": true,
+    "whatsNew": "Stabiliteitsverbeteringen en afwerking."
+  }
+}

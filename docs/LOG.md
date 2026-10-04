@@ -3,6 +3,17 @@
 Append-only record of completed runs (newest first). This file — not commit
 prefixes — is the sole record of what's done.
 
+## Run #110 — ASO-ronde oktober: v1.3.3 met en-GB + nl-NL listings (2026-10-04)
+- Inventaris + trechter per land in `docs/ASO-audit-2026-10.md`: impressies flink omhoog t.o.v.
+  de nulmeting (883/90 d), maar imp→pagina is laag (VS 1,4%, VK/AU <1%) → eerste beeld zwak.
+- App Store Connect (via Heimdall): versie **1.3.3** aangemaakt (`MANUAL`); nieuwe store-listings
+  **en-GB** (naam in spatievorm `Grid Breaker: …`, `whack,mole` in keywords) en **nl-NL**
+  (alleen NL-keywords, nieuwe vertaling); screenshotvolgorde iPhone/iPad met gameplay/Fever vooraan.
+  en-US naam/ondertitel/keywords bewust ongewijzigd (meetbaarheid v1.3.1). Bron van waarheid:
+  `docs/release/aso-1.3.3/metadata.py`.
+- `MARKETING_VERSION` → 1.3.3, `CURRENT_PROJECT_VERSION` → 9.
+- Pending: Xcode Cloud-build koppelen + preflight; indienen alleen op verzoek; nameting 2–4 weken na release.
+
 ## Run #109 — v1.3 release prep (2026-06-25)
 - Bumped `MARKETING_VERSION` → 1.3, `CURRENT_PROJECT_VERSION` → 6 (pbxproj).
 - Written `docs/RELEASE_NOTES_v1.3.md`: What's New copy (App Store), full description, submit-checklist.

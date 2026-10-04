@@ -3,6 +3,11 @@
 Milestones end with a running, watchable artifact (ground-truth Part 4.5). One
 scoped slice per session.
 
+## ⏳ v1.3.3 — ASO-ronde (2026-10-04)
+Store-only release: en-GB + nl-NL listings en nieuwe screenshotvolgorde (`docs/ASO-audit-2026-10.md`).
+Versie staat in App Store Connect op `MANUAL`; wacht op Xcode Cloud-build → koppelen → indienen.
+Daarna: nameting per land; volgende ronde en-US keywords (`whack,mole`), captions, evt. ja/es-MX.
+
 ## ✅ v1.2 — LIVE on the App Store (2026-06-22)
 Shipped: PROTOCOL mode (Runs #88–95, `docs/PROTOCOL_MODE.md`), the in-game Codex, iPad
 full-screen scaling, and post-launch fixes. **Game Center is fully working in v1.2**
